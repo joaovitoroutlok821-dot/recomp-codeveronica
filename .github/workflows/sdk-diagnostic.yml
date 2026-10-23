@@ -1,0 +1,85 @@
+name: Diagnostico do SDK ReXGlue
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/sdk-diagnostic.yml'
+      - 'scripts/ensure-rexglue-*.py'
+      - 'scripts/ensure-disruptorplus-*.py'
+      - 'scripts/common.sh'
+
+permissions:
+  contents: read
+
+jobs:
+  build-sdk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Baixar repositorio
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y autoconf clang-18 lld cmake ninja-build git python3 pkg-config curl unzip build-essential libvulkan-dev libx11-dev libxcb1-dev libxcb-keysyms1-dev libxcb-xfixes0-dev libxcb-xinput-dev libwayland-dev
+
+      - name: Verificar scripts de compatibilidade
+        run: |
+          set -euo pipefail
+          for f in scripts/ensure-rexglue-binary-patches.py scripts/ensure-rexglue-timerqueue-blocking-wait.py scripts/ensure-disruptorplus-blocking-wait-fix.py scripts/ensure-rexglue-db16cyc-noop.py scripts/ensure-rexglue-switch-trap-context.py; do
+            test -f "$f"
+            python3 -m py_compile "$f"
+          done
+          bash -n scripts/common.sh
+
+      - name: Baixar SDK fixado
+        run: |
+          set -euo pipefail
+          git clone https://github.com/rexglue/rexglue-sdk.git .deps/rexglue-sdk
+          git -C .deps/rexglue-sdk checkout 398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb
+          git -C .deps/rexglue-sdk submodule update --init --recursive
+
+      - name: Aplicar correcoes locais
+        run: |
+          set -euo pipefail
+          python3 scripts/ensure-rexglue-binary-patches.py .deps/rexglue-sdk
+          python3 scripts/ensure-rexglue-timerqueue-blocking-wait.py .deps/rexglue-sdk
+          python3 scripts/ensure-disruptorplus-blocking-wait-fix.py .deps/rexglue-sdk
+          python3 scripts/ensure-rexglue-db16cyc-noop.py .deps/rexglue-sdk
+          python3 scripts/ensure-rexglue-switch-trap-context.py .deps/rexglue-sdk
+
+      - name: Configurar SDK para Linux
+        run: |
+          cmake --preset linux-amd64 -S .deps/rexglue-sdk -DCMAKE_C_COMPILER=clang-18 -DCMAKE_CXX_COMPILER=clang++-18 -DREXGLUE_ENABLE_PERF_COUNTERS=OFF
+
+      - name: Compilar e instalar SDK
+        run: |
+          cmake --build .deps/rexglue-sdk/out/build/linux-amd64 --target install --parallel 2
+
+      - name: Compilar CLI rexglue
+        run: |
+          cmake --build .deps/rexglue-sdk/out/build/linux-amd64 --target rexglue --parallel 2
+
+      - name: Resumo
+        if: always()
+        run: |
+          {
+            echo "## Diagnostico do SDK ReXGlue"
+            echo "- Este workflow testa somente a compilacao do SDK para Linux."
+            echo "- Nao inclui nem envia Default.xex ou arquivos comerciais do jogo."
+            echo "- Um APK Android ainda exige uma etapa Android/NDK separada."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Anexar logs do CMake em caso de falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recvx-sdk-diagnostic-logs
+          path: |
+            .deps/rexglue-sdk/out/build/linux-amd64/CMakeCache.txt
+            .deps/rexglue-sdk/out/build/linux-amd64/CMakeFiles/CMakeConfigureLog.yaml
+          if-no-files-found: ignore
