@@ -25,7 +25,7 @@ jobs:
       - name: Instalar dependencias
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf clang-18 lld cmake ninja-build git python3 pkg-config curl unzip build-essential libvulkan-dev libx11-dev libxcb1-dev libxcb-keysyms1-dev libxcb-xfixes0-dev libxcb-xinput-dev libx11-xcb-dev libwayland-dev
+          sudo apt-get install -y autoconf clang-18 g++-13 libstdc++-13-dev lld cmake ninja-build git python3 pkg-config curl unzip build-essential libvulkan-dev libx11-dev libxcb1-dev libxcb-keysyms1-dev libxcb-xfixes0-dev libxcb-xinput-dev libx11-xcb-dev libwayland-dev
 
       - name: Verificar scripts de compatibilidade
         run: |
