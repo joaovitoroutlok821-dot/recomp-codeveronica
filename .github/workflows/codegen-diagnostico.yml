@@ -1,0 +1,56 @@
+name: Resident Evil codegen diagnostic
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: recvx-codegen-diagnostic
+  cancel-in-progress: false
+
+jobs:
+  codegen:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install host dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build clang-18 lld git pkg-config python3 curl unzip zip \
+            libvulkan1 libx11-6 libx11-xcb1 libxcb1 libwayland-client0 libxss1
+
+      - name: Download private release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download recvx-xex-private --repo "${GITHUB_REPOSITORY}" --pattern Default.xex --dir /tmp/recvx-xex
+          test -s /tmp/recvx-xex/Default.xex
+          echo "Downloaded XEX size: $(stat -c '%s' /tmp/recvx-xex/Default.xex)"
+          echo "Downloaded XEX SHA-256:"
+          sha256sum /tmp/recvx-xex/Default.xex
+          expected="c552c6995462a5cefdd52c07bebd28fff4481164b19a445c636d7b54736f3c70"
+          actual="$(sha256sum /tmp/recvx-xex/Default.xex | cut -d ' ' -f1)"
+          test "$actual" = "$expected"
+
+      - name: Stage XEX temporarily for build
+        run: |
+          mkdir -p game
+          cp /tmp/recvx-xex/Default.xex game/Default.xex
+          trap 'rm -f game/Default.xex' EXIT
+          ./build.sh --release --jobs 2
+
+      - name: Save diagnostic logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recvx-codegen-diagnostics
+          path: |
+            logs/
+            out/stage/linux-amd64-release/
+          if-no-files-found: warn
+          retention-days: 7
