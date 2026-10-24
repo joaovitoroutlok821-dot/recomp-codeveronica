@@ -5,6 +5,8 @@ on:
   push:
     paths:
       - '.github/workflows/codegen-diagnostico.yml'
+      - 'build.sh'
+      - 'scripts/**'
 
 permissions:
   contents: read
