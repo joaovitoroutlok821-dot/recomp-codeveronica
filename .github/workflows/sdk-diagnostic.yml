@@ -58,8 +58,8 @@ jobs:
           cmake --preset linux-amd64 -S .deps/rexglue-sdk \
             -DCMAKE_C_COMPILER=clang-18 \
             -DCMAKE_CXX_COMPILER=clang++-18 \
-            -DCMAKE_C_FLAGS="-march=x86-64-v2 --gcc-toolchain=/usr" \
-            -DCMAKE_CXX_FLAGS="-march=x86-64-v2 --gcc-toolchain=/usr" \
+            -DCMAKE_C_FLAGS="-march=x86-64-v2 --gcc-toolchain=/usr --gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13" \
+            -DCMAKE_CXX_FLAGS="-march=x86-64-v2 --gcc-toolchain=/usr --gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13" \
             -DREXGLUE_ENABLE_PERF_COUNTERS=OFF
 
       - name: Confirmar biblioteca C++23
