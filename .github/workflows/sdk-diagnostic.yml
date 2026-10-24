@@ -67,10 +67,10 @@ jobs:
         run: |
           set -euo pipefail
           printf '#include <expected>\nint main(){ std::expected<int, int> x(1); return *x - 1; }\n' > /tmp/check-expected.cpp
-          clang++-18 --gcc-toolchain=/usr --gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13 -std=c++23 -stdlib=libstdc++ -isystem /usr/include/c++/13 -isystem /usr/include/x86_64-linux-gnu/c++/13 /tmp/check-expected.cpp -o /tmp/check-expected
+          g++-13 -std=c++23 /tmp/check-expected.cpp -o /tmp/check-expected
           /tmp/check-expected
           printf '#include <charconv>\nint main(){ float x{}; const char s[] = "1.25"; return std::from_chars(s, s+4, x, std::chars_format::general).ec == std::errc{} ? 0 : 1; }\n' > /tmp/check-float-from-chars.cpp
-          clang++-18 --gcc-toolchain=/usr --gcc-install-dir=/usr/lib/gcc/x86_64-linux-gnu/13 -std=c++23 -stdlib=libstdc++ -isystem /usr/include/c++/13 -isystem /usr/include/x86_64-linux-gnu/c++/13 /tmp/check-float-from-chars.cpp -o /tmp/check-float-from-chars
+          g++-13 -std=c++23 /tmp/check-float-from-chars.cpp -o /tmp/check-float-from-chars
           /tmp/check-float-from-chars
 
       - name: Compilar e instalar SDK
