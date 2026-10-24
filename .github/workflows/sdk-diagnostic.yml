@@ -56,7 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           cmake --preset linux-amd64 -S .deps/rexglue-sdk \
-            -DCMAKE_C_COMPILER=gcc-13 \
+            -DCMAKE_C_COMPILER=clang-18 \
             -DCMAKE_CXX_COMPILER=clang++-18 \
             -DCMAKE_C_FLAGS="-march=x86-64-v2" \
             -DCMAKE_CXX_FLAGS="-march=x86-64-v2 -stdlib=libc++" \
@@ -69,7 +69,7 @@ jobs:
           clang++-18 -std=c++23 -stdlib=libc++ /tmp/check-expected.cpp -o /tmp/check-expected
           /tmp/check-expected
           printf '#include <charconv>\nint main(){ float x{}; const char s[] = "1.25"; return std::from_chars(s, s+4, x, std::chars_format::general).ec == std::errc{} ? 0 : 1; }\n' > /tmp/check-float-from-chars.cpp
-          clang++-18 -std=c++23 -stdlib=libstdc++ /tmp/check-float-from-chars.cpp -o /tmp/check-float-from-chars
+          clang++-18 -std=c++23 -stdlib=libc++ /tmp/check-float-from-chars.cpp -o /tmp/check-float-from-chars
           /tmp/check-float-from-chars
 
       - name: Compilar e instalar SDK
