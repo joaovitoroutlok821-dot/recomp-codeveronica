@@ -2,6 +2,9 @@ name: Resident Evil codegen diagnostic
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/codegen-diagnostico.yml'
 
 permissions:
   contents: read
