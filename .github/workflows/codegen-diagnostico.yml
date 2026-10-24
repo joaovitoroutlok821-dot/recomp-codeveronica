@@ -49,7 +49,7 @@ jobs:
           mkdir -p game
           cp /tmp/recvx-xex/Default.xex game/Default.xex
           trap 'rm -f game/Default.xex' EXIT
-          ./build.sh --release --jobs 2
+          bash build.sh --release --jobs 2
 
       - name: Save diagnostic logs
         if: always()
