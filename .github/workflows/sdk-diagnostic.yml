@@ -25,7 +25,11 @@ jobs:
       - name: Instalar dependencias
         run: |
           sudo apt-get update
-          sudo apt-get install -y autoconf gcc-13 libc++-18-dev libc++abi-18-dev gcc-13 g++-13 libstdc++-13-dev lld cmake ninja-build git python3 pkg-config curl unzip build-essential libvulkan-dev libx11-dev libxcb1-dev libxcb-keysyms1-dev libxcb-xfixes0-dev libxcb-xinput-dev libx11-xcb-dev libwayland-dev
+          sudo apt-get install -y wget ca-certificates
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh 21
+          sudo apt-get install -y autoconf gcc-13 g++-13 libstdc++-13-dev libc++-21-dev libc++abi-21-dev lld cmake ninja-build git python3 pkg-config curl unzip build-essential libvulkan-dev libx11-dev libxcb1-dev libxcb-keysyms1-dev libxcb-xfixes0-dev libxcb-xinput-dev libx11-xcb-dev libwayland-dev
 
       - name: Verificar scripts de compatibilidade
         run: |
@@ -56,8 +60,8 @@ jobs:
         run: |
           set -euo pipefail
           cmake --preset linux-amd64 -S .deps/rexglue-sdk \
-            -DCMAKE_C_COMPILER=clang-18 \
-            -DCMAKE_CXX_COMPILER=clang++-18 \
+            -DCMAKE_C_COMPILER=clang-21 \
+            -DCMAKE_CXX_COMPILER=clang++-21 \
             -DCMAKE_C_FLAGS="-march=x86-64-v2" \
             -DCMAKE_CXX_FLAGS="-march=x86-64-v2 -stdlib=libc++" \
             -DREXGLUE_ENABLE_PERF_COUNTERS=OFF
@@ -66,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           printf '#include <expected>\nint main(){ std::expected<int, int> x(1); return *x - 1; }\n' > /tmp/check-expected.cpp
-          clang++-18 -std=c++23 -stdlib=libc++ /tmp/check-expected.cpp -o /tmp/check-expected
+          clang++-21 -std=c++23 -stdlib=libc++ /tmp/check-expected.cpp -o /tmp/check-expected
           /tmp/check-expected
 
       - name: Compilar e instalar SDK
