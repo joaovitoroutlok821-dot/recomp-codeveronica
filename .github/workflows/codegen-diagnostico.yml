@@ -6,6 +6,10 @@ on:
     paths:
       - '.github/workflows/codegen-diagnostico.yml'
       - 'build.sh'
+      - 'CMakeLists.txt'
+      - 'CMakePresets.json'
+      - 'generated/**'
+      - 'src/**'
       - 'scripts/**'
 
 permissions:
