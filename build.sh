@@ -238,12 +238,11 @@ readonly SDK_CMAKE_CONFIG
 recvx_info "building local ReXGlue SDK: $SDK_SOURCE"
 recvx_info "ReXGlue SDK configuration: $SDK_CMAKE_CONFIG"
 # ReXGlue uses C++23 std::expected and floating-point std::from_chars.
-# On Ubuntu 24.04, use Clang with the system libstdc++ (GCC 13+) which
-# implements both APIs. The installed libc++ 18 lacks floating-point from_chars.
+# Use the current LLVM/libc++ toolchain installed by the diagnostic workflow.
 case "$RECVX_HOST_ARCH" in
-  amd64) readonly RECVX_CXX_FLAGS="-march=x86-64-v2" ;;
-  arm64) readonly RECVX_CXX_FLAGS="-march=armv8-a" ;;
-  *) readonly RECVX_CXX_FLAGS="" ;;
+  amd64) readonly RECVX_CXX_FLAGS="-stdlib=libc++ -march=x86-64-v2" ;;
+  arm64) readonly RECVX_CXX_FLAGS="-stdlib=libc++ -march=armv8-a" ;;
+  *) readonly RECVX_CXX_FLAGS="-stdlib=libc++" ;;
 esac
 RECVX_REXGLUE_PERF_COUNTERS="${RECVX_REXGLUE_PERF_COUNTERS:-OFF}"
 case "${RECVX_REXGLUE_PERF_COUNTERS^^}" in
