@@ -32,7 +32,7 @@ jobs:
           wget -q https://apt.llvm.org/llvm.sh -O /tmp/llvm.sh
           chmod +x /tmp/llvm.sh
           sudo /tmp/llvm.sh 18
-          sudo apt-get install -y clang-18
+          sudo apt-get install -y clang-18 libc++-18-dev libc++abi-18-dev
 
       - name: Download private release asset
         env:
@@ -52,7 +52,7 @@ jobs:
           mkdir -p game
           cp /tmp/recvx-xex/Default.xex game/Default.xex
           trap 'rm -f game/Default.xex' EXIT
-          bash build.sh --release --jobs 2
+          CXXFLAGS="${CXXFLAGS:-} -stdlib=libc++" bash build.sh --release --jobs 2
 
       - name: Save diagnostic logs
         if: always()
