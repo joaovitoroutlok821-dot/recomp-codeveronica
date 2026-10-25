@@ -81,15 +81,36 @@ jobs:
             -DCMAKE_CXX_STANDARD=23 2>&1 | tee android-probe/configure.log
           echo "configure_exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
+      - name: Validate that SDK selected a real Android target
+        if: steps.probe.outputs.configure_exit == '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # CMake configuration alone can succeed while misclassifying Android
+          # as Linux. Do not let that false positive look like Android support.
+          if grep -E 'REX_PLATFORM_LINUX=1|Platform: linux-' android-probe/configure.log; then
+            echo "Android target check failed: pinned ReXGlue SDK selected its Linux platform branch." | tee android-probe/android-support-blocker.txt
+            echo "The SDK currently declares support for Windows, Linux and macOS only; this is not an Android build." | tee -a android-probe/android-support-blocker.txt
+            exit 1
+          fi
+          if ! grep -E 'REX_PLATFORM_ANDROID=1|Platform: android-' android-probe/configure.log; then
+            echo "Android target check failed: no explicit Android platform selection was found." | tee android-probe/android-support-blocker.txt
+            exit 1
+          fi
+
       - name: Summarize probe without disguising failures
         if: always()
         shell: bash
         run: |
           {
-            echo "## Android ARM64 configure probe"
-            echo "- This job tests SDK CMake configuration only; it does not claim to produce an APK."
-            echo "- Android configure exit: ${{ steps.probe.outputs.configure_exit || 'not recorded' }}"
-            echo "- Check configure.log and platform-check.txt in the artifact for the first real blocker."
+            echo "## Android ARM64 platform probe"
+            echo "- This job checks SDK configuration and verifies explicit Android platform selection; it does not produce an APK."
+            echo "- CMake configure exit: ${{ steps.probe.outputs.configure_exit || 'not recorded' }}"
+            if [[ -f android-probe/android-support-blocker.txt ]]; then
+              echo "- Android support blocker:"
+              sed 's/^/  - /' android-probe/android-support-blocker.txt
+            fi
+            echo "- Inspect configure.log and platform-check.txt in the artifact for details."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Android probe logs
