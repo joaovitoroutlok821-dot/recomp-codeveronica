@@ -34,7 +34,7 @@ jobs:
       - name: Install host build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git cmake ninja-build clang-21 lld pkg-config python3 build-essential libvulkan-dev libx11-dev libxcb1-dev libxcb-keysyms1-dev libxcb-xfixes0-dev libxcb-xinput-dev libx11-xcb-dev libwayland-dev
+          sudo apt-get install -y git cmake ninja-build clang lld pkg-config python3 build-essential libvulkan-dev libx11-dev libxcb1-dev libxcb-keysyms1-dev libxcb-xfixes0-dev libxcb-xinput-dev libx11-xcb-dev libwayland-dev
 
       - name: Checkout pinned ReXGlue SDK
         run: |
