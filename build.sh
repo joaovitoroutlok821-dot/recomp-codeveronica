@@ -225,6 +225,9 @@ recvx_run python3 "$SDK_DB16_NOOP_HELPER" "$SDK_SOURCE"
 recvx_info "ensuring ReXGlue switch-trap CTR capture"
 recvx_run python3 "$SDK_SWITCH_TRAP_HELPER" "$SDK_SOURCE"
 
+recvx_info "ensuring ReXGlue chrono clock_cast compatibility for libc++"
+recvx_run python3 "$ROOT_DIR/scripts/ensure-rexglue-chrono-libcpp-compat.py" "$SDK_SOURCE"
+
 readonly SDK_PREFIX="$SDK_SOURCE/out/install/$RECVX_SDK_PRESET"
 
 case "$BUILD_KIND" in
