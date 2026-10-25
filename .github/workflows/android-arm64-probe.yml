@@ -23,7 +23,7 @@ jobs:
           submodules: recursive
 
       - name: Install Android SDK and NDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
 
       - name: Install NDK
         run: |
