@@ -237,6 +237,13 @@ readonly SDK_CMAKE_CONFIG
 
 recvx_info "building local ReXGlue SDK: $SDK_SOURCE"
 recvx_info "ReXGlue SDK configuration: $SDK_CMAKE_CONFIG"
+# ReXGlue uses C++23 std::expected. Explicitly select libc++ because the preset
+# sets CMAKE_CXX_FLAGS itself, which means the CXXFLAGS environment is ignored.
+case "$RECVX_HOST_ARCH" in
+  amd64) readonly RECVX_CXX_FLAGS="-stdlib=libc++ -march=x86-64-v2" ;;
+  arm64) readonly RECVX_CXX_FLAGS="-stdlib=libc++ -march=armv8-a" ;;
+  *) readonly RECVX_CXX_FLAGS="-stdlib=libc++" ;;
+esac
 RECVX_REXGLUE_PERF_COUNTERS="${RECVX_REXGLUE_PERF_COUNTERS:-OFF}"
 case "${RECVX_REXGLUE_PERF_COUNTERS^^}" in
   ON|OFF) ;;
@@ -246,6 +253,7 @@ esac
 recvx_run cmake --preset "$RECVX_SDK_PRESET" -S "$SDK_SOURCE" \
   -DCMAKE_C_COMPILER:FILEPATH="$CLANG_C" \
   -DCMAKE_CXX_COMPILER:FILEPATH="$CLANG_CXX" \
+  -DCMAKE_CXX_FLAGS:STRING="$RECVX_CXX_FLAGS" \
   -DREXGLUE_ENABLE_PERF_COUNTERS:BOOL="$RECVX_REXGLUE_PERF_COUNTERS"
 readonly SDK_BUILD_DIR="$SDK_SOURCE/out/build/$RECVX_SDK_PRESET"
 recvx_run cmake --build "$SDK_BUILD_DIR" \
@@ -369,6 +377,7 @@ recvx_info "host CMake CLI fix: $CMAKE_REXGLUE_CLI_FIX"
 declare -a configure_extra=(
   -DCMAKE_C_COMPILER:FILEPATH="$CLANG_C"
   -DCMAKE_CXX_COMPILER:FILEPATH="$CLANG_CXX"
+  -DCMAKE_CXX_FLAGS:STRING="$RECVX_CXX_FLAGS"
   -DCMAKE_PREFIX_PATH:PATH="$SDK_PREFIX"
   -Drexglue_DIR:PATH="$(recvx_config_from_prefix "$SDK_PREFIX")"
   -DCMAKE_PROJECT_INCLUDE:FILEPATH="$CMAKE_REXGLUE_CLI_FIX"
