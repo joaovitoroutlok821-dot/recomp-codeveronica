@@ -31,8 +31,8 @@ jobs:
             libxcursor-dev libxrandr-dev libxinerama-dev libxi-dev libxfixes-dev libxkbcommon-dev libxss-dev libxtst-dev
           wget -q https://apt.llvm.org/llvm.sh -O /tmp/llvm.sh
           chmod +x /tmp/llvm.sh
-          sudo /tmp/llvm.sh 18
-          sudo apt-get install -y clang-18 libc++-18-dev libc++abi-18-dev
+          sudo /tmp/llvm.sh 21
+          sudo apt-get install -y clang-21 libc++-21-dev libc++abi-21-dev
 
       - name: Download private release asset
         env:
