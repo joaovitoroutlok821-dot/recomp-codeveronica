@@ -56,3 +56,10 @@ Source inspection of that pinned SDK also confirms the problem is larger than th
 4. Only after the Android native target links should the workflow produce an APK and validate its launch; the game XEX and gameplay remain separate verification steps.
 
 Do not bypass the platform validation or rename Linux ARM64 as Android. This status records a confirmed upstream SDK limitation, not a completed Android port.
+
+
+## Linux code generation and native build verified (2026-10-25)
+
+The GitHub Actions run [Resident Evil codegen diagnostic](https://github.com/marcussilvacastrooutlok-afk/recomp-codeveronica/actions/runs/40191411586) completed successfully with the exact XEX SHA-256 recorded above. The job generated and compiled the title-specific C++ output (214 compilation units shown in the build log), linked the Linux x86-64 executable `recvx`, and staged `librexgpu-xenos.so` and `librexruntime.so`. This confirms the current manifest/codegen path can produce a Linux executable for this XEX; it does not confirm Android compatibility or gameplay.
+
+The next blocker remains Android platform support in the pinned ReXGlue SDK. The Android NDK configure probe [run 40219955322](https://github.com/marcussilvacastrooutlok-afk/recomp-codeveronica/actions/runs/40219955322) configured CMake but selected `Platform: linux-arm64`, so it was correctly rejected. Do not package the Linux executable or Linux shared libraries as an Android APK. The next implementation step is a real Android platform/window/surface integration, followed by an ARM64 native link and APK packaging.
