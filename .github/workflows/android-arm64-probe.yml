@@ -84,6 +84,7 @@ jobs:
           echo "configure_exit=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
 
       - name: Validate that SDK selected a real Android target
+        id: android_validation
         if: steps.probe.outputs.configure_exit == '0'
         shell: bash
         run: |
@@ -100,6 +101,14 @@ jobs:
             exit 1
           fi
 
+      - name: Compile ReXGlue SDK for Android ARM64
+        if: steps.probe.outputs.configure_exit == '0' && steps.android_validation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build android-probe/build --parallel 2 2>&1 | tee android-probe/build.log
+          echo "Android ARM64 SDK compilation: SUCCESS" | tee android-probe/build-result.txt
+
       - name: Summarize probe without disguising failures
         if: always()
         shell: bash
@@ -112,7 +121,7 @@ jobs:
               echo "- Android support blocker:"
               sed 's/^/  - /' android-probe/android-support-blocker.txt
             fi
-            echo "- Inspect configure.log and platform-check.txt in the artifact for details."
+            echo "- Inspect configure.log, platform-check.txt, and build.log in the artifact for details."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload Android probe logs
