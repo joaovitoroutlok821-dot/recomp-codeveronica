@@ -133,7 +133,7 @@ bool AndroidNativeWindowSurface::GetSizeImpl(uint32_t& width_out, uint32_t& heig
 """, encoding="utf-8")
 
 checks = {
-    root / "CMakeLists.txt": ["set(REX_PLATFORM \\"android-arm64\\")", "REX_PLATFORM_ANDROID=1"],
+    root / "CMakeLists.txt": ['set(REX_PLATFORM "android-arm64")', "REX_PLATFORM_ANDROID=1"],
     root / "src/ui/CMakeLists.txt": ["surface_android.cpp", "NOT ANDROID"],
     root / "src/ui/window_sdl.cpp": ["SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER", "AndroidNativeWindowSurface"],
     header: ["class AndroidNativeWindowSurface", "ANativeWindow* window()"],
