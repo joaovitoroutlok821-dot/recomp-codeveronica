@@ -55,6 +55,7 @@ jobs:
           python3 scripts/ensure-rexglue-switch-trap-context.py .deps/rexglue-sdk
           sed -i 's/^#ifdef __APPLE__$/#if defined(__APPLE__) || defined(_LIBCPP_VERSION)/' .deps/rexglue-sdk/include/rex/chrono/chrono.h
           python3 scripts/ensure-rexglue-android-platform.py .deps/rexglue-sdk
+          python3 scripts/ensure-rexglue-android-float-from-chars.py .deps/rexglue-sdk
 
       - name: Probe CMake configuration for Android ARM64
         id: probe
