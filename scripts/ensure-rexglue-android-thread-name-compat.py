@@ -36,19 +36,16 @@ if "#include <android/api-level.h>" not in s:
 s = s.replace("rex::GetAndroidApiLevel()", "android_get_device_api_level()")
 
 # PTHREAD_MUTEX_ROBUST / pthread_mutex_consistent are not exposed by this NDK
-# configuration. Keep robust mutex handling on Linux desktop, not Android.
-s = s.replace(
-    "#if REX_PLATFORM_LINUX\n    // Use robust mutexes so waits can recover if owner thread terminates.",
-    "#if REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID\n    // Use robust mutexes so waits can recover if owner thread terminates.",
+# configuration. Guard the robust-mutex blocks without relying on indentation.
+s, robust_guards = re.subn(
+    r"(?m)^([ \t]*)#if REX_PLATFORM_LINUX(?=\n[ \t]*(?:// Use robust mutexes so waits can recover if owner thread terminates\.|auto native_mutex = static_cast<pthread_mutex_t\*>|int lock_result = pthread_mutex_lock))",
+    r"\1#if REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID",
+    s,
 )
-s = s.replace(
-    "#if REX_PLATFORM_LINUX\n    auto native_mutex = static_cast<pthread_mutex_t*>(mutex_.native_handle());",
-    "#if REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID\n    auto native_mutex = static_cast<pthread_mutex_t*>(mutex_.native_handle());",
-)
-s = s.replace(
-    "#if REX_PLATFORM_LINUX\n        auto native_mutex = static_cast<pthread_mutex_t*>(handles[i]->mutex_.native_handle());",
-    "#if REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID\n        auto native_mutex = static_cast<pthread_mutex_t*>(handles[i]->mutex_.native_handle());",
-)
+if robust_guards < 3:
+    raise SystemExit(
+        f"[android-thread-compat] expected 3 robust-mutex guards, patched {robust_guards}"
+    )
 
 if "#include <rex/main_android.h>" in s:
     raise SystemExit("[android-thread-compat] obsolete header reference remains")
