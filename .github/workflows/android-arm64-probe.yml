@@ -110,6 +110,20 @@ jobs:
             exit 1
           fi
 
+      - name: Remove Linux-only pthread and realtime linker flags for Android
+        if: steps.probe.outputs.configure_exit == '0' && steps.android_validation.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Android NDK provides pthread and clock APIs through the platform libraries;
+          # Linux-only -lpthread and -lrt are not linkable with the Android sysroot.
+          test -f android-probe/build/build.ninja
+          sed -i -E 's/(^|[[:space:]])-lpthread([[:space:]]|$)/ /g; s/(^|[[:space:]])-lrt([[:space:]]|$)/ /g' android-probe/build/build.ninja
+          if grep -nE '(^|[[:space:]])-l(pthread|rt)([[:space:]]|$)' android-probe/build/build.ninja; then
+            echo "Linux-only linker flags remain in Android build.ninja" >&2
+            exit 1
+          fi
+
       - name: Compile ReXGlue SDK for Android ARM64
         if: steps.probe.outputs.configure_exit == '0' && steps.android_validation.outcome == 'success'
         shell: bash
