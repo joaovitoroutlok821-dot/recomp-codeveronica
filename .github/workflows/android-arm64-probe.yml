@@ -8,6 +8,7 @@ on:
       - 'scripts/common.sh'
       - 'scripts/ensure-rexglue-android-platform.py'
       - 'scripts/ensure-rexglue-android-thread-compat.py'
+      - 'scripts/ensure-rexglue-android-aarch64-fiber.py'
       - 'generated/rexglue.cmake'
       - 'CMakeLists.txt'
 
@@ -58,6 +59,7 @@ jobs:
           python3 scripts/ensure-rexglue-android-platform.py .deps/rexglue-sdk
           python3 scripts/ensure-rexglue-android-float-from-chars.py .deps/rexglue-sdk
           python3 scripts/ensure-rexglue-android-thread-compat.py .deps/rexglue-sdk
+          python3 scripts/ensure-rexglue-android-aarch64-fiber.py .deps/rexglue-sdk
 
       - name: Probe CMake configuration for Android ARM64
         id: probe
