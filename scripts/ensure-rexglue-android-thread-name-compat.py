@@ -37,5 +37,38 @@ if s == before:
 if removed_calls == 0 and "SetAndroidPreApi26Name" in before:
     raise SystemExit("[android-thread-name] obsolete helper reference found but no call line was removed")
 
+# Android NDK builds do not expose the SDK's legacy API-level helper.
+# Use the NDK API and avoid Linux-only robust pthread mutex APIs on Android.
+thread_src = src
+threading = thread_src.read_text(encoding="utf-8")
+threading_before = threading
+if "#include <android/api-level.h>" not in threading:
+    anchor = "#include <pthread.h>\n"
+    if anchor not in threading:
+        raise SystemExit("[android-thread-name] pthread include anchor missing")
+    threading = threading.replace(anchor, anchor + "#if defined(__ANDROID__)\n#include <android/api-level.h>\n#endif\n", 1)
+threading = threading.replace("rex::GetAndroidApiLevel()", "android_get_device_api_level()")
+threading = threading.replace(
+    "#if REX_PLATFORM_LINUX\n    // Use robust mutexes so waits can recover if owner thread terminates.",
+    "#if REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID\n    // Use robust mutexes so waits can recover if owner thread terminates."
+)
+threading = threading.replace(
+    "#if REX_PLATFORM_LINUX\n    auto native_mutex = static_cast<pthread_mutex_t*>(mutex_.native_handle());",
+    "#if REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID\n    auto native_mutex = static_cast<pthread_mutex_t*>(mutex_.native_handle());"
+)
+threading = threading.replace(
+    "#if REX_PLATFORM_LINUX\n        auto native_mutex = static_cast<pthread_mutex_t*>(handles[i]->mutex_.native_handle());",
+    "#if REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID\n        auto native_mutex = static_cast<pthread_mutex_t*>(handles[i]->mutex_.native_handle());"
+)
+if "rex::GetAndroidApiLevel()" in threading:
+    raise SystemExit("[android-thread-name] obsolete API-level helper remains in threading_posix.cpp")
+if "pthread_mutexattr_setrobust(&attr, PTHREAD_MUTEX_ROBUST)" in threading and "#if REX_PLATFORM_LINUX && !REX_PLATFORM_ANDROID\n    // Use robust mutexes" not in threading:
+    raise SystemExit("[android-thread-name] Linux robust mutex constructor guard was not applied")
+if threading == threading_before:
+    print("[android-thread-name] threading_posix.cpp already patched")
+else:
+    thread_src.write_text(threading, encoding="utf-8")
+    print("[android-thread-name] patched NDK API level and Linux-only robust mutex paths")
+
 src.write_text(s, encoding="utf-8")
 print("[android-thread-name] removed obsolete pre-API-26 helper call")
