@@ -16,12 +16,15 @@ include_anchor = '#include <string.h>\n'
 include_patch = '''#include <string.h>
 
 #if REX_PLATFORM_ANDROID
-#include <SDL3/SDL_system.h>
 #include <jni.h>
 #include <string>
+extern "C" void* SDL_GetAndroidJNIEnv(void);
+extern "C" void* SDL_GetAndroidActivity(void);
 #endif
 '''
-if "#include <SDL3/SDL_system.h>" not in s:
+if "#include <SDL3/SDL_system.h>" in s:
+    s = s.replace("#include <SDL3/SDL_system.h>", 'extern "C" void* SDL_GetAndroidJNIEnv(void);\\nextern "C" void* SDL_GetAndroidActivity(void);', 1)
+elif "#include <jni.h>" not in s:
     if include_anchor not in s:
         raise SystemExit("[android-content-uri] include anchor not found")
     s = s.replace(include_anchor, include_patch, 1)
