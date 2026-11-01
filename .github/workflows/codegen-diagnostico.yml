@@ -66,5 +66,7 @@ jobs:
           path: |
             logs/
             out/stage/linux-amd64-release/
+            generated/default/**
+            generated/rexglue.cmake
           if-no-files-found: warn
           retention-days: 7
