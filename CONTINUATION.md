@@ -256,3 +256,13 @@ O usuário confirmou, com base em outros jogos recompilados que já utilizou, qu
 - Esta alteração é apenas o instalador/integração do seletor. Ainda não foi ligada a um workflow de APK, nem compilada, instalada ou testada em dispositivo.
 - Limitações ainda a resolver antes de considerar a funcionalidade pronta: cálculo prévio confiável de espaço/tamanho, progresso de cópia mais informativo, reutilização da cópia quando a pasta já selecionada não mudou, nomes de entrada alternativos/capitalização, cancelamento de cópia, e testes de compilação Java/Manifest com o SDL fixado.
 - Nenhuma compilação de APK foi iniciada por este commit. A validação automática do repositório pode executar verificações estáticas, mas não compila o APK.
+
+
+## Registro de continuidade — 2026-11-02 (estado revisado)
+
+- Revisado o estado do repositório e mantido o registro de implementação inicial do seletor Android já existente (commit `6692f86c289d6df475ec2651b84e93448f93876a`), com ajustes posteriores para detectar XEX sem diferenciar maiúsculas/minúsculas e só persistir a URI após cópia bem-sucedida.
+- A tela de preparação usa `ACTION_OPEN_DOCUMENT_TREE`, copia a árvore selecionada para `files/game` e a Activity SDL recebe `--game_data_root` apontando para o armazenamento privado.
+- **Estado confirmado neste registro:** ainda faltam validação prévia de espaço livre, progresso/cancelamento robustos, reaproveitamento seguro da cópia existente, testes de compilação/inicialização no Android e integração final com workflow que gere APK.
+- **Privacidade:** o `Default.xex` particular não deve ser commitado, embutido no APK nem publicado em artefatos.
+- Nenhum código-fonte ou workflow do Resident Evil foi alterado nesta atualização; nenhum build foi iniciado por esta atualização de documentação.
+- Próxima etapa: concluir e validar as melhorias do instalador Android antes de configurar/acionar uma compilação final do APK.
