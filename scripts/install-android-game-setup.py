@@ -68,7 +68,7 @@ public final class GameSetupActivity extends Activity {
         String saved = getPreferences(MODE_PRIVATE).getString(PREF_URI, null);
         if (saved != null) {
             selectedTree = Uri.parse(saved);
-            if (new File(gameDir, "Default.xex").isFile()) {
+            if (findEntryPoint(gameDir) != null) {
                 status.setText("Pasta do jogo preparada. Os dados já estão no armazenamento privado.");
                 start.setEnabled(true);
             } else {
@@ -128,7 +128,6 @@ public final class GameSetupActivity extends Activity {
             return;
         }
         selectedTree = tree;
-        getPreferences(MODE_PRIVATE).edit().putString(PREF_URI, tree.toString()).apply();
         prepareGame(tree);
     }
 
@@ -144,8 +143,8 @@ public final class GameSetupActivity extends Activity {
                 if (!staging.mkdirs() && !staging.isDirectory()) throw new Exception("Não foi possível criar a pasta temporária.");
                 Uri rootUri = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree));
                 copyDirectory(rootUri, staging);
-                File entry = new File(staging, "Default.xex");
-                if (!entry.isFile() || entry.length() < 4) throw new Exception("Default.xex não foi encontrado na raiz da pasta selecionada.");
+                File entry = findEntryPoint(staging);
+                if (entry == null) throw new Exception("Nenhum arquivo .xex válido foi encontrado na raiz da pasta selecionada.");
                 File backup = new File(getFilesDir(), "game.old");
                 deleteRecursively(backup);
                 if (gameDir.exists() && !gameDir.renameTo(backup)) throw new Exception("Não foi possível preservar a cópia anterior.");
@@ -158,6 +157,7 @@ public final class GameSetupActivity extends Activity {
                     progress.setVisibility(View.GONE);
                     choose.setEnabled(true);
                     start.setEnabled(true);
+                    getPreferences(MODE_PRIVATE).edit().putString(PREF_URI, tree.toString()).apply();
                     status.setText("Arquivos preparados. Cópia concluída no armazenamento privado.");
                     Toast.makeText(this, "Pasta do jogo preparada.", Toast.LENGTH_LONG).show();
                 });
@@ -218,8 +218,8 @@ public final class GameSetupActivity extends Activity {
     }
 
     private void launchGame() {
-        File entry = new File(gameDir, "Default.xex");
-        if (!entry.isFile()) {
+        File entry = findEntryPoint(gameDir);
+        if (entry == null) {
             start.setEnabled(false);
             status.setText("Os arquivos do jogo não estão preparados. Selecione a pasta novamente.");
             return;
