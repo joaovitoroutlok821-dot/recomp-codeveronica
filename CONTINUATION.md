@@ -190,3 +190,25 @@ Ambiente Android validado no probe:
 - O run `41375019134` concluiu com sucesso e publicou o artefato `pacman-android-apk`.
 - Inspeção do APK confirmou XEX em `assets/game/default.xex` (8.970.240 bytes), portanto esse artefato não atende ao requisito de selecionar os arquivos do jogo no armazenamento e não deve ser tratado como versão final.
 - O workflow também ainda não incorpora o seletor SAF. Ver detalhes e próximos passos no `CONTINUATION.md` do repositório RecompPacman.
+
+
+## Evidência adicional do probe Android — artefato inspecionado em 2026-11-02
+
+O artefato real do run `40925144992` foi baixado e inspecionado (não apenas inferido pelo status do workflow):
+
+- ZIP: `recvx-android-arm64-probe`, 910 entradas.
+- Resultado interno: `Android ARM64 SDK compilation: SUCCESS`.
+- O log Ninja chegou a 791 tarefas; compilou o backend Vulkan/Xenos e linkou:
+  - `.deps/rexglue-sdk/out/android-arm64/librexgpu-xenos.so`
+  - `.deps/rexglue-sdk/out/android-arm64/librexruntime.so`
+  - `.deps/rexglue-sdk/out/android-arm64/rexglue` (CLI ARM64; não usar como codegen host).
+- A árvore Ninja também contém o alvo `SDL3-static`; portanto o probe não demonstra a existência de uma `libSDL3.so` pronta para copiar. O pacote SDL Android deve ser construído/integrado separadamente, como feito no workflow Pac-Man.
+- O SDK Android ARM64 foi efetivamente compilado no probe; isto é mais forte que uma simples configuração CMake, mas ainda não compila as fontes `generated/default` do Resident Evil e não cria APK.
+- Artefato de origem: run `40925144992`, artifact ID `12920314229`, commit `ef6f1a3f71fd1b180fdaec759d52a280325bb142`.
+
+### Decisão para o futuro workflow APK
+
+- Usar o executável `rexglue` Linux x86_64 produzido/instalado na fase host para gerar `generated/default`.
+- Compilar o alvo do jogo com NDK ARM64 e ligar às bibliotecas Android efetivamente produzidas pelo SDK, incluindo runtime e Xenos.
+- Não copiar a CLI `rexglue` Android para o lugar da ferramenta de codegen host.
+- A biblioteca SDL Android e o carregamento das dependências transitivas ainda precisam ser verificados no APK final.
