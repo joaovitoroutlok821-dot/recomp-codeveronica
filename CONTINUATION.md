@@ -131,3 +131,31 @@ Ambiente Android validado no probe:
 - Não alterar cegamente o manifesto nem remover as correções manuais existentes.
 - Não incluir o XEX ou seus dados privados em commits ou artefatos públicos.
 - Registrar neste arquivo os novos commits, workflows, artefatos, testes e próximos passos sempre que o estado mudar.
+
+
+## Registro de continuidade — 2026-11-02
+
+### Verificação adicional do fluxo Android
+
+- O workflow `Validate repository` disparado pelo commit de continuidade `80fbb979f9457c44ea9741d57f8fe14b72901a31` concluiu com sucesso (run `41375023157`).
+- O workflow `codegen-diagnostico.yml` continua sendo a etapa de geração host; não é um builder de APK.
+- O `CMakeLists.txt` do jogo continua usando `rexglue_setup_target(recvx GPU_PLUGINS xenos)`.
+- O arquivo `generated/rexglue.cmake` mostra que o alvo `recvx_recomp` compila os fontes de `generated/default/sources.cmake`, liga `rex::runtime` e depende do alvo host `recvx_codegen`. O codegen chama `rex::rexglue` com `recvx_manifest.toml`.
+- A configuração gerada atual não oferece, por si só, um APK: é necessário separar o executável host de codegen da compilação NDK do jogo e do empacotamento Android/SDL.
+- O workflow de probe Android existente aplica patches locais ao SDK antes do CMake; ele é prova de compatibilidade do SDK, não de compilação do título.
+- A árvore do repositório contém `scripts/ensure-rexglue-android-content-uri.py`, que instala uma ponte JNI para abrir URIs via Android ContentResolver. Isso é uma base técnica para o seletor de pasta/arquivos, mas ainda precisa ser integrada e testada na Activity/SDL do APK.
+- Nenhuma alteração de código de runtime ou workflow de APK do Resident Evil foi feita nesta revisão. Nenhum APK foi produzido.
+
+### Próximas ações registradas
+
+1. Inspecionar os alvos exportados pelo SDK (runtime, Xenos/Vulkan, SDL e dependências) a partir dos artefatos do probe, sem presumir nomes de bibliotecas.
+2. Criar workflow de Android ARM64 em duas fases: codegen host Linux usando o XEX temporário privado; compilação das fontes geradas com NDK; empacotamento SDL/Java/JNI.
+3. Integrar o acesso ao jogo por Storage Access Framework/ContentResolver. Não embutir `Default.xex` no APK nem em artefatos públicos.
+4. Validar bibliotecas, ABI, assinatura e conteúdo do APK antes de disponibilizá-lo para instalação.
+5. Atualizar este arquivo em cada alteração, commit, execução, artefato ou teste.
+
+### Pac-Man — acompanhamento cruzado
+
+- Em 2026-11-02, run `41375019134` estava em andamento. Codegen e configuração Android ARM64 concluídos; etapa `Compilar codigo gerado para Android (ARM64)` em andamento; empacotamento e upload ainda pendentes.
+- A revisão do workflow Pac-Man identificou que ele copia `default.xex` para `android-package/app/src/main/assets/game/default.xex`. Não usar esse APK como versão final enquanto esse comportamento existir.
+- A revisão da árvore pública do Pac-Man confirmou que há um `default.xex` versionado no repositório público (8.970.240 bytes). Não foi feita alteração de visibilidade nem remoção do arquivo nesta etapa.
