@@ -243,3 +243,16 @@ O usuário confirmou, com base em outros jogos recompilados que já utilizou, qu
 3. Só depois ligar o caminho privado preparado ao argumento `--game_data_root` e ao fluxo de inicialização do runtime.
 4. Atualizar o workflow Android do Resident separando codegen host, compilação NDK e empacotamento SDL.
 5. Registrar neste arquivo commits, runs, artefatos e resultados de testes; não incluir o XEX privado.
+
+
+## Implementação inicial do seletor e preparação dos arquivos — 2026-11-02
+
+- Commit `6692f86c289d6df475ec2651b84e93448f93876a`: adicionado `scripts/install-android-game-setup.py`.
+- O script instala duas Activities Java no projeto Android do SDL:
+  - `GameSetupActivity`: tela inicial, seletor de diretório via `ACTION_OPEN_DOCUMENT_TREE`, persistência da permissão de leitura, cópia recursiva para `files/game` e verificação de `Default.xex` na raiz.
+  - `GameSDLActivity`: subclass de `SDLActivity` que fornece `--game_data_root=<caminho privado>` por `getArguments()`.
+- O script altera o AndroidManifest para que a tela de preparação seja a launcher e a Activity SDL seja aberta somente após a cópia.
+- A cópia é feita em `game.new`; a pasta anterior é preservada em `game.old` até a nova cópia ser renomeada para `game`. Em caso de falha na substituição, tenta restaurar a cópia anterior.
+- Esta alteração é apenas o instalador/integração do seletor. Ainda não foi ligada a um workflow de APK, nem compilada, instalada ou testada em dispositivo.
+- Limitações ainda a resolver antes de considerar a funcionalidade pronta: cálculo prévio confiável de espaço/tamanho, progresso de cópia mais informativo, reutilização da cópia quando a pasta já selecionada não mudou, nomes de entrada alternativos/capitalização, cancelamento de cópia, e testes de compilação Java/Manifest com o SDL fixado.
+- Nenhuma compilação de APK foi iniciada por este commit. A validação automática do repositório pode executar verificações estáticas, mas não compila o APK.
