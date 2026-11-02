@@ -229,6 +229,15 @@ public final class GameSetupActivity extends Activity {
         startActivity(intent);
     }
 
+    private static File findEntryPoint(File directory) {
+        File[] files = directory.listFiles();
+        if (files == null) return null;
+        for (File file : files) {
+            if (file.isFile() && file.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".xex") && file.length() >= 4) return file;
+        }
+        return null;
+    }
+
     private static void deleteRecursively(File file) {
         if (file.isDirectory()) {
             File[] children = file.listFiles();
