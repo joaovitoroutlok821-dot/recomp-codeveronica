@@ -212,3 +212,34 @@ O artefato real do run `40925144992` foi baixado e inspecionado (não apenas inf
 - Compilar o alvo do jogo com NDK ARM64 e ligar às bibliotecas Android efetivamente produzidas pelo SDK, incluindo runtime e Xenos.
 - Não copiar a CLI `rexglue` Android para o lugar da ferramenta de codegen host.
 - A biblioteca SDL Android e o carregamento das dependências transitivas ainda precisam ser verificados no APK final.
+
+
+## Decisão de arquitetura de seleção dos arquivos — 2026-11-02
+
+O usuário confirmou, com base em outros jogos recompilados que já utilizou, que selecionar a pasta do jogo pode consumir armazenamento interno aproximadamente equivalente ao tamanho dos arquivos selecionados. Adotar esse comportamento como referência para Pac-Man e Resident Evil.
+
+### Estratégia preferida
+
+- Abrir o seletor de diretório do Android (Storage Access Framework / `ACTION_OPEN_DOCUMENT_TREE`).
+- Solicitar e persistir a permissão de leitura da URI escolhida.
+- Copiar recursivamente a árvore selecionada para uma pasta privada do aplicativo, preservando subpastas e nomes necessários ao jogo.
+- Exibir progresso e erros; verificar espaço disponível antes e durante a cópia e não iniciar o runtime se a preparação falhar.
+- Reutilizar a cópia preparada em inicializações seguintes, com opção futura de trocar/repreparar a pasta.
+- Passar ao ReXGlue um caminho POSIX privado normal como `--game_data_root`, evitando depender de URIs `content://` no filesystem POSIX atual.
+- Manter a tela/configurações do aplicativo acessíveis mesmo sem dados do jogo; só iniciar SDL/runtime quando os dados estiverem preparados.
+- Nunca embutir o `Default.xex` privado do usuário no APK, commit ou artefato público.
+
+### Verificação Android/SDL
+
+- O manifesto do SDL 3.5.0 no commit fixado `8bf3b7215ad9fc3deb583c6a3a37c6c67f2e24e4` declara `SDLActivity` como única Activity LAUNCHER. A integração precisará adicionar uma Activity de configuração/seleção como launcher e iniciar SDLActivity após a preparação, ou implementar fluxo equivalente sem quebrar o ciclo de vida SDL.
+- O helper `ensure-rexglue-android-content-uri.py` atual só injeta uma ponte JNI para ContentResolver; não implementa o seletor, a persistência de permissão, a cópia da árvore nem a integração com o filesystem. Não considerá-lo uma implementação SAF completa.
+- A cópia para armazenamento privado é a estratégia preferida por ser compatível com as operações POSIX `open/fopen/stat/opendir` observadas no filesystem atual do SDK. Ainda requer implementação e testes de cópia recursiva, cancelamento, espaço insuficiente, falhas de I/O, retomada e detecção de dados já preparados.
+- Nenhum código de seleção/cópia foi implementado nesta atualização; nenhum APK foi produzido.
+
+### Próximos passos
+
+1. Implementar e testar um componente Android reutilizável de seleção SAF + cópia recursiva + verificação de espaço/progresso.
+2. Integrar a Activity de configuração ao pacote SDL, mantendo as configurações acessíveis sem XEX.
+3. Só depois ligar o caminho privado preparado ao argumento `--game_data_root` e ao fluxo de inicialização do runtime.
+4. Atualizar o workflow Android do Resident separando codegen host, compilação NDK e empacotamento SDL.
+5. Registrar neste arquivo commits, runs, artefatos e resultados de testes; não incluir o XEX privado.
