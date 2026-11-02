@@ -159,3 +159,34 @@ Ambiente Android validado no probe:
 - Em 2026-11-02, run `41375019134` estava em andamento. Codegen e configuração Android ARM64 concluídos; etapa `Compilar codigo gerado para Android (ARM64)` em andamento; empacotamento e upload ainda pendentes.
 - A revisão do workflow Pac-Man identificou que ele copia `default.xex` para `android-package/app/src/main/assets/game/default.xex`. Não usar esse APK como versão final enquanto esse comportamento existir.
 - A revisão da árvore pública do Pac-Man confirmou que há um `default.xex` versionado no repositório público (8.970.240 bytes). Não foi feita alteração de visibilidade nem remoção do arquivo nesta etapa.
+
+
+## Registro de continuidade — 2026-11-02 (validação e revisão SDK)
+
+### Validação do repositório
+
+- Run `41376034688` (`Validate repository`), commit `1fe538411cbf24794b78ed6aece59b29467643bc`: conclusão `success`.
+- As verificações de scripts Python, shell, referências dos helpers, manifesto e regras de segurança passaram.
+- Isso valida o repositório; não compila o jogo para Android e não produz APK.
+
+### Verificação da plataforma SDK
+
+- O `CMakeLists.txt` da revisão fixada do ReXGlue (`398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`) detecta explicitamente Windows, Linux e macOS, e termina com erro para outras plataformas: `Unsupported platform. ReXGlue supports Windows, Linux, and macOS only.`
+- O projeto define `REX_PLATFORM` e macros globais antes de incluir componentes CMake. Portanto, a compilação Android depende dos patches de plataforma já existentes no probe; não basta passar somente `-DANDROID_ABI=arm64-v8a` ao CMake.
+- O script `scripts/ensure-rexglue-android-content-uri.py` adiciona uma função JNI que usa SDL Android JNI Environment/Activity e `ContentResolver.openFileDescriptor()`, detachando o file descriptor. **O script, por si só, não implementa o seletor SAF na Activity, não guarda permissões URI persistentes e não liga automaticamente essa função ao caminho de abertura usado pelo jogo.** Também requer revisão de compilação/integração antes de ser considerado funcional.
+- Nenhum workflow de APK Android do Resident Evil foi criado ou executado nesta revisão; nenhum APK foi produzido.
+
+### Próximas ações
+
+1. Revisar todos os patches Android aplicados no probe e os targets CMake/exportados reais do SDK (runtime, Xenos/Vulkan, SDL e dependências).
+2. Separar codegen Linux host e compilação ARM64 NDK, contornando de forma explícita a detecção upstream que não inclui Android.
+3. Integrar SAF ponta a ponta na Activity/SDL, persistindo URI permission e ligando a URI/file descriptor ao filesystem do ReXGlue.
+4. Garantir que o XEX privado seja usado apenas temporariamente para codegen, sem commit ou inclusão no APK/artefato.
+5. Criar workflow Android apenas depois de identificar e validar targets e bibliotecas; validar ABI, conteúdo e assinatura do APK antes de solicitar teste no telefone.
+6. Atualizar este registro a cada alteração, commit, run, artefato e teste.
+
+### Acompanhamento Pac-Man
+
+- O run `41375019134` concluiu com sucesso e publicou o artefato `pacman-android-apk`.
+- Inspeção do APK confirmou XEX em `assets/game/default.xex` (8.970.240 bytes), portanto esse artefato não atende ao requisito de selecionar os arquivos do jogo no armazenamento e não deve ser tratado como versão final.
+- O workflow também ainda não incorpora o seletor SAF. Ver detalhes e próximos passos no `CONTINUATION.md` do repositório RecompPacman.
