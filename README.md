@@ -1,6 +1,6 @@
 # Resident Evil Code: Veronica X HD — Android recompilation workspace
 
-Private workspace for bringing up the Xbox 360 PAL build of **Resident Evil Code: Veronica X HD** with ReXGlue and investigating an Android build path.
+Development workspace for bringing up the Xbox 360 PAL build of **Resident Evil Code: Veronica X HD** with ReXGlue and investigating an Android build path.
 
 > **Current status: experimental scaffold.** This is not a finished port. A successful APK, gameplay, graphics, sound, and the presence of any particular dubbing/audio track have not been verified.
 
