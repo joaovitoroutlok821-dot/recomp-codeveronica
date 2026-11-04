@@ -61,14 +61,13 @@ The user verified the local game file on an Android/Termux device on 2026-10-21:
 - File: `Default.xex`
 - Size: `13774848` bytes
 - Header: `XEX2`
-- SHA-256: `c552c6995462a5cefdd52c07bebd28fff4481164b19a445c636d7b54736f3c70`
 - ASCII module references: `Bio_cv.exe`, `xam.xex`, `xboxkrnl.exe`
 
 The retail XEX is intentionally not committed to this repository. This identity check does not demonstrate Android gameplay.
 
 ## Linux code generation and native build verified (2026-10-25)
 
-The Linux diagnostic completed successfully with the exact XEX hash recorded above. It generated and compiled 214 title-specific C++ compilation units, linked the Linux x86-64 executable `recvx`, and staged `librexgpu-xenos.so` and `librexruntime.so`. This does not confirm Android compatibility or gameplay.
+The Linux diagnostic completed successfully with the same locally verified XEX identity. It generated and compiled 214 title-specific C++ compilation units, linked the Linux x86-64 executable `recvx`, and staged `librexgpu-xenos.so` and `librexruntime.so`. This does not confirm Android compatibility or gameplay.
 
 ## Historical Android blocker (2026-10-25)
 
