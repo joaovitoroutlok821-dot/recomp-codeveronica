@@ -115,3 +115,17 @@ The earlier run [40219955322](https://github.com/marcussilvacastrooutlok-afk/rec
 - Artifact ID: `13293936559` (`recvx-android-sdl-jni-smoke`).
 - Resultado interno: `APK_VALIDATION=PASS`.
 - Inspeção adicional do APK e dos ELF confirmou ABI AArch64 e dependência `libSDL3.so`.
+
+
+## Atualização confirmada — 2026-11-04 (branch android-rebuild)
+
+- Workflow [#41770101231](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/41770101231) concluiu com sucesso: build do APK debug SDL/JNI + tela de preparação SAF.
+- Artefato: `recvx-android-sdl-saf-test`, ID `13294387823` (expira em 2026-11-18).
+- O workflow verificou as Activities `GameSetupActivity` e `GameSDLActivity`, launcher MAIN/LAUNCHER, package, ABI ARM64, bibliotecas SDL/JNI, assinatura e zipalign. O APK não contém o XEX.
+- O usuário já confirmou que o APK SDL anterior abre e mantém a tela de teste colorida no Motorola Edge 30 Pro. A versão SAF ainda aguarda teste físico de seleção/cópia da pasta.
+- O botão da versão SAF abre explicitamente um teste SDL; não inicia o jogo.
+- Auditoria do codegen na branch: `generated/default/` não existe no Git porque está ignorada. O histórico de 214 unidades C++ e executável Linux `recvx` é uma compilação anterior, não um conjunto de fontes geradas disponível nesta branch.
+- A tentativa de codegen do workflow [#41768927121](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/41768927121) falhou antes de iniciar o gerador: o workflow tentou baixar o release `recvx-xex-private`, que não existe nesta conta. Nenhum codegen foi executado nessa tentativa.
+- Removido de `scripts/common.sh` o fingerprint SHA-256 hardcoded do XEX e a impressão do hash. A validação local agora confere magic `XEX2`, tamanho mínimo e marcador de módulo `Bio_cv.exe`; isso confirma formato/identificador, não a identidade criptográfica exata do disco.
+- Bloqueio atual: regenerar/recuperar as fontes do título sem publicar o XEX. O próximo pipeline precisa de uma entrada privada segura para o XEX ou de geração local em ambiente compatível; não usar release público nem commitar o arquivo.
+
