@@ -64,7 +64,7 @@ jobs:
               raise SystemExit("Não encontrei o único add_subdirectory(SDL)")
           text = text.replace(
               anchor,
-              'set(SDL_SHARED ON CACHE BOOL "" FORCE)\\nset(SDL_STATIC OFF CACHE BOOL "" FORCE)\\n' + anchor,
+              'set(SDL_SHARED ON CACHE BOOL "" FORCE)\nset(SDL_STATIC OFF CACHE BOOL "" FORCE)\n' + anchor,
               1,
           )
           cmake.write_text(text)
