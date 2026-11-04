@@ -1,4 +1,4 @@
-name: RECVX Android SDL-JNI smoke test
+name: RECVX Android SDL-JNI and SAF setup test
 
 on:
   workflow_dispatch:
@@ -108,6 +108,7 @@ jobs:
               strings.write_text(xml)
           print("Package ID, nome do app e NDK foram configurados.")
           PY
+          python3 scripts/install-android-game-setup.py android-smoke/package
 
       - name: Build debug APK
         working-directory: android-smoke/package
@@ -130,19 +131,25 @@ jobs:
           fi
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee android-smoke/apk-badging.txt
           grep -q "package: name='com.rexglue.recvx.smoketest'" android-smoke/apk-badging.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml > android-smoke/apk-manifest.txt
+          grep -q 'org.libsdl.app.GameSetupActivity' android-smoke/apk-manifest.txt
+          grep -q 'org.libsdl.app.GameSDLActivity' android-smoke/apk-manifest.txt
+          grep -q 'android.intent.action.MAIN' android-smoke/apk-manifest.txt
+          grep -q 'android.intent.category.LAUNCHER' android-smoke/apk-manifest.txt
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -v 4 "$APK"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
           echo "APK_VALIDATION=PASS" | tee android-smoke/result.txt
 
-      - name: Publish diagnostic APK and verification logs
+      - name: Publish SDL-JNI and SAF test APK and verification logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: recvx-android-sdl-jni-smoke
+          name: recvx-android-sdl-saf-test
           path: |
             android-smoke/package/app/build/outputs/apk/debug/app-debug.apk
             android-smoke/apk-contents.txt
             android-smoke/apk-badging.txt
+            android-smoke/apk-manifest.txt
             android-smoke/result.txt
           if-no-files-found: warn
           retention-days: 14
