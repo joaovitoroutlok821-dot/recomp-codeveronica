@@ -12,7 +12,14 @@ set(RECVX_SOURCES
     src/main.cpp
 )
 
-if(WIN32)
+if(ANDROID)
+    # SDLActivity loads libSDL3.so and libmain.so, then calls SDL_main.
+    add_library(recvx SHARED
+        ${RECVX_SOURCES}
+        src/android_main.cpp
+    )
+    set_target_properties(recvx PROPERTIES OUTPUT_NAME main)
+elseif(WIN32)
     add_executable(recvx WIN32 ${RECVX_SOURCES})
 else()
     add_executable(recvx ${RECVX_SOURCES})
