@@ -66,4 +66,4 @@
 
 ## Próxima tarefa técnica
 
-Revisar o helper SAF e os scripts de compatibilidade Android existentes; em seguida preparar um workflow de diagnóstico do APK mínimo SDL/JNI, sem depender do XEX. Só depois integrar codegen e fontes do título. Cada fase terá workflow e artefato próprios, com logs e critérios de aprovação claros.
+Executar pela primeira vez o workflow `.github/workflows/android-smoke-test.yml` na branch `android-rebuild`, corrigir erros de configuração/compilação e inspecionar o APK e os logs. A API de Actions retornou zero execuções até agora, portanto a existência do workflow não comprova build. Só depois de obter APK SDL/JNI válido e testá-lo no aparelho integrar codegen host e fontes do título. Cada fase terá workflow e artefato próprios, com logs e critérios de aprovação claros.
