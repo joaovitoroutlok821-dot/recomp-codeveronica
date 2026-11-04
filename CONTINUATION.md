@@ -229,3 +229,16 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Job ID `126617622126`; artefato de logs `recvx-android-arm64-probe`, ID `13330153452`.
 - Isso valida a compilacao do SDK ReXGlue Android ARM64 com o helper atualizado. Ainda nao valida o novo entrypoint SDL_main, o alvo recompilado do jogo, APK final ou execucao do jogo no aparelho.
 - Proximo passo: implementar e compilar o entrypoint Android SDL_main e conectar o ciclo de vida da WindowedApp `recvx`; manter o XEX e fontes geradas do titulo fora do repositorio publico.
+
+
+## Integração do ponto de entrada e target Android — 2026-11-04
+
+- Revisado o SDK fixado em `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`: `cvar::Init(argc, argv)` retorna os argumentos posicionais; o inicializador oficial os associa a `WindowedApp::GetPositionalOptions()` e chama `SetParsedArguments()`.
+- Corrigido `src/android_main.cpp` para reproduzir esse mapeamento antes de `OnInitialize()`, mantendo o registro Android por `WindowedApp::GetCreator("recvx")`, o loop SDL e a destruição da aplicação.
+- Commit: `eddc4238f36d7ecfb3419c1ed466429f02901b95` — `fix(android): forward positional arguments to ReXGlue app`.
+- Atualizado o `CMakeLists.txt`: em Android, cria uma biblioteca compartilhada incluindo `src/android_main.cpp` e define o nome de saída como `main`, que é o nome esperado pelo `SDLActivity`; desktop mantém o executável `recvx`.
+- Commit: `cb17959247926e5d453ed25431c7c9bcef2cec39` — `build(android): add SDLActivity shared library target`.
+- O SDK confirma a assinatura do creator, `GetCreator`, `OnInitialize`, `InvokeOnDestroy` e `RunMainMessageLoop`. A implementação foi alinhada com a passagem de argumentos do inicializador oficial.
+- **Ainda não compilado:** não há nesta branch a pasta `generated/default/` com `recvx_init.h` e as unidades C++ do jogo. A integração CMake/entrypoint ainda precisa de um build Android privado que obtenha o XEX e regenere o código no runner, sem publicar XEX ou fontes geradas.
+- O workflow de probe SDK compila o SDK isoladamente e não valida este target de jogo. O APK SDL/SAF existente também não contém este entrypoint ReXGlue. Portanto, ainda não há APK do jogo nem validação de execução do Resident Evil.
+- Próxima etapa técnica: preparar workflow privado para codegen + compilação do target `recvx` Android ARM64, transferindo somente artefatos não sensíveis e mantendo XEX/fontes geradas em ambiente privado.
