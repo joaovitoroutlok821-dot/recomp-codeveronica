@@ -89,3 +89,20 @@ Não integrar o XEX nem o codegen do título ao workflow até que o APK SDL/JNI 
 - Removida a referência ao hash da documentação `README.md` e `STATUS.md` nesta branch.
 - Nenhum XEX foi enviado ao repositório ou ao workflow de diagnóstico SDL/JNI.
 - Último commit de README/script/status/continuidade será refletido pelo HEAD atual da branch; `main` permanece intacta.
+
+
+## Resultado do primeiro APK SDL/JNI — 2026-11-04
+
+- Workflow [#41768874041](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/41768874041) concluído com sucesso na branch `android-rebuild`.
+- Artefato: `recvx-android-sdl-jni-smoke`, artifact ID `13293936559`.
+- APK debug compilado: package `com.rexglue.recvx.smoketest`, ABI `arm64-v8a`, minSdk 21 e targetSdk 35.
+- APK contém `libmain.so` e `libSDL3.so`; inspeção ELF confirmou 64-bit AArch64, NDK r27c (27.2.12479018), e `libmain.so` declara `libSDL3.so` como dependência.
+- Verificações de package ID, assinatura debug, zipalign e ausência de XEX/ISO/XISO/WUD/WAD passaram.
+- Este APK só prova o caminho SDL/Java/JNI e criação de janela/renderer no build. Não contém o runtime ReXGlue, fontes recompiladas do título ou dados do jogo; não é o APK final.
+- Próxima etapa: instalar no Motorola Edge 30 Pro e confirmar que a tela SDL colorida permanece aberta. Só depois avançar para SAF e runtime.
+
+### Workflow legado de codegen
+
+- O workflow antigo falhou na etapa de baixar o release `recvx-xex-private` porque esse release não existe nesta nova conta/repositório (`release not found`). O codegen nem chegou a começar.
+- O arquivo de workflow foi removido apenas da branch `android-rebuild` para evitar tentativas automáticas inúteis e impedir que se tente colocar um XEX privado em release de um repositório público.
+- `main` foi preservada.
