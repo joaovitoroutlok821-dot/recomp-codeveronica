@@ -81,3 +81,11 @@ Dados técnicos já verificados em conversa anterior: arquivo XEX2, 13.774.848 b
 ## Critério de próximo avanço
 
 Não integrar o XEX nem o codegen do título ao workflow até que o APK SDL/JNI mínimo seja compilado e validado. A primeira execução do workflow precisa ser verificada; se o push pelo conector não iniciar Actions, habilitar/iniciar o workflow pela aba Actions do GitHub antes de considerar a fase concluída.
+
+
+## Privacidade e integridade — 2026-11-04
+
+- Removida a impressão e a constante de hash SHA-256 do script `scripts/inspect-xex.py`; a inspeção local agora exibe somente metadados e strings de identificação.
+- Removida a referência ao hash da documentação `README.md` e `STATUS.md` nesta branch.
+- Nenhum XEX foi enviado ao repositório ou ao workflow de diagnóstico SDL/JNI.
+- Último commit de README/script/status/continuidade será refletido pelo HEAD atual da branch; `main` permanece intacta.
