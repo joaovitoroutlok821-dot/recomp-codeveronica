@@ -66,4 +66,4 @@
 
 ## Próxima tarefa técnica
 
-Executar pela primeira vez o workflow `.github/workflows/android-smoke-test.yml` na branch `android-rebuild`, corrigir erros de configuração/compilação e inspecionar o APK e os logs. A API de Actions retornou zero execuções até agora, portanto a existência do workflow não comprova build. Só depois de obter APK SDL/JNI válido e testá-lo no aparelho integrar codegen host e fontes do título. Cada fase terá workflow e artefato próprios, com logs e critérios de aprovação claros.
+Instalar e testar o APK SDL/JNI já gerado pelo workflow `.github/workflows/android-smoke-test.yml` no Motorola Edge 30 Pro. O build e a inspeção do pacote passaram; falta confirmar a abertura e a permanência da superfície SDL no aparelho. Só depois integrar o seletor SAF, runtime ReXGlue e fontes do título. Cada fase terá workflow e artefato próprios, com logs e critérios de aprovação claros.
