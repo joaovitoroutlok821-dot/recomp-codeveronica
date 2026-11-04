@@ -3,6 +3,8 @@ name: Resident Evil codegen diagnostic
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - '.github/workflows/codegen-diagnostico.yml'
       - 'build.sh'
@@ -45,11 +47,7 @@ jobs:
           gh release download recvx-xex-private --repo "${GITHUB_REPOSITORY}" --pattern Default.xex --dir /tmp/recvx-xex
           test -s /tmp/recvx-xex/Default.xex
           echo "Downloaded XEX size: $(stat -c '%s' /tmp/recvx-xex/Default.xex)"
-          echo "Downloaded XEX SHA-256:"
-          sha256sum /tmp/recvx-xex/Default.xex
-          expected="c552c6995462a5cefdd52c07bebd28fff4481164b19a445c636d7b54736f3c70"
-          actual="$(sha256sum /tmp/recvx-xex/Default.xex | cut -d ' ' -f1)"
-          test "$actual" = "$expected"
+          python3 scripts/inspect-xex.py /tmp/recvx-xex/Default.xex
 
       - name: Stage XEX temporarily for build
         run: |
