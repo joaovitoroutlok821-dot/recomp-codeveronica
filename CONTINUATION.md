@@ -106,3 +106,32 @@ Não integrar o XEX nem o codegen do título ao workflow até que o APK SDL/JNI 
 - O workflow antigo falhou na etapa de baixar o release `recvx-xex-private` porque esse release não existe nesta nova conta/repositório (`release not found`). O codegen nem chegou a começar.
 - O arquivo de workflow foi removido apenas da branch `android-rebuild` para evitar tentativas automáticas inúteis e impedir que se tente colocar um XEX privado em release de um repositório público.
 - `main` foi preservada.
+
+
+## Atualização de continuidade — 2026-11-04 (estado verificado)
+
+### APK SDL/JNI + SAF
+
+- Workflow [#41770101231](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/41770101231) terminou com sucesso na branch `android-rebuild` (commit `146220eb1ed24bd3201da722f0a8f1aeb994677f`).
+- Artefato `recvx-android-sdl-saf-test`, ID `13294387823`.
+- APK debug compilado e verificado: SDL3/JNI ARM64, package `com.rexglue.recvx.smoketest`, Activities SAF e SDL, assinatura e alinhamento válidos, sem XEX embutido.
+- O usuário confirmou em teste físico que o APK SDL anterior abre e exibe a tela de cores sem fechar.
+- A versão SAF ainda precisa ser instalada e testada no telefone. O botão de ação é rotulado como teste SDL e não inicia o jogo.
+
+### Auditoria do codegen
+
+- A árvore Git da branch não contém `generated/default/`; essa pasta está no `.gitignore`. Logo, as 214 unidades C++ citadas no histórico não estão atualmente disponíveis nesta branch para auditoria ou compilação Android.
+- O executável Linux `recvx` foi ligado em experimento anterior, mas isso não equivale a código gerado persistido nem a um alvo Android.
+- Workflow de diagnóstico [#41768927121](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/41768927121) falhou na etapa de download do release `recvx-xex-private` (release inexistente); o codegen não chegou a executar.
+- O manifesto contém entradas manuais e correção de switch table; não ampliar esses endereços sem evidência do XEX e dos logs de codegen.
+- Removida a validação por hash fixo de `scripts/common.sh`. Agora verifica o cabeçalho XEX2, tamanho mínimo e string interna `Bio_cv.exe`, sem imprimir hash. Isso não é autenticação criptográfica da versão do jogo.
+
+### Próxima sequência correta
+
+1. Testar no Motorola Edge 30 Pro o APK SAF do artefato #41770101231: selecionar a pasta do jogo e confirmar a cópia para armazenamento privado; o botão abre apenas a tela de teste SDL.
+2. Resolver um caminho privado e seguro para disponibilizar o XEX ao codegen no runner, ou preparar execução local do CLI em ambiente compatível. Não usar release público, não versionar o XEX e não solicitar hash.
+3. Regenerar as fontes com a versão ReXGlue fixada; guardar relatórios/manifestos e métricas de geração em artefato sem o XEX.
+4. Auditar quantidade de funções/unidades, lacunas, imports/stubs, limites manuais e switches antes da compilação NDK.
+5. Compilar o alvo específico `recvx` para `arm64-v8a`, ligá-lo ao runtime/Xenos Android e só então empacotar o APK de jogo.
+
+As instruções anteriores deste arquivo que diziam que não havia APK ou que o primeiro smoke test ainda precisava ser executado foram superadas pelos resultados acima. O APK SAF está construído, mas o jogo recompilado ainda não está pronto.
