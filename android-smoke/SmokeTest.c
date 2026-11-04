@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
 
     SDL_Window *window = SDL_CreateWindow(
         "Resident Evil Code Veronica X - Android Test",
-        0, 0, SDL_WINDOW_FULLSCREEN);
+        1280, 720, SDL_WINDOW_FULLSCREEN);
     if (!window) {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
                      "RECVX_SMOKE: SDL_CreateWindow failed: %s", SDL_GetError());
