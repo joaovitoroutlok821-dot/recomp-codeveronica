@@ -65,6 +65,7 @@ public final class GameSetupActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        setTitle("Resident Evil Code Veronica X - Preparação");
         gameDir = new File(getFilesDir(), "game");
         buildUi();
         String saved = getPreferences(MODE_PRIVATE).getString(PREF_URI, null);
@@ -104,7 +105,7 @@ public final class GameSetupActivity extends Activity {
         bp.topMargin = pad;
         layout.addView(choose, bp);
         start = new Button(this);
-        start.setText("Iniciar jogo");
+        start.setText("Abrir teste SDL (não inicia o jogo)");
         start.setEnabled(false);
         start.setOnClickListener(v -> launchGame());
         layout.addView(start, new LinearLayout.LayoutParams(-1, -2));
@@ -123,6 +124,12 @@ public final class GameSetupActivity extends Activity {
         if (request != REQUEST_TREE || result != RESULT_OK || data == null || data.getData() == null) return;
         Uri tree = data.getData();
         selectedTree = tree;
+        try {
+            getContentResolver().takePersistableUriPermission(
+                tree, data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION));
+        } catch (SecurityException ignored) {
+            // The immediate copy can still proceed when a provider does not support persisted grants.
+        }
         prepareGame(tree);
     }
 
