@@ -63,6 +63,17 @@ edit("src/ui/CMakeLists.txt",
     find_package(PkgConfig REQUIRED)''',
 "skip desktop dependencies on Android")
 edit("src/ui/window_sdl.cpp",
+'''#if REX_PLATFORM_MAC
+  int initial_width = int(GetDesiredLogicalWidth());''',
+'''#if REX_PLATFORM_ANDROID
+  // ReXGlue presents through Vulkan; SDL needs a Vulkan-capable native window.
+  flags |= SDL_WINDOW_VULKAN;
+#endif
+#if REX_PLATFORM_MAC
+  int initial_width = int(GetDesiredLogicalWidth());''',
+"Request a Vulkan-capable Android SDL window")
+
+edit("src/ui/window_sdl.cpp",
 '''#if REX_PLATFORM_WIN32
 #include <rex/ui/surface_win.h>
 #elif REX_PLATFORM_MAC''',
