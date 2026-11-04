@@ -28,7 +28,6 @@ Próximas tarefas:
 - Title ID: `43430822`
 - Media ID: `58A6EFFB`
 - Internal module string: `Bio_cv.exe`
-- XEX SHA-256: `c552c6995462a5cefdd52c07bebd28fff4481164b19a445c636d7b54736f3c70`
 - ReXGlue baseline: `0.10.0-dev.g398e2ba`
 
 ## Android ARM64 SDK compile verified (2026-10-29)
