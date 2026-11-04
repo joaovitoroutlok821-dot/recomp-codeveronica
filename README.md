@@ -10,7 +10,6 @@ Private workspace for bringing up the Xbox 360 PAL build of **Resident Evil Code
 - Media ID: `58A6EFFB`
 - Internal module: `Bio_cv.exe`
 - Expected executable: `game/Default.xex`
-- Expected SHA-256 for the upstream-supported target: `c552c6995462a5cefdd52c07bebd28fff4481164b19a445c636d7b54736f3c70`
 - ReXGlue baseline: `0.10.0-dev.g398e2ba`
 
 ## Game files and privacy
@@ -23,7 +22,7 @@ Check the executable locally:
 python3 scripts/inspect-xex.py game/Default.xex
 ```
 
-The script reports the file hash; compare it to the expected hash above before attempting code generation.
+The script checks the local XEX header and identifying strings without publishing game content or a file hash.
 
 ## What comes next
 
