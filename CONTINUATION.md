@@ -47,6 +47,18 @@ Dados técnicos já verificados em conversa anterior: arquivo XEX2, 13.774.848 b
 - O seletor deve copiar a pasta escolhida para armazenamento privado do app, verificar `Default.xex` e só então abrir SDL. Deve tratar espaço insuficiente, progresso, cancelamento, falhas de I/O e recuperação de cópia anterior.
 - A logo padrão do SDL não deve ser usada como ícone final do launcher; a identidade visual do jogo deve ser aplicada quando a arte adequada estiver disponível no projeto.
 
+## Progresso na branch android-rebuild — 2026-11-04
+
+- Criado `ANDROID_REBUILD_PLAN.md`.
+- Atualizado `scripts/install-android-game-setup.py`: pré-estimativa recursiva de espaço quando o provedor fornece tamanhos, margem preventiva de 128 MiB, reserva dinâmica de 32 MiB durante a cópia, progresso e remoção da pasta temporária se a cópia falhar.
+- O seletor agora exige `Default.xex` na raiz da pasta selecionada, em vez de aceitar qualquer arquivo `.xex`.
+- Criado `android-smoke/SmokeTest.c` para validar SDL3, criação de janela, renderer e ciclo de eventos sem depender do XEX.
+- Criado `.github/workflows/android-smoke-test.yml`, usando o mesmo commit SDL fixado pelo SDK, NDK 27.2.12479018 e ABI arm64-v8a. O workflow valida as bibliotecas nativas, package ID, alinhamento, assinatura e ausência de imagens de jogo.
+- O workflow força SDL compartilhada para garantir a inclusão de `libSDL3.so`.
+- Última branch head conhecida antes desta atualização documental: `6624918613acbe4dd1e56919913b4cc07a8799ff`.
+- `main` permanece no commit-base `8da26ce9542c252ea24babafd3f3cf53dbf3eb75`.
+- A API de Actions ainda retornou zero execuções; não há APK nem resultado de compilação confirmado.
+
 ## Plano de execução
 
 1. Auditoria da branch `android-rebuild`, scripts Android, SDL e targets exportados pelo SDK.
@@ -64,3 +76,8 @@ Dados técnicos já verificados em conversa anterior: arquivo XEX2, 13.774.848 b
 - Não alterar o manifesto nem remover correções de limites de funções sem análise.
 - Não misturar binários Linux host com bibliotecas Android.
 - Preservar `main`; usar `android-rebuild` para a reconstrução.
+
+
+## Critério de próximo avanço
+
+Não integrar o XEX nem o codegen do título ao workflow até que o APK SDL/JNI mínimo seja compilado e validado. A primeira execução do workflow precisa ser verificada; se o push pelo conector não iniciar Actions, habilitar/iniciar o workflow pela aba Actions do GitHub antes de considerar a fase concluída.
