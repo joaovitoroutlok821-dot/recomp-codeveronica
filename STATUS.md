@@ -8,6 +8,7 @@
 - Plano detalhado: [ANDROID_REBUILD_PLAN.md](ANDROID_REBUILD_PLAN.md).
 - A branch foi criada e verificada; a branch `main` não foi alterada.
 - Ainda não foi produzido APK nesta branch.
+- O utilitário local de inspeção XEX e a documentação não armazenam nem imprimem o hash do arquivo do jogo.
 - O repositório de destino não apresenta execuções de Actions anteriores (API retornou zero runs); resultados históricos mencionados abaixo pertencem ao repositório anterior e são apenas referência documental, não artefatos disponíveis neste repositório.
 
 ## Fase atual
@@ -92,4 +93,7 @@ The earlier run [40219955322](https://github.com/marcussilvacastrooutlok-afk/rec
 - Correção SAF: `b920f8d332940841c29872267f58bc9fc3f69e72`.
 - Smoke test e workflow: `651ee75952c711c02d636c1bda7549a9f5c65cd5`, `4912a133057c2ba3f84eb210574682f2470ff62e`, `db4d433937a894673b65b70a16a330d797838610`, `3346889c3113cde7244fe652771e341d8268ae6f` e `6624918613acbe4dd1e56919913b4cc07a8799ff`.
 
-**Execução do workflow:** a consulta à API de Actions retornou zero execuções neste repositório até a última verificação. Portanto, o APK ainda não foi compilado; a criação do workflow não deve ser confundida com um build concluído.
+**Execução do workflow:** a consulta à API de Actions retornou zero execuções neste repositório até a última verificação. O primeiro build ainda precisa ser iniciado/confirmado na aba Actions. Portanto, o APK ainda não foi compilado; a criação do workflow não deve ser confundida com um build concluído.
+
+- Última branch head verificada: `5cb52baf68029553665e20d3c97db92f8eca8524`.
+- `main` verificada sem alterações: `8da26ce9542c252ea24babafd3f3cf53dbf3eb75`.
