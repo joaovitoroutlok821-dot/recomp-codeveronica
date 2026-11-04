@@ -13,7 +13,7 @@
 
 ## Fase atual
 
-**Fase 2 — primeiro build do APK mínimo SDL/JNI.**
+**Fase 3 — teste do APK SDL/JNI no aparelho.**
 
 Concluído na branch `android-rebuild`:
 1. Criada a branch isolada a partir de `main`, sem modificar a branch principal.
@@ -22,11 +22,21 @@ Concluído na branch `android-rebuild`:
 4. Criado `android-smoke/SmokeTest.c`, um teste SDL3 de tela cheia que alterna cores e registra os erros de inicialização.
 5. Criado `.github/workflows/android-smoke-test.yml`, que compila um APK debug ARM64 com SDL 3.5.0 fixado e verifica `libmain.so`, `libSDL3.so`, package ID, alinhamento, assinatura e ausência de arquivos de jogo.
 
+Build SDL/JNI confirmado:
+- Workflow [#41768874041](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/41768874041) terminou com sucesso.
+- Artefato `recvx-android-sdl-jni-smoke`, ID `13293936559`.
+- APK debug: 1.318.697 bytes; package `com.rexglue.recvx.smoketest`; ABI `arm64-v8a`; minSdk 21; targetSdk 35.
+- O APK contém `libmain.so` e `libSDL3.so`, ambas ELF64/AArch64, compiladas com NDK 27.2.12479018; `libmain.so` depende de `libSDL3.so`.
+- Assinatura debug, alinhamento e conteúdo passaram; nenhum XEX/ISO/XISO/WUD/WAD foi encontrado no APK.
+- Esta é uma aplicação de diagnóstico SDL/JNI, não o jogo recompilado. Ainda não contém o runtime ReXGlue nem o alvo `recvx`.
+
 Próximas tarefas:
-1. Obter a primeira execução do workflow `RECVX Android SDL-JNI smoke test` e corrigir qualquer falha de build/empacotamento.
-2. Confirmar o APK de diagnóstico e testar abertura/superfície SDL no Motorola Edge 30 Pro.
-3. Só depois integrar codegen host e compilação do alvo `recvx` com NDK ARM64.
-4. Validar o conteúdo do APK final e garantir que não contém o XEX.
+1. Instalar e abrir o APK de diagnóstico no Motorola Edge 30 Pro e confirmar a tela colorida SDL sem fechamento.
+2. Se abrir corretamente, integrar a Activity de preparação SAF e validar a cópia de `Default.xex`.
+3. Depois integrar o runtime ReXGlue Android e compilar o alvo `recvx` com NDK ARM64.
+4. Validar o APK final e garantir que não contém o XEX.
+
+O workflow legado de codegen foi removido somente desta branch porque dependia de um release asset `recvx-xex-private` inexistente; a execução falhou antes do codegen (`release not found`). Não enviar o XEX para este repositório público nem criar release público com o arquivo.
 
 ## Histórico técnico preservado
 
@@ -97,3 +107,11 @@ The earlier run [40219955322](https://github.com/marcussilvacastrooutlok-afk/rec
 
 - Última branch head verificada: `5cb52baf68029553665e20d3c97db92f8eca8524`.
 - `main` verificada sem alterações: `8da26ce9542c252ea24babafd3f3cf53dbf3eb75`.
+
+
+## Evidência do APK SDL/JNI
+
+- Run de referência: [41768874041](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/41768874041).
+- Artifact ID: `13293936559` (`recvx-android-sdl-jni-smoke`).
+- Resultado interno: `APK_VALIDATION=PASS`.
+- Inspeção adicional do APK e dos ELF confirmou ABI AArch64 e dependência `libSDL3.so`.
