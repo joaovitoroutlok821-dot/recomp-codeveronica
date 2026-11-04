@@ -1,8 +1,27 @@
 # Status
 
-## Current phase
+## Reconstrução isolada Android — 2026-11-04
 
-Android ARM64 SDK integration is compiling; the next phase is linking the title-specific Resident Evil target and completing SDL Activity/Vulkan surface integration and APK packaging.
+- Repositório de trabalho: `joaovitoroutlok821-dot/recomp-codeveronica`.
+- Branch de reconstrução: `android-rebuild`.
+- Base: `main` no commit `8da26ce9542c252ea24babafd3f3cf53dbf3eb75`.
+- Plano detalhado: [ANDROID_REBUILD_PLAN.md](ANDROID_REBUILD_PLAN.md).
+- A branch foi criada e verificada; a branch `main` não foi alterada.
+- Ainda não foi produzido APK nesta branch.
+- O repositório de destino não apresenta execuções de Actions anteriores (API retornou zero runs); resultados históricos mencionados abaixo pertencem ao repositório anterior e são apenas referência documental, não artefatos disponíveis neste repositório.
+
+## Fase atual
+
+**Fase 1 — auditoria e preparação do pacote Android mínimo.**
+
+Próximas tarefas:
+1. Revisar e endurecer o instalador SAF (espaço livre, cópia, permissões e recuperação de falhas).
+2. Validar o pacote SDL Android com o mesmo commit da biblioteca nativa ReXGlue.
+3. Criar workflow independente de diagnóstico/empacotamento SDL/JNI sem exigir XEX.
+4. Depois que o APK mínimo passar, integrar codegen host e compilação do alvo `recvx` com NDK ARM64.
+5. Validar o conteúdo do APK e garantir que não contém o XEX.
+
+## Histórico técnico preservado
 
 ## Verified target facts
 
@@ -59,3 +78,4 @@ The earlier run [40219955322](https://github.com/marcussilvacastrooutlok-afk/rec
 - audio correctness
 - controller input
 - gameplay
+
