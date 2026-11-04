@@ -60,6 +60,8 @@ public final class GameSetupActivity extends Activity {
     private ProgressBar progress;
     private Uri selectedTree;
     private File gameDir;
+    private long totalBytes;
+    private long copiedBytes;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -120,13 +122,6 @@ public final class GameSetupActivity extends Activity {
         super.onActivityResult(request, result, data);
         if (request != REQUEST_TREE || result != RESULT_OK || data == null || data.getData() == null) return;
         Uri tree = data.getData();
-        int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        try {
-            getContentResolver().takePersistableUriPermission(tree, flags & Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        } catch (SecurityException e) {
-            status.setText("Não foi possível guardar a permissão da pasta: " + e.getMessage());
-            return;
-        }
         selectedTree = tree;
         prepareGame(tree);
     }
@@ -142,6 +137,22 @@ public final class GameSetupActivity extends Activity {
                 deleteRecursively(staging);
                 if (!staging.mkdirs() && !staging.isDirectory()) throw new Exception("Não foi possível criar a pasta temporária.");
                 Uri rootUri = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree));
+                totalBytes = estimateDirectoryBytes(rootUri);
+                copiedBytes = 0;
+                long available = new StatFs(getFilesDir().getAbsolutePath()).getAvailableBytes();
+                long safetyMargin = 128L * 1024L * 1024L;
+                if (totalBytes > 0 && totalBytes + safetyMargin > available) {
+                    throw new Exception("Espaço insuficiente. Necessário aproximadamente " +
+                        formatBytes(totalBytes + safetyMargin) + "; disponível " + formatBytes(available) + ".");
+                }
+                main.post(() -> {
+                    progress.setIndeterminate(totalBytes <= 0);
+                    progress.setMax(1000);
+                    progress.setProgress(0);
+                    status.setText(totalBytes > 0
+                        ? "Copiando arquivos: 0% (" + formatBytes(totalBytes) + ")"
+                        : "Copiando arquivos. O provedor não informou o tamanho total.");
+                });
                 copyDirectory(rootUri, staging);
                 File entry = findEntryPoint(staging);
                 if (entry == null) throw new Exception("Nenhum arquivo .xex válido foi encontrado na raiz da pasta selecionada.");
@@ -162,6 +173,7 @@ public final class GameSetupActivity extends Activity {
                     Toast.makeText(this, "Pasta do jogo preparada.", Toast.LENGTH_LONG).show();
                 });
             } catch (Exception e) {
+                deleteRecursively(new File(getFilesDir(), "game.new"));
                 main.post(() -> {
                     progress.setVisibility(View.GONE);
                     choose.setEnabled(true);
@@ -170,6 +182,41 @@ public final class GameSetupActivity extends Activity {
                 });
             }
         });
+    }
+
+    private long estimateDirectoryBytes(Uri directoryUri) throws Exception {
+        String documentId = DocumentsContract.getDocumentId(directoryUri);
+        Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(directoryUri, documentId);
+        String[] columns = {DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                            DocumentsContract.Document.COLUMN_MIME_TYPE,
+                            DocumentsContract.Document.COLUMN_SIZE};
+        long total = 0;
+        try (Cursor cursor = getContentResolver().query(children, columns, null, null, null)) {
+            if (cursor == null) throw new Exception("Não foi possível estimar o tamanho da pasta selecionada.");
+            int sizeColumn = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE);
+            while (cursor.moveToNext()) {
+                String id = cursor.getString(0);
+                String mime = cursor.getString(1);
+                if (DocumentsContract.Document.MIME_TYPE_DIR.equals(mime)) {
+                    long nested = estimateDirectoryBytes(
+                        DocumentsContract.buildDocumentUriUsingTree(directoryUri, id));
+                    if (nested < 0) return -1;
+                    total += nested;
+                } else {
+                    if (sizeColumn < 0 || cursor.isNull(sizeColumn)) return -1;
+                    long size = cursor.getLong(sizeColumn);
+                    if (size < 0) return -1;
+                    total += size;
+                }
+            }
+        }
+        return total;
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes >= 1024L * 1024L * 1024L) return String.format(java.util.Locale.ROOT, "%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0));
+        if (bytes >= 1024L * 1024L) return String.format(java.util.Locale.ROOT, "%.0f MB", bytes / (1024.0 * 1024.0));
+        return String.format(java.util.Locale.ROOT, "%.0f KB", bytes / 1024.0);
     }
 
     private void copyDirectory(Uri directoryUri, File destination) throws Exception {
@@ -212,7 +259,25 @@ public final class GameSetupActivity extends Activity {
             if (in == null) throw new Exception("Não foi possível abrir um arquivo selecionado.");
             byte[] buffer = new byte[1024 * 1024];
             int count;
-            while ((count = in.read(buffer)) != -1) out.write(buffer, 0, count);
+            while ((count = in.read(buffer)) != -1) {
+                long available = new StatFs(getFilesDir().getAbsolutePath()).getAvailableBytes();
+                long safetyMargin = 32L * 1024L * 1024L;
+                if (available < count + safetyMargin) {
+                    throw new java.io.IOException("Espaço livre insuficiente durante a cópia. Libere armazenamento e tente novamente.");
+                }
+                out.write(buffer, 0, count);
+                copiedBytes += count;
+                if (totalBytes > 0) {
+                    final int percent = (int)Math.min(1000L, copiedBytes * 1000L / totalBytes);
+                    final long copied = copiedBytes;
+                    main.post(() -> {
+                        progress.setIndeterminate(false);
+                        progress.setProgress(percent);
+                        status.setText("Copiando arquivos: " + (percent / 10) + "% (" +
+                            formatBytes(copied) + " de " + formatBytes(totalBytes) + ")");
+                    });
+                }
+            }
             out.getFD().sync();
         }
     }
@@ -233,7 +298,7 @@ public final class GameSetupActivity extends Activity {
         File[] files = directory.listFiles();
         if (files == null) return null;
         for (File file : files) {
-            if (file.isFile() && file.getName().toLowerCase(java.util.Locale.ROOT).endsWith(".xex") && file.length() >= 4) return file;
+            if (file.isFile() && "default.xex".equalsIgnoreCase(file.getName()) && file.length() >= 4) return file;
         }
         return null;
     }
