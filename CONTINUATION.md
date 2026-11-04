@@ -135,3 +135,30 @@ Não integrar o XEX nem o codegen do título ao workflow até que o APK SDL/JNI 
 5. Compilar o alvo específico `recvx` para `arm64-v8a`, ligá-lo ao runtime/Xenos Android e só então empacotar o APK de jogo.
 
 As instruções anteriores deste arquivo que diziam que não havia APK ou que o primeiro smoke test ainda precisava ser executado foram superadas pelos resultados acima. O APK SAF está construído, mas o jogo recompilado ainda não está pronto.
+
+
+## Auditoria Android/ReXGlue — continuação 2026-11-04
+
+### Entrada da aplicação e modelo Android
+
+- Revisados `src/main.cpp`, `src/recvx_app.h`, `CMakeLists.txt`, `generated/rexglue.cmake`, `CMakePresets.json` e o SDK fixado em `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`.
+- `src/main.cpp` usa `REX_DEFINE_APP(recvx, RecvXApp::Create)`; não contém lógica SDL/Android própria.
+- `include/rex/ui/windowed_app.h` do SDK define `XE_UI_WINDOWED_APPS_IN_LIBRARY=1` quando `REX_PLATFORM_ANDROID` está ativo. Nesse modo, `REX_DEFINE_APP` registra a aplicação em uma biblioteca em vez de exportar o criador de um executável.
+- O ponto de entrada SDL atual do SDK (`src/ui/windowed_app_main_sdl.cpp`) implementa `main()` para plataformas não-Windows. O arquivo não contém uma implementação Android `SDL_main`/ponte JNI específica. Portanto, não é correto compilar o `main.cpp` atual como se fosse um executável Android.
+- O SDK fixado não reconhece Android no seletor de plataforma de seu `CMakeLists.txt`: no estado original aceita Windows, Linux e macOS e termina com erro para outras plataformas. A configuração Android precisa da camada de compatibilidade, incluindo definição `REX_PLATFORM_ANDROID` e superfície SDL/Vulkan Android.
+- O repositório já contém `scripts/ensure-rexglue-android-platform.py`, uma adaptação idempotente que injeta o alvo `android-arm64`, seleciona `surface_android.cpp`, evita dependências desktop via pkg-config e liga a superfície nativa Android à janela SDL. O script deve ser executado e validado no SDK clonado; sua existência isolada não prova que a compilação completa funciona.
+- `generated/rexglue.cmake` cria um executável do projeto, liga `rex::runtime` e inclui fontes geradas em uma object library. Para Android será necessário um target `SHARED` e uma entrada SDL/Android coerente com o registro da aplicação; não modificar o target atual até provar o fluxo correto.
+
+### Próximas verificações obrigatórias
+
+1. Inspecionar o CMake completo do SDK e como `rexui`, `rex::runtime`, SDL3 e o target de plataforma são exportados/ligados.
+2. Confirmar o contrato SDL Android usado pelo projeto SDL 3.5.0 fixado: símbolo de entrada, `SDLActivity`, carregamento de `libmain.so` e lifecycle JNI.
+3. Implementar uma entrada Android mínima que obtenha o criador registrado para `recvx`, inicialize o contexto SDL/ReXGlue e respeite pause/resume/destroy do Android. Não presumir que chamar `main()` ou somente exportar `SDL_main` seja suficiente.
+4. Adaptar CMake do projeto para biblioteca compartilhada Android, incluindo fontes recompiladas e runtime; compilar no workflow sem XEX embutido no APK.
+5. Só depois integrar SAF para definir o caminho privado do jogo e iniciar runtime real.
+
+### Evidência e limites desta auditoria
+
+- A auditoria foi somente leitura; nenhum código-fonte de runtime, CMake ou APK foi alterado nesta etapa.
+- O smoke APK SDL/SAF existente continua sendo apenas um teste de preparação e SDL; não executa ReXGlue nem Resident Evil.
+- A compilação Android do SDK já validada em probe anterior continua sendo evidência de SDK ARM64, mas não valida o entrypoint Android da aplicação do título.
