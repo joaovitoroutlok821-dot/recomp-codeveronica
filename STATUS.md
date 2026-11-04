@@ -12,14 +12,20 @@
 
 ## Fase atual
 
-**Fase 1 — auditoria e preparação do pacote Android mínimo.**
+**Fase 2 — primeiro build do APK mínimo SDL/JNI.**
+
+Concluído na branch `android-rebuild`:
+1. Criada a branch isolada a partir de `main`, sem modificar a branch principal.
+2. Criado `ANDROID_REBUILD_PLAN.md` e atualizado o registro de continuidade.
+3. Endurecido `scripts/install-android-game-setup.py`: estimativa recursiva do tamanho, margem de espaço livre, verificação durante a cópia, progresso, limpeza de cópia temporária em falha e exigência de `Default.xex` na raiz.
+4. Criado `android-smoke/SmokeTest.c`, um teste SDL3 de tela cheia que alterna cores e registra os erros de inicialização.
+5. Criado `.github/workflows/android-smoke-test.yml`, que compila um APK debug ARM64 com SDL 3.5.0 fixado e verifica `libmain.so`, `libSDL3.so`, package ID, alinhamento, assinatura e ausência de arquivos de jogo.
 
 Próximas tarefas:
-1. Revisar e endurecer o instalador SAF (espaço livre, cópia, permissões e recuperação de falhas).
-2. Validar o pacote SDL Android com o mesmo commit da biblioteca nativa ReXGlue.
-3. Criar workflow independente de diagnóstico/empacotamento SDL/JNI sem exigir XEX.
-4. Depois que o APK mínimo passar, integrar codegen host e compilação do alvo `recvx` com NDK ARM64.
-5. Validar o conteúdo do APK e garantir que não contém o XEX.
+1. Obter a primeira execução do workflow `RECVX Android SDL-JNI smoke test` e corrigir qualquer falha de build/empacotamento.
+2. Confirmar o APK de diagnóstico e testar abertura/superfície SDL no Motorola Edge 30 Pro.
+3. Só depois integrar codegen host e compilação do alvo `recvx` com NDK ARM64.
+4. Validar o conteúdo do APK final e garantir que não contém o XEX.
 
 ## Histórico técnico preservado
 
@@ -78,3 +84,13 @@ The earlier run [40219955322](https://github.com/marcussilvacastrooutlok-afk/rec
 - controller input
 - gameplay
 
+
+
+## Commits da reconstrução
+
+- Plano e branch: `2983c5f13cfd02e1c171eaa1a1661ecd9bdad3fd`.
+- Atualização de continuidade/status: `dbc0a8db7047e01fa772bb512845aeab401d8119` e `b64882531b7da264e6fd6f1418c9751aab838eb4`.
+- Correção SAF: `b920f8d332940841c29872267f58bc9fc3f69e72`.
+- Smoke test e workflow: `651ee75952c711c02d636c1bda7549a9f5c65cd5`, `4912a133057c2ba3f84eb210574682f2470ff62e`, `db4d433937a894673b65b70a16a330d797838610`, `3346889c3113cde7244fe652771e341d8268ae6f` e `6624918613acbe4dd1e56919913b4cc07a8799ff`.
+
+**Execução do workflow:** a consulta à API de Actions retornou zero execuções neste repositório até a última verificação. Portanto, o APK ainda não foi compilado; a criação do workflow não deve ser confundida com um build concluído.
