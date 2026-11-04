@@ -220,3 +220,12 @@ Nenhum código de runtime ou APK foi alterado nesta etapa; somente este registro
 5. Executar build ARM64 do SDK e do target específico em workflow isolado antes de gerar APK.
 
 O APK Black é referência arquitetural, não prova de compatibilidade binária nem de funcionamento do nosso jogo.
+
+
+## Validacao da correcao SDL/Vulkan Android — 2026-11-04
+
+- O commit `80f0fe325dcc915aa6dde015a021bd8d2bf09ffb` atualizou `scripts/ensure-rexglue-android-platform.py` para solicitar `SDL_WINDOW_VULKAN` em janelas Android.
+- O push acionou o workflow **Android ARM64 platform probe** #41842550526, que terminou com sucesso. Etapas confirmadas: checkout do SDK fixado, aplicacao dos patches, configuracao CMake com selecao Android real, validacao de `REX_PLATFORM_ANDROID`, e compilacao do SDK para `arm64-v8a`.
+- Job ID `126617622126`; artefato de logs `recvx-android-arm64-probe`, ID `13330153452`.
+- Isso valida a compilacao do SDK ReXGlue Android ARM64 com o helper atualizado. Ainda nao valida o novo entrypoint SDL_main, o alvo recompilado do jogo, APK final ou execucao do jogo no aparelho.
+- Proximo passo: implementar e compilar o entrypoint Android SDL_main e conectar o ciclo de vida da WindowedApp `recvx`; manter o XEX e fontes geradas do titulo fora do repositorio publico.
