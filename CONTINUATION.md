@@ -182,3 +182,41 @@ As instruções anteriores deste arquivo que diziam que não havia APK ou que o 
 5. Integrar SAF ao caminho `game:\\Default.xex` por PathConfig/URI ou staging privado interno, sem copiar XEX para APK e sem persistir conteúdo em repo público.
 
 Nenhum código de runtime ou APK foi alterado nesta etapa; somente este registro de continuidade foi ampliado.
+
+
+## Análise do APK Black Android e revisão Vulkan — 2026-11-04
+
+### Referência externa analisada
+
+- APK fornecido pelo usuário: `Black.apk.zip`; análise estrutural confirmou bibliotecas ARM64 `libmain.so`, `libSDL3.so` e `libc++_shared.so`.
+- Projeto de referência: `RanggaCasper/Black-Android`. A arquitetura usa Activity derivada de `SDLActivity`, `getLibraries() = {"SDL3", "main"}`, SDL3 e uma biblioteca principal própria.
+- O `native/main.cpp` do Black inicializa SDL, cria janela Vulkan, prepara arquivos e executa o runtime. Seu fluxo de jogo é específico do XboxXBE-Recomp e NÃO pode ser copiado diretamente para ReXGlue.
+- O CMake do Black constrói `main` como biblioteca compartilhada incluindo runtime, código do jogo e host Android. O APK não depende de um executável Android separado.
+- O Black usa SDL 3.4.16 e NDK 28.2; o nosso SDK fixa outra versão SDL (3.5.0 no estado atual). Não misturar classes Java SDL nem bibliotecas de versões diferentes.
+
+### Correção importante após leitura do SDK ReXGlue fixado
+
+- No commit SDK `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`, `Surface::TypeIndex` já contém `kTypeIndex_AndroidNativeWindow` e `kTypeFlag_AndroidNativeWindow`.
+- `src/ui/vulkan/vulkan_instance.cpp` já habilita `VK_KHR_android_surface` quando `VK_USE_PLATFORM_ANDROID_KHR` está definido.
+- `src/ui/vulkan/vulkan_presenter.cpp` já contém o caminho Android que chama `vkCreateAndroidSurfaceKHR` com o `ANativeWindow*` fornecido por `AndroidNativeWindowSurface`.
+- Portanto, o helper `scripts/ensure-rexglue-android-platform.py` não deve duplicar nem reimplementar a parte Vulkan do presenter. Seu papel é habilitar plataforma Android no CMake, selecionar a superfície Android, evitar dependências desktop X11/Wayland e permitir que `window_sdl.cpp` obtenha a janela nativa SDL.
+- A superfície proposta guarda ponteiro emprestado de `ANativeWindow` obtido das propriedades SDL; o tempo de vida deve ficar limitado ao SDL_Window e não deve liberar a referência emprestada.
+- A revisão identificou também que `WindowSDL::OpenImpl()` cria a janela com flags `RESIZABLE | HIGH_PIXEL_DENSITY | HIDDEN`; ainda falta confirmar/implementar o requisito de janela Vulkan no Android. O Black cria a janela explicitamente com `SDL_WINDOW_VULKAN`. Antes de aplicar essa flag ao ReXGlue, verificar o comportamento de `SDL_WINDOW_VULKAN` no commit SDL fixado e se a abstração atual não a adiciona em outro ponto.
+
+### Entrada Android: decisões de arquitetura
+
+- `REX_DEFINE_APP(recvx, RecvXApp::Create)` registra o creator "recvx" em modo Android-library; `WindowedApp::GetCreator("recvx")` é a API prevista para recuperar a aplicação.
+- `SDLWindowedAppContext::Initialize()` inicializa `SDL_INIT_VIDEO` e registra eventos; seu loop `RunMainMessageLoop()` espera eventos e despacha janelas, quit e tarefas da UI. O contexto faz `SDL_QuitSubSystem(SDL_INIT_VIDEO)` no destrutor.
+- O entrypoint desktop `windowed_app_main_sdl.cpp` não pode ser reutilizado como Android: contém `main()` e chama `cvar::Init(argc, argv)`, fluxo que não representa o ciclo de vida SDLActivity.
+- O host Android deve ser um arquivo separado exportando `SDL_main`, preparar logging/cvars sem pressupor argumentos desktop, criar e inicializar `SDLWindowedAppContext`, recuperar creator "recvx", chamar `OnInitialize()`, executar `RunMainMessageLoop()` e sempre chamar `InvokeOnDestroy()` depois de inicialização (inclusive falha parcial), respeitando o contrato da classe.
+- Não foi ainda feita alteração de código Android nem novo build nesta etapa. O adaptador anterior permanece apenas uma proposta e precisa de validação de SDL init order, janela Vulkan, pause/resume e encerramento.
+
+### Próximas verificações obrigatórias
+
+1. Inspecionar a versão SDL exata fixada pelo SDK para confirmar flags Vulkan, `SDL_main`, carregamento de `libmain.so` e callbacks Android.
+2. Corrigir o helper Android para adicionar superfície/seleção CMake sem duplicar o suporte Vulkan que o SDK já possui.
+3. Confirmar `VK_USE_PLATFORM_ANDROID_KHR`, headers NDK e ligação de `android`/Vulkan no target SDK.
+4. Criar entrypoint `SDL_main` em fonte separada e integrar SAF com `game:\\Default.xex` via armazenamento privado, sem embutir XEX.
+5. Executar build ARM64 do SDK e do target específico em workflow isolado antes de gerar APK.
+
+O APK Black é referência arquitetural, não prova de compatibilidade binária nem de funcionamento do nosso jogo.
