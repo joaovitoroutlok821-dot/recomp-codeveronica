@@ -42,6 +42,7 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
@@ -140,6 +141,7 @@ public final class GameSetupActivity extends Activity {
         status.setText("Verificando arquivos e espaço disponível...");
         worker.execute(() -> {
             try {
+                validateSourceXex(tree);
                 File staging = new File(getFilesDir(), "game.new");
                 deleteRecursively(staging);
                 if (!staging.mkdirs() && !staging.isDirectory()) throw new Exception("Não foi possível criar a pasta temporária.");
@@ -301,11 +303,55 @@ public final class GameSetupActivity extends Activity {
         startActivity(intent);
     }
 
+    private void validateSourceXex(Uri tree) throws Exception {
+        Uri children = DocumentsContract.buildChildDocumentsUriUsingTree(
+            tree, DocumentsContract.getTreeDocumentId(tree));
+        String[] columns = {
+            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+            DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_SIZE
+        };
+        try (Cursor cursor = getContentResolver().query(children, columns, null, null, null)) {
+            if (cursor == null) throw new Exception("Não foi possível verificar o arquivo Default.xex.");
+            int sizeColumn = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_SIZE);
+            while (cursor.moveToNext()) {
+                String name = cursor.getString(1);
+                String mime = cursor.getString(2);
+                if (!"default.xex".equalsIgnoreCase(name) ||
+                    DocumentsContract.Document.MIME_TYPE_DIR.equals(mime)) continue;
+                if (sizeColumn >= 0 && !cursor.isNull(sizeColumn) &&
+                    cursor.getLong(sizeColumn) < 1048576L) {
+                    throw new Exception("Default.xex é pequeno demais para ser o executável esperado.");
+                }
+                Uri document = DocumentsContract.buildDocumentUriUsingTree(tree, cursor.getString(0));
+                try (InputStream in = getContentResolver().openInputStream(document)) {
+                    if (in == null || in.read() != 'X' || in.read() != 'E' ||
+                        in.read() != 'X' || in.read() != '2') {
+                        throw new Exception("Default.xex não possui cabeçalho XEX2 válido.");
+                    }
+                }
+                return;
+            }
+        }
+        throw new Exception("Default.xex não foi encontrado na raiz da pasta selecionada.");
+    }
+
+    private static boolean isValidXex2(File file) {
+        if (!file.isFile() || file.length() < 1048576L) return false;
+        try (FileInputStream in = new FileInputStream(file)) {
+            return in.read() == 'X' && in.read() == 'E' &&
+                   in.read() == 'X' && in.read() == '2';
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
     private static File findEntryPoint(File directory) {
         File[] files = directory.listFiles();
         if (files == null) return null;
         for (File file : files) {
-            if (file.isFile() && "default.xex".equalsIgnoreCase(file.getName()) && file.length() >= 4) return file;
+            if ("default.xex".equalsIgnoreCase(file.getName()) && isValidXex2(file)) return file;
         }
         return null;
     }
