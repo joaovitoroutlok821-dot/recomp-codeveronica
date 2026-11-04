@@ -162,3 +162,23 @@ As instruções anteriores deste arquivo que diziam que não havia APK ou que o 
 - A auditoria foi somente leitura; nenhum código-fonte de runtime, CMake ou APK foi alterado nesta etapa.
 - O smoke APK SDL/SAF existente continua sendo apenas um teste de preparação e SDL; não executa ReXGlue nem Resident Evil.
 - A compilação Android do SDK já validada em probe anterior continua sendo evidência de SDK ARM64, mas não valida o entrypoint Android da aplicação do título.
+
+
+### Confirmação do registro e entrada SDL Android — 2026-11-04
+
+- Inspecionado `include/rex/ui/windowed_app.h`: Android define `XE_UI_WINDOWED_APPS_IN_LIBRARY=1`; `REX_DEFINE_APP(recvx, RecvXApp::Create)` registra o creator sob a chave textual `recvx`.
+- Inspecionado `src/ui/windowed_app.cpp`: `WindowedApp::creators_` é definido como ponteiro estático zerado; `WindowedApp::GetCreator("recvx")` recupera o creator depois do carregamento da biblioteca. Isso confirma o mecanismo de seleção da aplicação, mas não fornece por si só uma função exportada para iniciar a aplicação.
+- SDL 3.5.0 no commit fixado `8bf3b7215ad9fc3deb583c6a3a37c6c67f2e24e4` usa `SDLActivity.getMainFunction() == "SDL_main"`; a atividade chama `nativeRunMain(library, function, arguments)` em thread SDL dedicada. O pacote Android SDL carrega `libSDL3.so` e `libmain.so`. Logo a biblioteca do jogo precisa expor o símbolo SDL_main compatível com o ABI C esperado por SDL, e o entrypoint deve obter `WindowedApp::GetCreator("recvx")`.
+- A amostra `Android.mk` do SDL confirma o módulo nativo `main` como shared library e SDL3 como dependência compartilhada. O projeto atual usa Gradle/CMake, mas o contrato JNI/SDL é o mesmo; não copiar cegamente o Android.mk legado.
+- O helper `scripts/ensure-rexglue-android-platform.py` cria uma superfície Android usando `ANativeWindow` e propriedades SDL. Revisar antes de executar: seu header novo usa `ANativeWindow*` sem incluir explicitamente `<android/native_window.h>`; também é necessário conferir se a classe Surface e o enum `kTypeIndex_AndroidNativeWindow` existem exatamente como assumido. Não tratar o sanity check textual do script como validação de compilação.
+- Correção de interpretação da auditoria anterior: `include/rex/platform.h` já define `REX_PLATFORM_ANDROID` automaticamente para `__ANDROID__` (e também `REX_PLATFORM_LINUX`). A lacuna está no CMake do SDK, que seleciona UNIX/Linux antes de tratar Android, não na ausência da macro no cabeçalho.
+
+### Plano técnico revisado
+
+1. Confirmar definições de Surface/SurfaceType e os requisitos de ownership/refcount de ANativeWindow.
+2. Adaptar CMake SDK com Android branch antes de UNIX, surface Android e dependências Android NDK; validar configuração e compilação do SDK completo, não apenas do probe.
+3. Implementar `SDL_main` em uma fonte Android separada: inicializar logging/cvars sem argv desktop, criar SDLWindowedAppContext, obter creator via `WindowedApp::GetCreator("recvx")`, chamar OnInitialize, executar o loop e sempre invocar InvokeOnDestroy em encerramento/erro conforme contrato. Confirmar a ordem de SDL_Init/SDL_InitSubSystem e o lifecycle SDL Android para evitar inicialização dupla ou bloqueio no pause.
+4. Construir `libmain.so` ARM64 com runtime, UI, fontes geradas e entrypoint; garantir que símbolos de registro não sejam removidos pelo linker e que todas as dependências SDL/ReXGlue estejam no APK.
+5. Integrar SAF ao caminho `game:\\Default.xex` por PathConfig/URI ou staging privado interno, sem copiar XEX para APK e sem persistir conteúdo em repo público.
+
+Nenhum código de runtime ou APK foi alterado nesta etapa; somente este registro de continuidade foi ampliado.
