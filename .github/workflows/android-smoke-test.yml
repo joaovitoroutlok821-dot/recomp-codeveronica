@@ -31,7 +31,6 @@ jobs:
         run: |
           set -euo pipefail
           sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018" "cmake;3.31.6"
-          yes | sdkmanager --licenses >/dev/null
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
 
       - name: Configure Java 17
@@ -56,6 +55,20 @@ jobs:
           mkdir -p android-smoke/package/app/jni/SDL
           cp -a "$RUNNER_TEMP/SDL/." android-smoke/package/app/jni/SDL/
           cp android-smoke/SmokeTest.c android-smoke/package/app/jni/src/YourSourceHere.c
+          python3 - <<'PY'
+          from pathlib import Path
+          cmake = Path("android-smoke/package/app/jni/CMakeLists.txt")
+          text = cmake.read_text()
+          anchor = 'add_subdirectory(SDL)'
+          if text.count(anchor) != 1:
+              raise SystemExit("Não encontrei o único add_subdirectory(SDL)")
+          text = text.replace(
+              anchor,
+              'set(SDL_SHARED ON CACHE BOOL "" FORCE)\\nset(SDL_STATIC OFF CACHE BOOL "" FORCE)\\n' + anchor,
+              1,
+          )
+          cmake.write_text(text)
+          PY
           python3 - <<'PY'
           from pathlib import Path
           import re
