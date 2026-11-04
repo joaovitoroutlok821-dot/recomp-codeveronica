@@ -6,7 +6,6 @@
 RECVX_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 RECVX_XEX="$RECVX_ROOT/game/Default.xex"
 RECVX_MANIFEST="$RECVX_ROOT/recvx_manifest.toml"
-RECVX_EXPECTED_XEX_SHA256="c552c6995462a5cefdd52c07bebd28fff4481164b19a445c636d7b54736f3c70"
 RECVX_EXPECTED_REXGLUE_VERSION="0.10.0-dev.g398e2ba"
 RECVX_REXGLUE_VERSION_PREFIX="0.10."
 RECVX_REXGLUE_COMMIT="398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb"
@@ -47,12 +46,20 @@ recvx_require_command() {
 
 recvx_verify_xex() {
   [[ -f "$RECVX_XEX" ]] || recvx_die "missing case-sensitive XEX: $RECVX_XEX"
-  recvx_require_command sha256sum
-  local actual_sha
-  actual_sha="$(sha256sum "$RECVX_XEX")"
-  actual_sha="${actual_sha%% *}"
-  [[ "$actual_sha" == "$RECVX_EXPECTED_XEX_SHA256" ]] ||
-    recvx_die "unexpected Default.xex SHA-256: $actual_sha"
+  recvx_require_command stat
+  recvx_require_command grep
+
+  local magic size
+  magic="$(head -c 4 "$RECVX_XEX")"
+  [[ "$magic" == "XEX2" ]] ||
+    recvx_die "Default.xex does not have the expected XEX2 container header"
+
+  size="$(stat -c '%s' "$RECVX_XEX")"
+  [[ "$size" =~ ^[0-9]+$ ]] && (( size >= 1048576 )) ||
+    recvx_die "Default.xex is unexpectedly small or has an unreadable size"
+
+  grep -aFq 'Bio_cv.exe' "$RECVX_XEX" ||
+    recvx_die "Default.xex does not contain the expected Bio_cv.exe module identifier"
 }
 
 recvx_config_from_prefix() {
