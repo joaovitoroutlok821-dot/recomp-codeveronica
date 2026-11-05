@@ -12,13 +12,24 @@ set(RECVX_SOURCES
     src/main.cpp
 )
 
-if(ANDROID)
-    # SDLActivity loads libSDL3.so and libmain.so, then calls SDL_main.
+if(ANDROID AND TARGET main)
+    # SDL's Android project owns libmain.so. Attach the title to that exact
+    # target instead of creating a second shared library with the same name.
+    target_sources(main PRIVATE
+        ${RECVX_SOURCES}
+        src/android_main.cpp
+    )
+    rexglue_setup_target(main GPU_PLUGINS xenos)
+elseif(ANDROID)
+    # Standalone Android mode is retained for non-SDL parent projects.
     add_library(recvx SHARED
         ${RECVX_SOURCES}
         src/android_main.cpp
     )
     set_target_properties(recvx PROPERTIES OUTPUT_NAME main)
+    if(NOT ANDROID)
+    rexglue_setup_target(recvx GPU_PLUGINS xenos)
+endif()
 elseif(WIN32)
     add_executable(recvx WIN32 ${RECVX_SOURCES})
 else()
