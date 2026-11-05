@@ -296,3 +296,17 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - O run #6 foi encerrado com falha antes de empacotar/validar o APK; não houve APK final. O artefato de diagnóstico pode conter apenas relatórios parciais.
 - Próxima ação: iniciar novamente o workflow privado #7 pelo botão **Run workflow**, mantendo `source_ref=android-rebuild`. Verificar se o link de `librexruntimed.so` passa; depois investigar qualquer próximo erro real de linkagem/compilação.
 - Nenhum XEX foi adicionado ao repositório público; o workflow continua removendo XEX, fontes geradas e checkout SDK do runner ao final.
+
+
+## Resultado do workflow privado #7 e correção seguinte — 2026-11-05
+
+- Workflow privado #7, run ID `42092445762`, terminou com falha na etapa de compilação Android ARM64.
+- A correção anterior foi confirmada: não reapareceram os erros de link `-lpthread` e `-lrt`.
+- Passaram validação XEX, checkout, geração privada de fontes, instalação SDK/NDK/CMake, patches de plataforma, checkout SDL 3.5.0 e preparação do pacote Android.
+- A falha real foi `/bin/sh: .../.deps/rexglue-sdk/out/android-arm64/rexglued: Exec format error`. O CMake Android tentou executar o CLI ReXGlue compilado para Android ARM64 como ferramenta host Linux.
+- A compilação parou durante a etapa 14; a verificação do APK foi ignorada. O artefato foi tentado, mas não há APK validado.
+- O script existente `scripts/ensure-rexglue-android-cmake.py` contém o mecanismo para definir `REXGLUE_SKIP_CODEGEN=ON` no Android e usar as fontes geradas pelo job host. A etapa de compatibilidade Android do workflow privado não o reaplicava explicitamente depois do codegen privado.
+- Atualizado o workflow privado para executar `python3 scripts/ensure-rexglue-android-cmake.py "$SDK" "$PWD"` após os patches de SDK, reforçando a guarda CMake antes da configuração Android.
+- Commit privado: `9d65e4691fb3a2d8dfe5743f63750779bdaa8ab8`.
+- Próximo passo: executar workflow privado #8 com `source_ref=android-rebuild` e confirmar que não tenta executar `rexglued` Android no runner. Depois investigar a próxima falha real, se houver.
+- Nenhum XEX ou fonte gerada do título foi adicionado ao repositório público.
