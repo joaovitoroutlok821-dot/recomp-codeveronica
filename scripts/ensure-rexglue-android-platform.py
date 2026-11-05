@@ -62,6 +62,33 @@ edit("src/ui/CMakeLists.txt",
 '''if(UNIX AND NOT APPLE AND NOT ANDROID)
     find_package(PkgConfig REQUIRED)''',
 "skip desktop dependencies on Android")
+edit("src/system/gpu_plugin_loader.cpp",
+'''  auto path = rex::filesystem::GetExecutableFolder() / PluginFileName(name);
+  if (!std::filesystem::exists(path)) {
+    REXSYS_ERROR(
+        "GPU plugin '{}' not found at {}. Stage it next to the executable "
+        "(GPU_PLUGINS {} in rexglue_configure_target).",
+        name, path.string(), name);
+    return nullptr;
+  }
+''',
+'''  // Android loads native libraries from the app's linker namespace. The
+  // executable path is app_process64, not the APK's native-library folder.
+#if REX_PLATFORM_ANDROID
+  std::filesystem::path path = PluginFileName(name);
+#else
+  auto path = rex::filesystem::GetExecutableFolder() / PluginFileName(name);
+  if (!std::filesystem::exists(path)) {
+    REXSYS_ERROR(
+        "GPU plugin '{}' not found at {}. Stage it next to the executable "
+        "(GPU_PLUGINS {} in rexglue_configure_target).",
+        name, path.string(), name);
+    return nullptr;
+  }
+#endif
+''',
+"Android GPU plugin linker lookup")
+
 edit("src/ui/window_sdl.cpp",
 '''#if REX_PLATFORM_MAC
   int initial_width = int(GetDesiredLogicalWidth());''',
