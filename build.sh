@@ -16,6 +16,7 @@ readonly SDK_TIMERQUEUE_HELPER="$ROOT_DIR/scripts/ensure-rexglue-timerqueue-bloc
 readonly SDK_DISRUPTOR_HELPER="$ROOT_DIR/scripts/ensure-disruptorplus-blocking-wait-fix.py"
 readonly SDK_DB16_NOOP_HELPER="$ROOT_DIR/scripts/ensure-rexglue-db16cyc-noop.py"
 readonly SDK_SWITCH_TRAP_HELPER="$ROOT_DIR/scripts/ensure-rexglue-switch-trap-context.py"
+readonly SDK_ANDROID_CMAKE_HELPER="$ROOT_DIR/scripts/ensure-rexglue-android-cmake.py"
 readonly ROOT_PATCH_CLEANUP="$ROOT_DIR/scripts/cleanup-obsolete-root-patches.sh"
 
 usage() {
@@ -188,6 +189,8 @@ recvx_verify_xex
   recvx_die "missing helper: $SDK_DB16_NOOP_HELPER"
 [[ -f "$SDK_SWITCH_TRAP_HELPER" ]] ||
   recvx_die "missing helper: $SDK_SWITCH_TRAP_HELPER"
+[[ -f "$SDK_ANDROID_CMAKE_HELPER" ]] ||
+  recvx_die "missing helper: $SDK_ANDROID_CMAKE_HELPER"
 [[ -f "$ROOT_PATCH_CLEANUP" ]] ||
   recvx_die "missing helper: $ROOT_PATCH_CLEANUP"
 
@@ -346,6 +349,11 @@ else
 fi
 codegen_command+=("$RECVX_MANIFEST")
 recvx_run "${codegen_command[@]}"
+
+# Apply Android CMake compatibility to the pinned SDK and to the generated
+# workspace scaffold after host codegen has materialized generated/default.
+recvx_info "ensuring ReXGlue Android CMake integration"
+recvx_run python3 "$SDK_ANDROID_CMAKE_HELPER" "$SDK_SOURCE" "$ROOT_DIR"
 
 # generated/rexglue.cmake uses $<TARGET_FILE:rex::rexglue> for its codegen
 # custom command. The installed SDK doesn't provide an imported CLI location
