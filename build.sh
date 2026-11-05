@@ -353,7 +353,7 @@ recvx_run "${codegen_command[@]}"
 # Apply Android CMake compatibility to the pinned SDK and to the generated
 # workspace scaffold after host codegen has materialized generated/default.
 recvx_info "ensuring ReXGlue Android CMake integration"
-recvx_run python3 "$SDK_ANDROID_CMAKE_HELPER" "$SDK_SOURCE" "$ROOT_DIR"
+recvx_run python3 "$SDK_ANDROID_CMAKE_HELPER" "$SDK_SOURCE" "$ROOT_DIR" "$SDK_PREFIX"
 
 # generated/rexglue.cmake uses $<TARGET_FILE:rex::rexglue> for its codegen
 # custom command. The installed SDK doesn't provide an imported CLI location
