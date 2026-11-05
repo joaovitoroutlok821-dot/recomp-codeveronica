@@ -310,3 +310,14 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Commit privado: `9d65e4691fb3a2d8dfe5743f63750779bdaa8ab8`.
 - Próximo passo: executar workflow privado #8 com `source_ref=android-rebuild` e confirmar que não tenta executar `rexglued` Android no runner. Depois investigar a próxima falha real, se houver.
 - Nenhum XEX ou fonte gerada do título foi adicionado ao repositório público.
+
+
+## Build privado Android #10 — diagnóstico e correção #11 (2026-11-05)
+
+- Build #10: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42123035684
+- O compilador confirmou C++23 (`-std=gnu++23`), portanto a correção anterior resolveu a falha de headers da biblioteca padrão.
+- A compilação avançou até aproximadamente 779/999 tarefas e falhou ao compilar `rex_app.cpp`, incluído diretamente no target SDL `main`: `fatal error: 'imgui.h' file not found`.
+- A auditoria do SDK fixado `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb` confirmou que `rexui` é um object library, publica `imgui::imgui` e propaga o diretório de headers do ImGui. O target SDL `main` só estava ligado a `rex::runtime`, não a `rex::ui`.
+- Correção aplicada em `CMakeLists.txt`: ligar explicitamente `main` a `rex::ui` após `rexglue_setup_target`. Isso propaga os include directories do ImGui e inclui a implementação UI do SDK no `libmain.so`. O mesmo vínculo foi adicionado aos modos Android standalone e host para manter a configuração consistente.
+- Commit público da correção: `3e5eb9e12d98fafb71d47863ec760154e9849235`.
+- Próximo passo: executar build privado #11 e verificar se a compilação passa da unidade `rex_app.cpp`; ainda não existe APK final validado.
