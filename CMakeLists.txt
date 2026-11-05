@@ -23,6 +23,10 @@ if(ANDROID AND TARGET main)
         src/android_main.cpp
     )
     rexglue_setup_target(main GPU_PLUGINS xenos)
+    # rex_app.cpp includes ImGui headers and ReXApp uses the SDK UI layer.
+    # Linking rex::ui propagates imgui::imgui's include directory and includes
+    # the UI object-library implementation in SDL's libmain.so.
+    target_link_libraries(main PRIVATE rex::ui)
 elseif(ANDROID)
     # Standalone Android mode is retained for non-SDL parent projects.
     add_library(recvx SHARED
@@ -31,10 +35,13 @@ elseif(ANDROID)
     )
     set_target_properties(recvx PROPERTIES OUTPUT_NAME main)
     rexglue_setup_target(recvx GPU_PLUGINS xenos)
+    target_link_libraries(recvx PRIVATE rex::ui)
 elseif(WIN32)
     add_executable(recvx WIN32 ${RECVX_SOURCES})
     rexglue_setup_target(recvx GPU_PLUGINS xenos)
+    target_link_libraries(recvx PRIVATE rex::ui)
 else()
     add_executable(recvx ${RECVX_SOURCES})
     rexglue_setup_target(recvx GPU_PLUGINS xenos)
+    target_link_libraries(recvx PRIVATE rex::ui)
 endif()
