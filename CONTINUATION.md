@@ -253,3 +253,13 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Revisão do conteúdo no GitHub confirmou que os padrões de newline foram corrigidos e que o argumento `SDK_PREFIX` está sendo passado.
 - **Ainda não validado por execução:** não há resultado de workflow após esses commits. O script precisa ser executado no runner com o SDK instalado e o scaffold gerado para confirmar que todos os anchors correspondem ao conteúdo real.
 - Próxima barreira independente: resolver o target único `libmain.so` entre o CMake do SDL Android e o target do jogo, e adaptar o carregamento do plugin Xenos para Android. Nenhum APK final foi produzido nesta etapa.
+
+
+### Correção preparada para carregamento do plugin Xenos no Android — 2026-11-04
+
+- Commit: `98d8b207f44abab9948f5ece5f81bf2789912f71`.
+- Atualizado `scripts/ensure-rexglue-android-platform.py` para adaptar `src/system/gpu_plugin_loader.cpp` do SDK fixado.
+- Em Android, o carregador passa a chamar `dlopen` pelo nome `librexgpu-xenos.so`, usando o linker namespace do aplicativo, em vez de procurar o plugin junto ao caminho do executável `app_process64`.
+- Em Linux/macOS/Windows, a lógica original de localização ao lado do executável é preservada.
+- Esta é uma alteração no script de compatibilidade; ainda não foi executada numa compilação Android completa. É necessário confirmar que o plugin Xenos é efetivamente produzido, copiado para `app/src/main/jniLibs/arm64-v8a/` e carregado no aparelho.
+- O alvo SDL `main` ainda precisa receber as fontes `src/main.cpp`, `src/android_main.cpp`, as unidades recompiladas e a configuração `rexglue_setup_target(main GPU_PLUGINS xenos)`. Nenhum APK de jogo foi produzido por este commit.
