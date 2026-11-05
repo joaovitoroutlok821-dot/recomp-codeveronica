@@ -57,32 +57,32 @@ template.write_text(text, encoding="utf-8")
 
 helpers = root / "cmake/rexglue_helpers.cmake"
 replace_once(helpers,
-    """    target_sources(\${target_name} PRIVATE
-        \${REXGLUE_SHARE_DIR}/windowed_app_main_sdl.cpp
-        \${REXGLUE_SHARE_DIR}/rex_app.cpp)
+    """    target_sources(${target_name} PRIVATE
+        ${REXGLUE_SHARE_DIR}/windowed_app_main_sdl.cpp
+        ${REXGLUE_SHARE_DIR}/rex_app.cpp)
 """,
     """    if(ANDROID)
-        target_sources(\${target_name} PRIVATE
-            \${REXGLUE_SHARE_DIR}/rex_app.cpp)
+        target_sources(${target_name} PRIVATE
+            ${REXGLUE_SHARE_DIR}/rex_app.cpp)
     else()
-        target_sources(\${target_name} PRIVATE
-            \${REXGLUE_SHARE_DIR}/windowed_app_main_sdl.cpp
-            \${REXGLUE_SHARE_DIR}/rex_app.cpp)
+        target_sources(${target_name} PRIVATE
+            ${REXGLUE_SHARE_DIR}/windowed_app_main_sdl.cpp
+            ${REXGLUE_SHARE_DIR}/rex_app.cpp)
     endif()
 """, "SDL desktop entrypoint exclusion")
 replace_once(helpers,
-    """        add_custom_command(TARGET \${target_name} POST_BUILD
-            COMMAND \${CMAKE_COMMAND} -E copy_if_different
-                $<TARGET_FILE:\${_plugin_target}>
-                $<TARGET_FILE_DIR:\${target_name}>
+    """        add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:${_plugin_target}>
+                $<TARGET_FILE_DIR:${target_name}>
             VERBATIM
         )
 """,
     """        if(NOT ANDROID)
-            add_custom_command(TARGET \${target_name} POST_BUILD
-                COMMAND \${CMAKE_COMMAND} -E copy_if_different
-                    $<TARGET_FILE:\${_plugin_target}>
-                    $<TARGET_FILE_DIR:\${target_name}>
+            add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    $<TARGET_FILE:${_plugin_target}>
+                    $<TARGET_FILE_DIR:${target_name}>
                 VERBATIM
             )
         endif()
