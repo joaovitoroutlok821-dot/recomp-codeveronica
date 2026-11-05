@@ -263,3 +263,13 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Em Linux/macOS/Windows, a lógica original de localização ao lado do executável é preservada.
 - Esta é uma alteração no script de compatibilidade; ainda não foi executada numa compilação Android completa. É necessário confirmar que o plugin Xenos é efetivamente produzido, copiado para `app/src/main/jniLibs/arm64-v8a/` e carregado no aparelho.
 - O alvo SDL `main` ainda precisa receber as fontes `src/main.cpp`, `src/android_main.cpp`, as unidades recompiladas e a configuração `rexglue_setup_target(main GPU_PLUGINS xenos)`. Nenhum APK de jogo foi produzido por este commit.
+
+
+### Integração CMake com o alvo SDL main — 2026-11-05
+
+- Commit `bd395b2f2724883c7e1691fd54e0809d734cc79a`: a raiz do projeto agora reconhece o alvo `main` já criado pelo SDL Android e anexa `src/main.cpp`, `src/android_main.cpp` e `rexglue_setup_target(main GPU_PLUGINS xenos)` a ele. O modo Android independente e os builds desktop continuam com seus próprios alvos.
+- Commit `2892f92622f044b4bb980abbd59dca56de3c9d6f`: corrigida a estrutura condicional do CMake após revisão do arquivo; cada caminho configura seu alvo uma única vez.
+- Commit `66db71470cf3d3fe4277757b349d9cc60f1b1697`: criado `scripts/attach-recvx-to-sdl.py`. Ele adapta o CMake do projeto Android SDL 3.5.0 fixado, remove `YourSourceHere.c` do alvo `main` e adiciona o diretório do projeto ReXGlue como subdiretório, validando o alvo existente.
+- O script ainda não foi executado num workflow Android real. A configuração precisa passar `-DRECVX_SOURCE_ROOT=<checkout privado do projeto>`, instalar/encontrar o SDK ReXGlue e disponibilizar `generated/default/sources.cmake` do artefato privado.
+- O carregador Xenos adaptado no commit `98d8b207f44abab9948f5ece5f81bf2789912f71` ainda precisa ser exercitado e o plugin deve ser copiado para `app/src/main/jniLibs/arm64-v8a`.
+- Nenhuma alteração foi feita na branch `main`; nenhum XEX foi colocado no repositório público; nenhum APK de jogo foi produzido.
