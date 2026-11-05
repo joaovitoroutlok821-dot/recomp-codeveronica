@@ -283,3 +283,16 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - A validação exige `libmain.so`, `libSDL3.so`, `librexruntime.so` e `librexgpu-xenos.so` no APK e verifica alinhamento/assinatura.
 - O artefato e relatórios são publicados somente no workflow do repositório privado; o XEX e as fontes geradas são removidos no final.
 - **Estado:** workflow criado, mas ainda não executado. Não há APK Android do jogo confirmado. A execução manual em GitHub Actions ainda é necessária; depois será preciso analisar o resultado e corrigir os erros reais de compilação/linkagem.
+
+
+## Correção do primeiro build privado completo — 2026-11-05
+
+- Inspecionada a execução privada #6, run ID `42077632509`, no repositório `joaovitoroutlok821-dot/recvx-private-build`.
+- A validação do XEX, checkout do código, geração privada das fontes, instalação Android/NDK, patches do SDK, preparação SDL e compilação de grande parte das bibliotecas passaram.
+- A etapa que falhou foi o link de `librexruntimed.so`, com erros explícitos do linker NDK: `unable to find library -lpthread` e `unable to find library -lrt`.
+- Causa confirmada no SDK ReXGlue fixado: `src/core/CMakeLists.txt` adicionava `pthread rt dl` para todo `UNIX`, condição que também é verdadeira no Android. Android/Bionic não fornece bibliotecas separadas `libpthread` e `librt`; pthread já faz parte de libc.
+- Criado `scripts/ensure-rexglue-android-link-libs.py` na branch `android-rebuild`, commit `5b0b583951be4ceb5b62e9c091c5b14a2322a195`. O patch preserva pthread no macOS, usa somente `dl` no Android e mantém `pthread rt dl` no Linux.
+- Atualizado o workflow privado para executar o patch após o patch de plataforma, commit `5b904c176ed6147ea4f10bb747ba0e280bde80a0`.
+- O run #6 foi encerrado com falha antes de empacotar/validar o APK; não houve APK final. O artefato de diagnóstico pode conter apenas relatórios parciais.
+- Próxima ação: iniciar novamente o workflow privado #7 pelo botão **Run workflow**, mantendo `source_ref=android-rebuild`. Verificar se o link de `librexruntimed.so` passa; depois investigar qualquer próximo erro real de linkagem/compilação.
+- Nenhum XEX foi adicionado ao repositório público; o workflow continua removendo XEX, fontes geradas e checkout SDK do runner ao final.
