@@ -242,3 +242,14 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - **Ainda não compilado:** não há nesta branch a pasta `generated/default/` com `recvx_init.h` e as unidades C++ do jogo. A integração CMake/entrypoint ainda precisa de um build Android privado que obtenha o XEX e regenere o código no runner, sem publicar XEX ou fontes geradas.
 - O workflow de probe SDK compila o SDK isoladamente e não valida este target de jogo. O APK SDL/SAF existente também não contém este entrypoint ReXGlue. Portanto, ainda não há APK do jogo nem validação de execução do Resident Evil.
 - Próxima etapa técnica: preparar workflow privado para codegen + compilação do target `recvx` Android ARM64, transferindo somente artefatos não sensíveis e mantendo XEX/fontes geradas em ambiente privado.
+
+
+## Correção do adaptador CMake Android — 2026-11-04
+
+- Corrigido o adaptador `scripts/ensure-rexglue-android-cmake.py`: as âncoras do `generated/rexglue.cmake` agora usam quebras de linha reais em vez de procurar a sequência literal `\\n`.
+- O adaptador passou a aceitar o prefixo de instalação do SDK e a localizar/ajustar os arquivos instalados `rexglue_helpers.cmake`. Isso é necessário porque `find_package(rexglue)` usa a cópia instalada, não apenas o helper na árvore de fontes.
+- `build.sh` agora passa `SDK_PREFIX` como terceiro argumento depois de instalar o SDK e gerar o código.
+- Commits: `858e8ebb395a9e91a58ef1795a6cdfbeaa5a8d13` (adaptador) e `6741c48686411ec282fad7ffdfdd884f8f64ff82` (`build.sh`).
+- Revisão do conteúdo no GitHub confirmou que os padrões de newline foram corrigidos e que o argumento `SDK_PREFIX` está sendo passado.
+- **Ainda não validado por execução:** não há resultado de workflow após esses commits. O script precisa ser executado no runner com o SDK instalado e o scaffold gerado para confirmar que todos os anchors correspondem ao conteúdo real.
+- Próxima barreira independente: resolver o target único `libmain.so` entre o CMake do SDL Android e o target do jogo, e adaptar o carregamento do plugin Xenos para Android. Nenhum APK final foi produzido nesta etapa.
