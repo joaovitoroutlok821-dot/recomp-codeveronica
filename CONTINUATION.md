@@ -273,3 +273,13 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - O script ainda não foi executado num workflow Android real. A configuração precisa passar `-DRECVX_SOURCE_ROOT=<checkout privado do projeto>`, instalar/encontrar o SDK ReXGlue e disponibilizar `generated/default/sources.cmake` do artefato privado.
 - O carregador Xenos adaptado no commit `98d8b207f44abab9948f5ece5f81bf2789912f71` ainda precisa ser exercitado e o plugin deve ser copiado para `app/src/main/jniLibs/arm64-v8a`.
 - Nenhuma alteração foi feita na branch `main`; nenhum XEX foi colocado no repositório público; nenhum APK de jogo foi produzido.
+
+## Workflow privado de APK Android — 2026-11-05
+
+- Criado no repositório privado `joaovitoroutlok821-dot/recvx-private-build`, branch `main`, o workflow `.github/workflows/private-android-apk.yml`.
+- Commit privado: `626e01493f34aebbfaf1dd0a6b04870f6e7a915d` (última correção dos argumentos CMake).
+- O workflow valida o XEX no checkout privado, gera as fontes no runner efêmero, prepara SDL 3.5.0, aplica os patches Android do ReXGlue e tenta montar o APK ARM64.
+- O CMake do Gradle recebe explicitamente `RECVX_SOURCE_ROOT` e `REXSDK_DIR`, além das opções Vulkan/Android.
+- A validação exige `libmain.so`, `libSDL3.so`, `librexruntime.so` e `librexgpu-xenos.so` no APK e verifica alinhamento/assinatura.
+- O artefato e relatórios são publicados somente no workflow do repositório privado; o XEX e as fontes geradas são removidos no final.
+- **Estado:** workflow criado, mas ainda não executado. Não há APK Android do jogo confirmado. A execução manual em GitHub Actions ainda é necessária; depois será preciso analisar o resultado e corrigir os erros reais de compilação/linkagem.
