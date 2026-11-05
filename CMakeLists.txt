@@ -13,6 +13,9 @@ set(RECVX_SOURCES
 )
 
 if(ANDROID AND TARGET main)
+    # SDL creates the main target before this subdirectory is processed,
+    # so explicitly require C++23 on that existing target.
+    target_compile_features(main PRIVATE cxx_std_23)
     # SDL's Android project owns libmain.so. Attach the title to that exact
     # target instead of creating a second shared library with the same name.
     target_sources(main PRIVATE
