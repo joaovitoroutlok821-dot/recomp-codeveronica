@@ -3,10 +3,11 @@
 from pathlib import Path
 import sys
 
-if len(sys.argv) not in (2, 3):
-    raise SystemExit("usage: ensure-rexglue-android-cmake.py /path/to/rexglue-sdk [project-root]")
+if len(sys.argv) not in (2, 3, 4):
+    raise SystemExit("usage: ensure-rexglue-android-cmake.py /path/to/rexglue-sdk [project-root] [installed-sdk-prefix]")
 root = Path(sys.argv[1]).resolve()
-project_root = Path(sys.argv[2]).resolve() if len(sys.argv) == 3 else None
+project_root = Path(sys.argv[2]).resolve() if len(sys.argv) >= 3 else None
+installed_prefix = Path(sys.argv[3]).resolve() if len(sys.argv) == 4 else None
 
 def replace_once(path: Path, old: str, new: str, label: str):
     text = path.read_text(encoding="utf-8")
@@ -89,6 +90,46 @@ replace_once(helpers,
         endif()
 """, "Android plugin staging")
 
+
+# find_package(rexglue) loads the installed helper, not the SDK source copy.
+if installed_prefix:
+    installed_helpers = list(installed_prefix.rglob("rexglue_helpers.cmake"))
+    if not installed_helpers:
+        raise SystemExit(f"[android-cmake] installed helper not found below {installed_prefix}")
+    for installed_helper in installed_helpers:
+        replace_once(installed_helper,
+            """    target_sources(${target_name} PRIVATE
+        ${REXGLUE_SHARE_DIR}/windowed_app_main_sdl.cpp
+        ${REXGLUE_SHARE_DIR}/rex_app.cpp)
+""",
+            """    if(ANDROID)
+        target_sources(${target_name} PRIVATE
+            ${REXGLUE_SHARE_DIR}/rex_app.cpp)
+    else()
+        target_sources(${target_name} PRIVATE
+            ${REXGLUE_SHARE_DIR}/windowed_app_main_sdl.cpp
+            ${REXGLUE_SHARE_DIR}/rex_app.cpp)
+    endif()
+""", "installed SDL desktop entrypoint exclusion")
+        replace_once(installed_helper,
+            """        add_custom_command(TARGET ${target_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:${_plugin_target}>
+                $<TARGET_FILE_DIR:${target_name}>
+            VERBATIM
+        )
+""",
+            """        if(NOT ANDROID)
+            add_custom_command(TARGET ${target_name} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                    $<TARGET_FILE:${_plugin_target}>
+                    $<TARGET_FILE_DIR:${target_name}>
+                VERBATIM
+            )
+        endif()
+""", "installed Android plugin staging")
+        print(f"[android-cmake] patched installed helper: {installed_helper}")
+
 for path, required in [
     (template, ["REXGLUE_SKIP_CODEGEN", "Android build requires private host-generated sources.cmake"]),
     (helpers, ["if(ANDROID)", "windowed_app_main_sdl.cpp", "if(NOT ANDROID)"]),
@@ -105,7 +146,7 @@ if project_root:
         raise SystemExit(f"[android-cmake] missing generated CMake scaffold: {generated}")
     body = generated.read_text(encoding="utf-8")
     if "option(REXGLUE_SKIP_CODEGEN" not in body:
-        anchor = "# Include entrypoint generated code if codegen has been run.\\n"
+        anchor = "# Include entrypoint generated code if codegen has been run.\n"
         guard = """option(REXGLUE_SKIP_CODEGEN "Use already-generated title sources" OFF)
 if(ANDROID)
     set(REXGLUE_SKIP_CODEGEN ON CACHE BOOL "Use already-generated title sources" FORCE)
@@ -120,23 +161,23 @@ endif()
         body = body.replace(anchor, guard + anchor, 1)
     body = body.replace(
         "        add_dependencies(${target_name}_recomp recvx_codegen)",
-        "        if(TARGET recvx_codegen)\\n"
-        "            add_dependencies(${target_name}_recomp recvx_codegen)\\n"
+        "        if(TARGET recvx_codegen)\n"
+        "            add_dependencies(${target_name}_recomp recvx_codegen)\n"
         "        endif()")
     body = body.replace(
         "    add_dependencies(${target_name} recvx_codegen)",
-        "    if(TARGET recvx_codegen)\\n"
-        "        add_dependencies(${target_name} recvx_codegen)\\n"
+        "    if(TARGET recvx_codegen)\n"
+        "        add_dependencies(${target_name} recvx_codegen)\n"
         "    endif()")
-    start = "# Codegen runs as part of the build, re-running only when an input in codegen.d\\n"
-    if "if(NOT REXGLUE_SKIP_CODEGEN)\\n" + start not in body:
+    start = "# Codegen runs as part of the build, re-running only when an input in codegen.d\n"
+    if "if(NOT REXGLUE_SKIP_CODEGEN)\n" + start not in body:
         if start not in body:
             raise SystemExit("[android-cmake] generated codegen section anchor missing")
-        body = body.replace(start, "if(NOT REXGLUE_SKIP_CODEGEN)\\n" + start, 1)
+        body = body.replace(start, "if(NOT REXGLUE_SKIP_CODEGEN)\n" + start, 1)
         marker = "# Include DLL module shared library targets if codegen has generated them"
         if marker not in body:
             raise SystemExit("[android-cmake] generated DLL section anchor missing")
-        body = body.replace(marker, "endif() # NOT REXGLUE_SKIP_CODEGEN\\n\\n" + marker, 1)
+        body = body.replace(marker, "endif() # NOT REXGLUE_SKIP_CODEGEN\n\n" + marker, 1)
     generated.write_text(body, encoding="utf-8")
     print("[android-cmake] patched generated build scaffold (workspace only)")
 
