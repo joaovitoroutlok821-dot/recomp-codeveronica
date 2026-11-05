@@ -3,9 +3,10 @@
 from pathlib import Path
 import sys
 
-if len(sys.argv) != 2:
-    raise SystemExit("usage: ensure-rexglue-android-cmake.py /path/to/rexglue-sdk")
+if len(sys.argv) not in (2, 3):
+    raise SystemExit("usage: ensure-rexglue-android-cmake.py /path/to/rexglue-sdk [project-root]")
 root = Path(sys.argv[1]).resolve()
+project_root = Path(sys.argv[2]).resolve() if len(sys.argv) == 3 else None
 
 def replace_once(path: Path, old: str, new: str, label: str):
     text = path.read_text(encoding="utf-8")
@@ -96,4 +97,47 @@ for path, required in [
     for needle in required:
         if needle not in body:
             raise SystemExit(f"[android-cmake] sanity check failed: {needle} missing from {path}")
+# The project's generated scaffold is the file actually included by its root
+# CMakeLists. Patch this build copy after host codegen, not the committed file.
+if project_root:
+    generated = project_root / "generated/rexglue.cmake"
+    if not generated.is_file():
+        raise SystemExit(f"[android-cmake] missing generated CMake scaffold: {generated}")
+    body = generated.read_text(encoding="utf-8")
+    if "option(REXGLUE_SKIP_CODEGEN" not in body:
+        anchor = "# Include entrypoint generated code if codegen has been run.\\n"
+        guard = """option(REXGLUE_SKIP_CODEGEN "Use already-generated title sources" OFF)
+if(ANDROID)
+    set(REXGLUE_SKIP_CODEGEN ON CACHE BOOL "Use already-generated title sources" FORCE)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/generated/default/sources.cmake")
+        message(FATAL_ERROR "Android build requires private host-generated sources.cmake")
+    endif()
+endif()
+
+"""
+        if anchor not in body:
+            raise SystemExit("[android-cmake] generated scaffold source anchor missing")
+        body = body.replace(anchor, guard + anchor, 1)
+    body = body.replace(
+        "        add_dependencies(${target_name}_recomp recvx_codegen)",
+        "        if(TARGET recvx_codegen)\\n"
+        "            add_dependencies(${target_name}_recomp recvx_codegen)\\n"
+        "        endif()")
+    body = body.replace(
+        "    add_dependencies(${target_name} recvx_codegen)",
+        "    if(TARGET recvx_codegen)\\n"
+        "        add_dependencies(${target_name} recvx_codegen)\\n"
+        "    endif()")
+    start = "# Codegen runs as part of the build, re-running only when an input in codegen.d\\n"
+    if "if(NOT REXGLUE_SKIP_CODEGEN)\\n" + start not in body:
+        if start not in body:
+            raise SystemExit("[android-cmake] generated codegen section anchor missing")
+        body = body.replace(start, "if(NOT REXGLUE_SKIP_CODEGEN)\\n" + start, 1)
+        marker = "# Include DLL module shared library targets if codegen has generated them"
+        if marker not in body:
+            raise SystemExit("[android-cmake] generated DLL section anchor missing")
+        body = body.replace(marker, "endif() # NOT REXGLUE_SKIP_CODEGEN\\n\\n" + marker, 1)
+    generated.write_text(body, encoding="utf-8")
+    print("[android-cmake] patched generated build scaffold (workspace only)")
+
 print("[android-cmake] template and helper patches: OK")
