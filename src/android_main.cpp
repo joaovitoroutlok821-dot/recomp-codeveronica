@@ -2,6 +2,7 @@
 // SDLActivity loads libSDL3.so and libmain.so, then invokes SDL_main on
 // SDL's application thread. Keep this separate from the desktop main().
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_log.h>
 
 #include <cstdlib>
 #include <map>
@@ -14,25 +15,32 @@
 #include <rex/ui/windowed_app_context_sdl.h>
 
 extern "C" int SDL_main(int argc, char* argv[]) {
+  SDL_Log("[RECVX-DIAG] SDL_main entered: argc=%d", argc);
+  for (int i = 0; i < argc; ++i) SDL_Log("[RECVX-DIAG] argv[%d]=%s", i, argv && argv[i] ? argv[i] : "<null>");
   // Match the SDK's desktop entry point: preserve positional arguments and
   // pass them to WindowedApp before initialization.
   auto remaining = rex::cvar::Init(argc, argv);
+  SDL_Log("[RECVX-DIAG] cvar::Init complete; remaining=%zu", remaining.size());
   rex::cvar::ApplyEnvironment();
   rex::InitLoggingEarly();
+  SDL_Log("[RECVX-DIAG] cvars and early logging initialized");
 
   int result = EXIT_FAILURE;
   rex::ui::SDLWindowedAppContext context;
+  SDL_Log("[RECVX-DIAG] initializing SDL window context");
   if (!context.Initialize()) {
     REXLOG_ERROR("[Android] SDLWindowedAppContext initialization failed");
     return result;
   }
 
+  SDL_Log("[RECVX-DIAG] SDL window context initialized");
   const auto creator = rex::ui::WindowedApp::GetCreator("recvx");
   if (!creator) {
     REXLOG_ERROR("[Android] ReXGlue application creator 'recvx' was not registered");
     return result;
   }
 
+  SDL_Log("[RECVX-DIAG] recvx creator found");
   std::unique_ptr<rex::ui::WindowedApp> app;
   try {
     app = creator(context);
@@ -45,6 +53,7 @@ extern "C" int SDL_main(int argc, char* argv[]) {
     return result;
   }
 
+  SDL_Log("[RECVX-DIAG] recvx app instance created");
   // Match the official SDK entry point's positional-option mapping.
   const auto& option_names = app->GetPositionalOptions();
   std::map<std::string, std::string> parsed;
@@ -53,16 +62,21 @@ extern "C" int SDL_main(int argc, char* argv[]) {
     parsed[option_names[i]] = remaining[i];
   }
   app->SetParsedArguments(std::move(parsed));
+  SDL_Log("[RECVX-DIAG] positional arguments assigned; calling OnInitialize");
 
   bool initialize_attempted = false;
   try {
     initialize_attempted = true;
     if (app->OnInitialize()) {
+      SDL_Log("[RECVX-DIAG] OnInitialize succeeded; entering SDL main loop");
       result = context.RunMainMessageLoop();
+      SDL_Log("[RECVX-DIAG] SDL main loop returned: result=%d", result);
     } else {
+      SDL_Log("[RECVX-DIAG] OnInitialize returned false");
       REXLOG_ERROR("[Android] ReXGlue application OnInitialize() failed");
     }
     // Required even after a partial initialization that returned false.
+    SDL_Log("[RECVX-DIAG] invoking app destruction");
     app->InvokeOnDestroy();
   } catch (...) {
     REXLOG_ERROR("[Android] Exception during ReXGlue application lifecycle");
@@ -75,5 +89,6 @@ extern "C" int SDL_main(int argc, char* argv[]) {
     }
     result = EXIT_FAILURE;
   }
+  SDL_Log("[RECVX-DIAG] SDL_main exiting: result=%d", result);
   return result;
 }
