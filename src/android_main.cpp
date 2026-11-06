@@ -5,6 +5,7 @@
 #include <SDL3/SDL_log.h>
 
 #include <cstdlib>
+#include <exception>
 #include <map>
 #include <memory>
 #include <algorithm>
@@ -78,13 +79,30 @@ extern "C" int SDL_main(int argc, char* argv[]) {
     // Required even after a partial initialization that returned false.
     SDL_Log("[RECVX-DIAG] invoking app destruction");
     app->InvokeOnDestroy();
+  } catch (const std::exception& e) {
+    SDL_Log("[RECVX-DIAG] std::exception during app lifecycle: %s", e.what());
+    REXLOG_ERROR("[Android] Exception during ReXGlue application lifecycle: {}", e.what());
+    if (initialize_attempted) {
+      try {
+        SDL_Log("[RECVX-DIAG] invoking app destruction after std::exception");
+        app->InvokeOnDestroy();
+      } catch (const std::exception& destroy_error) {
+        SDL_Log("[RECVX-DIAG] std::exception during destruction: %s", destroy_error.what());
+      } catch (...) {
+        SDL_Log("[RECVX-DIAG] unknown exception during destruction");
+      }
+    }
+    result = EXIT_FAILURE;
   } catch (...) {
-    REXLOG_ERROR("[Android] Exception during ReXGlue application lifecycle");
+    SDL_Log("[RECVX-DIAG] unknown non-std exception during app lifecycle");
+    REXLOG_ERROR("[Android] Unknown exception during ReXGlue application lifecycle");
     if (initialize_attempted) {
       try {
         app->InvokeOnDestroy();
+      } catch (const std::exception& destroy_error) {
+        SDL_Log("[RECVX-DIAG] std::exception during destruction: %s", destroy_error.what());
       } catch (...) {
-        REXLOG_ERROR("[Android] Exception while destroying ReXGlue application");
+        SDL_Log("[RECVX-DIAG] unknown exception during destruction");
       }
     }
     result = EXIT_FAILURE;
