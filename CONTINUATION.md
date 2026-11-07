@@ -431,3 +431,12 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - A medição deve refletir frames efetivamente apresentados/renderizados, não simplesmente iterações de loop. Investigar ponto correto de apresentação no SDL/ReXGlue/Xenos antes de instrumentar.
 - Workflow #22 Release já estava em andamento quando a solicitação chegou; não alterar runner/build já iniciado. Incorporar o contador na próxima compilação posterior ao #22, ou em uma nova build após confirmar o resultado do #22.
 - Objetivo da telemetria: comparar menus, cutscenes e gameplay e ajudar a separar gargalo CPU/PPC, GPU/Xenos/Vulkan e sincronização/frame pacing.
+
+
+## Atualização — acompanhamento do Workflow #22 (2026-11-07)
+- Run #22: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42425746734
+- Estado consultado: `in_progress`; ainda não há artefatos publicados.
+- Checkout do XEX privado, validação do XEX, checkout da fonte pública, geração privada das fontes, instalação do Android SDK/NDK/CMake, configuração do Java 17, patches de compatibilidade e checkout do SDL 3.5.0 concluídos com sucesso.
+- Etapa atual: `Configure and compile Android ARM64 native libraries` em andamento. Verificação do APK, coleta de diagnóstico, upload e limpeza ainda pendentes.
+- Nenhum APK #22 disponível para teste neste momento. Não iniciar nova build enquanto esta estiver ativa.
+- Próximo passo: aguardar a conclusão, validar APK Release/ARM64 e só então solicitar teste no Motorola. A instrumentação de FPS permanece planejada para a compilação seguinte, depois de investigar o ponto real de apresentação dos frames.
