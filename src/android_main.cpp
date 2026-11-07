@@ -3,12 +3,16 @@
 // SDL's application thread. Keep this separate from the desktop main().
 #include <SDL3/SDL_main.h>
 #include <SDL3/SDL_log.h>
+#include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL_stdinc.h>
 
 #include <cstdlib>
 #include <exception>
 #include <map>
 #include <memory>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include <rex/cvar.h>
 #include <rex/logging.h>
@@ -18,9 +22,41 @@
 extern "C" int SDL_main(int argc, char* argv[]) {
   SDL_Log("[RECVX-DIAG] SDL_main entered: argc=%d", argc);
   for (int i = 0; i < argc; ++i) SDL_Log("[RECVX-DIAG] argv[%d]=%s", i, argv && argv[i] ? argv[i] : "<null>");
+
+  // ReXGlue's default log directory is based on the executable folder. On
+  // Android that can resolve to /system/bin, which is read-only. Give the
+  // logger an explicit file inside SDL's app-private writable preference dir.
+  char* pref_path = SDL_GetPrefPath("ReXGlue", "recvx");
+  if (!pref_path) {
+    SDL_Log("[RECVX-DIAG] SDL_GetPrefPath failed: %s", SDL_GetError());
+    return EXIT_FAILURE;
+  }
+  std::string log_file_arg = std::string("--log_file=") + pref_path + "recvx.log";
+  SDL_free(pref_path);
+
+  // Preserve an explicitly supplied log_file option; otherwise append the
+  // Android-safe path before cvar initialization.
+  bool has_log_file_arg = false;
+  for (int i = 1; i < argc; ++i) {
+    if (argv && argv[i] &&
+        (std::string(argv[i]).starts_with("--log_file=") ||
+         std::string(argv[i]) == "--log_file")) {
+      has_log_file_arg = true;
+      break;
+    }
+  }
+
+  std::vector<char*> cvar_argv;
+  cvar_argv.reserve(static_cast<size_t>(argc) + (has_log_file_arg ? 0 : 1));
+  for (int i = 0; i < argc; ++i) cvar_argv.push_back(argv[i]);
+  if (!has_log_file_arg) {
+    cvar_argv.push_back(log_file_arg.data());
+    SDL_Log("[RECVX-DIAG] Android log file: %s", log_file_arg.c_str() + 11);
+  }
+
   // Match the SDK's desktop entry point: preserve positional arguments and
   // pass them to WindowedApp before initialization.
-  auto remaining = rex::cvar::Init(argc, argv);
+  auto remaining = rex::cvar::Init(static_cast<int>(cvar_argv.size()), cvar_argv.data());
   SDL_Log("[RECVX-DIAG] cvar::Init complete; remaining=%zu", remaining.size());
   rex::cvar::ApplyEnvironment();
   rex::InitLoggingEarly();
