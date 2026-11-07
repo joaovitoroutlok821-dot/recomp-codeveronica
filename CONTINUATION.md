@@ -321,3 +321,45 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Correção aplicada em `CMakeLists.txt`: ligar explicitamente `main` a `rex::ui` após `rexglue_setup_target`. Isso propaga os include directories do ImGui e inclui a implementação UI do SDK no `libmain.so`. O mesmo vínculo foi adicionado aos modos Android standalone e host para manter a configuração consistente.
 - Commit público da correção: `3e5eb9e12d98fafb71d47863ec760154e9849235`.
 - Próximo passo: executar build privado #11 e verificar se a compilação passa da unidade `rex_app.cpp`; ainda não existe APK final validado.
+
+
+
+## Atualização de continuidade — correção de armazenamento Android e build privado #21 — 2026-11-07
+
+### Diagnóstico do APK #20
+
+- O APK do workflow privado #20 foi compilado com sucesso e incluiu as bibliotecas ARM64 esperadas, inclusive `librexgpu-xenosd.so`.
+- O usuário testou o APK #20; ao iniciar, a aplicação fechou e retornou ao launcher.
+- O log enviado pelo usuário (`recvx20-falha.txt`) identificou a falha fatal:
+  `filesystem error: in create_directories: Permission denied ["/data/.local"]`.
+- O backtrace passa por `std::filesystem::__create_directories` dentro de `librexruntimed.so` e pelo plugin `librexgpu-xenosd.so`. Isso confirma que o plugin Xenos foi carregado e executou; a falha imediata é a tentativa de criar dados em `/data/.local`, local sem permissão para o aplicativo Android.
+- A falha não deve ser confundida com a antiga ausência do plugin GPU nem com um erro de compilação.
+
+### Correção aplicada na branch pública android-rebuild
+
+- Commit `bfad73025588b04c87ab42ac62de650beafd585d`: primeira implementação de redirecionamento de dados Android para armazenamento externo específico do aplicativo.
+- Commit mais recente `38f62c55a099f54fc8302293366c9f602f98901f` — `fix(android): redirect HOME and XDG paths to app storage`.
+- Em `src/android_main.cpp`, a configuração Android obtém `getExternalFilesDir(null)` da Activity SDL; se indisponível, usa `SDL_GetPrefPath("ReXGlue", "recvx")`.
+- Cria diretórios separados para home, dados, configuração, cache e estado sob a raiz `rexglue`, e define `HOME`, `XDG_DATA_HOME`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME` e `XDG_STATE_HOME` antes de iniciar o runtime.
+- O destino primário esperado é a pasta externa específica do app, em `Android/data/com.rexglue.recvx.privateapp/files/rexglue/`; não é necessário root. A pasta do jogo/XEX permanece independente e não é incorporada ao APK.
+- A alteração foi enviada ao GitHub, mas ainda precisa ser compilada e validada em aparelho. Não declarar que o problema de armazenamento está resolvido até testar o novo APK.
+
+### Workflow privado #21
+
+- Repositório: `joaovitoroutlok821-dot/recvx-private-build`.
+- Para iniciar o workflow sem depender da ação manual `workflow_dispatch), foi usado o gatilho `push` já existente no workflow, que observa `.github/build-requests/**`.
+- Criado `.github/build-requests/recvx-storage-fix-38f62c5.txt` no repositório privado.
+- Commit do pedido de build: `4b6c2878f984357ddf9586ae80487f570c91df0f`.
+- Execução confirmada pela API do GitHub: workflow run **#21**, ID `42417490244`, evento `push`, commit `4b6c2878f984357ddf9586ae80487f570c91df0f`.
+- URL: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42417490244
+- Na última consulta, estado `queued`; ainda não havia resultado final.
+- O pedido informa ao workflow que deve usar `source_ref=android-rebuild`, incluindo a correção de armazenamento do commit `38f62c5`.
+
+### Próxima etapa
+
+1. Acompanhar a execução #21 até terminar; confirmar o ref/commit de origem realmente usado e verificar logs de configuração Android, compilação, validação e artefatos.
+2. Se o build falhar, corrigir a causa concreta dos logs antes de iniciar outra execução.
+3. Se o APK for produzido, verificar as bibliotecas e disponibilizar o artefato; o usuário deve testar e enviar logcat novo se ainda fechar.
+4. No próximo log, confirmar que não aparece mais tentativa de criar `/data/.local`; verificar também o caminho `HOME`/XDG registrado no início do runtime.
+5. Atualizar este arquivo `CONTINUATION.md` sempre que houver novo commit, execução, artefato, teste no aparelho ou diagnóstico relevante. Registrar apenas resultados confirmados, distinguindo build bem-sucedido de jogo funcional.
+
