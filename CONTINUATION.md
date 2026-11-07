@@ -363,3 +363,21 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 4. No próximo log, confirmar que não aparece mais tentativa de criar `/data/.local`; verificar também o caminho `HOME`/XDG registrado no início do runtime.
 5. Atualizar este arquivo `CONTINUATION.md` sempre que houver novo commit, execução, artefato, teste no aparelho ou diagnóstico relevante. Registrar apenas resultados confirmados, distinguindo build bem-sucedido de jogo funcional.
 
+
+
+## Resultado confirmado do build privado #21 — 2026-11-07
+
+- Workflow #21, run ID `42417490244`, terminou com `conclusion=success`; job `android-apk` ID `128538620833` também terminou com sucesso.
+- Logs confirmam que o checkout público foi feito na branch `android-rebuild` e que o commit efetivamente compilado foi exatamente `38f62c55a099f54fc8302293366c9f602f98901f`, contendo o redirecionamento de HOME/XDG para armazenamento privado do app. Não foi apenas o texto do pedido de build: o `git log -1` do checkout registrou esse SHA.
+- A validação privada do XEX passou; codegen privado e compilação Android ARM64 concluíram; o APK foi assinado e verificado, e `APK native library validation: PASS`.
+- O APK contém bibliotecas `arm64-v8a`: `libSDL3.so`, `libmain.so`, `librexgpu-xenosd.so` e `librexruntimed.so`. O plugin Xenos está presente no pacote.
+- Artefato APK: `recvx-private-android-arm64`, ID `13593797262`, tamanho ZIP 88.122.339 bytes, SHA-256 do ZIP `3e61ff3357a6ba46940aef663f87c8fadae577d2b4a607e1ea0af4b19ccc4acc`. APK extraído durante a inspeção: 89.226.057 bytes, SHA-256 `31ee5f6cfc973233ea421f81e8a456bc68e4019b6ae5cc0da835d9e872c89ea3`.
+- Artefato de diagnóstico: `recvx-private-diagnostics`, ID `13593667462`; validação de bibliotecas nativas registrada como PASS.
+- O workflow removeu do runner o XEX privado, as fontes geradas do título e o checkout do SDK no passo final. O XEX e as fontes geradas não foram publicados no repositório público.
+- URL do workflow: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42417490244
+
+### Interpretação e pendência
+
+- O build #21 prova que a correção de armazenamento compila e está incluída no APK; não prova ainda que o runtime não tentará escrever em `/data/.local` em execução real.
+- Próximo passo obrigatório: o usuário instalar e testar este APK no Motorola Edge 30 Pro, selecionar a pasta do jogo e iniciar. Se fechar, enviar novo logcat/crash log para verificar o caminho HOME/XDG e a próxima falha.
+- Estado do projeto: APK #21 construído com sucesso; teste físico e execução do jogo ainda pendentes. Não declarar o jogo funcional até confirmação no aparelho.
