@@ -402,3 +402,14 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - `src/recvx_app.h` ativa Xenos e possui uma thread de captura de um único primeiro frame visível, encerrando após capturar; essa captura não é um loop contínuo de vídeo.
 - Próximas prioridades técnicas: (1) implementar camada de controles táteis Android (stick/D-pad e botões Xbox A/B/X/Y, Start/Back e gatilhos, com eventos encaminhados à entrada SDL/Gamepad do runtime) para permitir pular cutscenes e jogar; (2) coletar diagnóstico de desempenho/FPS e logs durante a cutscene antes de escolher otimizações CPU/GPU. Não atribuir a lentidão apenas à cutscene nem reduzir resolução sem medição.
 - Estado: jogo renderiza no aparelho, porém cutscene muito lenta e sem controles táteis; ainda não é possível confirmar interação/jogabilidade.
+
+
+## Build de desempenho Release #22 iniciado — 2026-11-07
+
+- Após o usuário confirmar continuação, foi alterado o workflow privado `private-android-apk.yml` para compilar `assembleRelease` em vez de `assembleDebug`, assinar a variante Release com `signingConfigs.debug` para permitir instalação direta de teste e publicar `app-release.apk` no artefato.
+- Commits no repositório privado `recvx-private-build`: `e8b06039bf4a456f21e51edf3c31a65de77a7230` (troca para Release e configuração de assinatura) e `c0e8159ae60ca3a52643e9ae8c7733af6b676f01` (corrige caminho do artefato Release).
+- Pedido de build criado em `.github/build-requests/recvx-release-perf-20261107.txt`; commit privado `736dc4eab1005d5796f6803ef288b02e0bf7e0c1`.
+- GitHub confirmou Workflow privado #22, run ID `42425746734`, evento `push`, status inicial `queued`, URL https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42425746734.
+- Objetivo: comparar o desempenho da variante otimizada Release com o APK #21 Debug no mesmo aparelho/cena. Isso é um teste de hipótese; não garante por si só aumento de FPS.
+- Controles táteis: ainda não implementados. O projeto atual instala `GameSDLActivity` derivada de `SDLActivity`, mas não tem overlay próprio nem ponte validada para injetar botões virtuais na entrada SDL. Não alegar que os controles já foram adicionados; requer implementação e teste separados.
+- Próximos passos: monitorar run #22, verificar logs confirmando checkout do branch `android-rebuild`, validar APK Release assinado e bibliotecas ARM64, e disponibilizar o artefato somente após sucesso. Depois continuar a integração real dos controles virtuais e medir FPS/CPU/GPU com logs.
