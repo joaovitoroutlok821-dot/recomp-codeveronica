@@ -422,3 +422,12 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Hipóteses ainda abertas: custo de CPU na execução recompilada (PPC), GPU Xenos/Vulkan, sincronização/present ou compilação/cache de shaders. Não há FPS medido nem logs/perfis suficientes para isolar o gargalo.
 - Workflow #22 (Release otimizada) está em andamento, run ID `42425746734`, job `128563518683`; checkout privado/XEX e checkout da fonte pública concluídos, validação XEX passou, geração privada de fontes em andamento. URL: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42425746734
 - Próximo passo: aguardar APK Release, testar exatamente a mesma cena/trecho no mesmo aparelho e comparar com APK #21. Em paralelo, coletar FPS e logcat em gameplay; só então decidir se a otimização deve focar CPU, Xenos/Vulkan, shaders ou frame pacing. Controle Bluetooth já serve como meio temporário para navegar/pular cutscenes; overlay touch continua como melhoria separada, não como causa primária da lentidão.
+
+
+## Solicitação: contador de FPS para próxima compilação — 2026-11-08
+
+- O usuário pediu explicitamente adicionar contador de FPS na próxima compilação para medir objetivamente o desempenho.
+- Incluir FPS visível na tela durante menus, cutscenes e gameplay, preferencialmente com opção de ligar/desligar nas configurações. Se o overlay visual não puder ser implementado com segurança na próxima build, ao menos registrar FPS médio/atual e frametime em log com amostragem periódica, sem gerar carga excessiva.
+- A medição deve refletir frames efetivamente apresentados/renderizados, não simplesmente iterações de loop. Investigar ponto correto de apresentação no SDL/ReXGlue/Xenos antes de instrumentar.
+- Workflow #22 Release já estava em andamento quando a solicitação chegou; não alterar runner/build já iniciado. Incorporar o contador na próxima compilação posterior ao #22, ou em uma nova build após confirmar o resultado do #22.
+- Objetivo da telemetria: comparar menus, cutscenes e gameplay e ajudar a separar gargalo CPU/PPC, GPU/Xenos/Vulkan e sincronização/frame pacing.
