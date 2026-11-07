@@ -28,6 +28,11 @@ class RecvXApp : public rex::ReXApp {
   }
 
  protected:
+  void OnPreSetup(rex::RuntimeConfig& config) override {
+    // Explicitly enable the Xenos GPU plugin for the Android runtime.
+    config.gpu_plugin = "xenos";
+  }
+
   void OnLoadXexImage(std::string& xex_image) override {
     // Keep the original case for case-sensitive Linux filesystems.
     xex_image = "game:\\Default.xex";
