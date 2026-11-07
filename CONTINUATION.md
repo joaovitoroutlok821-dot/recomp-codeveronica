@@ -392,3 +392,13 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Revisão do código atual: src/recvx_app.h ativa explicitamente config.gpu_plugin = xenos; a rotina CaptureFirstVisibleGuestFrame() captura somente um frame visível e encerra a thread, portanto não deve ser presumida como carga contínua de captura durante o jogo. src/android_main.cpp configura HOME/XDG no armazenamento privado antes de inicializar o runtime.
 - Próxima investigação: obter FPS aproximado e logcat enquanto o jogo está lento; identificar se o gargalo está em CPU/PPC, GPU/Xenos/Vulkan, compilação de shaders ou sincronização/present. Evitar reduzir resolução ou alterar flags de GPU antes de obter uma linha de base.
 - Estado: primeiro resultado visual real do jogo no Android confirmado; execução ainda lenta e não jogável até otimização e novos testes.
+
+
+## Detalhe do teste #21: cutscene lenta e sem controles táteis — 2026-11-07
+
+- O usuário esclareceu que o sintoma é a opção 2: o jogo parece rodar em câmera lenta/baixa taxa de quadros já na primeira cutscene.
+- Não há botões de toque visíveis na tela para tentar pular a cutscene; assim, o usuário não consegue testar a jogabilidade/interação além da reprodução automática da cena.
+- Revisão do projeto confirma que a aplicação atual apenas registra `RecvXApp` e inicia ReXGlue (`src/main.cpp`); não há overlay Android próprio de controles táteis nos arquivos `src/` do projeto. Não assumir que os controles estejam implementados.
+- `src/recvx_app.h` ativa Xenos e possui uma thread de captura de um único primeiro frame visível, encerrando após capturar; essa captura não é um loop contínuo de vídeo.
+- Próximas prioridades técnicas: (1) implementar camada de controles táteis Android (stick/D-pad e botões Xbox A/B/X/Y, Start/Back e gatilhos, com eventos encaminhados à entrada SDL/Gamepad do runtime) para permitir pular cutscenes e jogar; (2) coletar diagnóstico de desempenho/FPS e logs durante a cutscene antes de escolher otimizações CPU/GPU. Não atribuir a lentidão apenas à cutscene nem reduzir resolução sem medição.
+- Estado: jogo renderiza no aparelho, porém cutscene muito lenta e sem controles táteis; ainda não é possível confirmar interação/jogabilidade.
