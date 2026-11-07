@@ -97,20 +97,38 @@ bool ConfigureAndroidRuntimeDataDirectory() {
     return false;
   }
 
-  const std::filesystem::path data_path =
-      std::filesystem::path(base_path) / "rexglue-data";
+  const std::filesystem::path root_path =
+      std::filesystem::path(base_path) / "rexglue";
+  const std::filesystem::path home_path = root_path / "home";
+  const std::filesystem::path data_path = root_path / "data";
+  const std::filesystem::path config_path = root_path / "config";
+  const std::filesystem::path cache_path = root_path / "cache";
+  const std::filesystem::path state_path = root_path / "state";
+
   std::error_code ec;
-  std::filesystem::create_directories(data_path, ec);
-  if (ec) {
-    SDL_Log("[RECVX-DIAG] Could not create runtime data directory %s: %s",
-            data_path.string().c_str(), ec.message().c_str());
-    return false;
+  for (const auto& directory :
+       {home_path, data_path, config_path, cache_path, state_path}) {
+    std::filesystem::create_directories(directory, ec);
+    if (ec) {
+      SDL_Log("[RECVX-DIAG] Could not create runtime directory %s: %s",
+              directory.string().c_str(), ec.message().c_str());
+      return false;
+    }
   }
 
-  if (setenv("XDG_DATA_HOME", data_path.c_str(), 1) != 0) {
-    SDL_Log("[RECVX-DIAG] Failed to set XDG_DATA_HOME");
+  // Keep all standard Unix/XDG locations inside this app's Android/data
+  // directory. This prevents HOME=/data from producing forbidden /data/.local.
+  if (setenv("HOME", home_path.c_str(), 1) != 0 ||
+      setenv("XDG_DATA_HOME", data_path.c_str(), 1) != 0 ||
+      setenv("XDG_CONFIG_HOME", config_path.c_str(), 1) != 0 ||
+      setenv("XDG_CACHE_HOME", cache_path.c_str(), 1) != 0 ||
+      setenv("XDG_STATE_HOME", state_path.c_str(), 1) != 0) {
+    SDL_Log("[RECVX-DIAG] Failed to configure Android HOME/XDG directories");
     return false;
   }
+  SDL_Log("[RECVX-DIAG] Android runtime storage root: %s",
+          root_path.string().c_str());
+  SDL_Log("[RECVX-DIAG] HOME=%s", home_path.string().c_str());
   SDL_Log("[RECVX-DIAG] XDG_DATA_HOME=%s", data_path.string().c_str());
   return true;
 }
