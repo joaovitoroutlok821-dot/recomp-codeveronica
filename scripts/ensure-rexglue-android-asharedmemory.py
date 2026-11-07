@@ -80,9 +80,9 @@ if "  AndroidInitialize();\n" not in text:
 fallback_anchor = """  // Use /dev/ashmem on API versions below 26, which added ASharedMemory.
   // /dev/ashmem was disabled on API 29 for apps targeting it."""
 fallback_replacement = """  // Do not use the legacy /dev/ashmem device on API 26+.
-  if (rex::GetAndroidApiLevel() >= 26) {
+  if (android_get_device_api_level() >= 26) {
     REXSYS_ERROR("Android memory: ASharedMemory_create unavailable on API {}",
-                 rex::GetAndroidApiLevel());
+                 android_get_device_api_level());
     return kFileMappingHandleInvalid;
   }
 
