@@ -381,3 +381,14 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - O build #21 prova que a correção de armazenamento compila e está incluída no APK; não prova ainda que o runtime não tentará escrever em `/data/.local` em execução real.
 - Próximo passo obrigatório: o usuário instalar e testar este APK no Motorola Edge 30 Pro, selecionar a pasta do jogo e iniciar. Se fechar, enviar novo logcat/crash log para verificar o caminho HOME/XDG e a próxima falha.
 - Estado do projeto: APK #21 construído com sucesso; teste físico e execução do jogo ainda pendentes. Não declarar o jogo funcional até confirmação no aparelho.
+
+
+## Primeiro teste físico do APK #21 — jogo abriu, desempenho baixo — 2026-11-07
+
+- O usuário instalou e executou o APK #21 no Motorola Edge 30 Pro (Android 13, Snapdragon 8 Gen 1).
+- Evidência visual enviada: cena 3D/cutscene de Resident Evil Code Veronica X aparece na tela do aparelho. O usuário confirmou: “O jogo abriu, mas está muito lento”.
+- Isso confirma que o fluxo de inicialização, carregamento do XEX, plugin Xenos e apresentação de imagem chegaram a produzir saída visível no aparelho. A falha anterior de encerramento por caminho /data/.local foi superada para permitir esta execução.
+- Sintoma atual: desempenho muito baixo/lentidão durante a cena. Ainda não há medição de FPS, logcat de execução ou diagnóstico de GPU/CPU; não atribuir a causa a resolução, Vulkan, compilação ou shader sem evidência.
+- Revisão do código atual: src/recvx_app.h ativa explicitamente config.gpu_plugin = xenos; a rotina CaptureFirstVisibleGuestFrame() captura somente um frame visível e encerra a thread, portanto não deve ser presumida como carga contínua de captura durante o jogo. src/android_main.cpp configura HOME/XDG no armazenamento privado antes de inicializar o runtime.
+- Próxima investigação: obter FPS aproximado e logcat enquanto o jogo está lento; identificar se o gargalo está em CPU/PPC, GPU/Xenos/Vulkan, compilação de shaders ou sincronização/present. Evitar reduzir resolução ou alterar flags de GPU antes de obter uma linha de base.
+- Estado: primeiro resultado visual real do jogo no Android confirmado; execução ainda lenta e não jogável até otimização e novos testes.
