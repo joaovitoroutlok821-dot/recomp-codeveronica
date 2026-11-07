@@ -5,6 +5,10 @@
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_system.h>
+
+#include <jni.h>
+#include <filesystem>
 
 #include <cstdlib>
 #include <exception>
@@ -19,9 +23,108 @@
 #include <rex/ui/windowed_app.h>
 #include <rex/ui/windowed_app_context_sdl.h>
 
+namespace {
+
+bool ConfigureAndroidRuntimeDataDirectory() {
+  auto* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
+  auto activity = static_cast<jobject>(SDL_GetAndroidActivity());
+  if (!env || !activity) {
+    SDL_Log("[RECVX-DIAG] Android activity/JNI environment unavailable");
+    return false;
+  }
+
+  jclass activity_class = env->GetObjectClass(activity);
+  if (!activity_class || env->ExceptionCheck()) {
+    if (env->ExceptionCheck()) env->ExceptionClear();
+    env->DeleteLocalRef(activity);
+    return false;
+  }
+
+  jmethodID get_external_files_dir = env->GetMethodID(
+      activity_class, "getExternalFilesDir", "(Ljava/lang/String;)Ljava/io/File;");
+  if (!get_external_files_dir || env->ExceptionCheck()) {
+    if (env->ExceptionCheck()) env->ExceptionClear();
+    env->DeleteLocalRef(activity_class);
+    env->DeleteLocalRef(activity);
+    return false;
+  }
+
+  jobject directory = env->CallObjectMethod(activity, get_external_files_dir, nullptr);
+  if (env->ExceptionCheck()) {
+    env->ExceptionClear();
+    directory = nullptr;
+  }
+
+  std::string base_path;
+  if (directory) {
+    jclass file_class = env->GetObjectClass(directory);
+    jmethodID get_absolute_path = file_class ? env->GetMethodID(
+        file_class, "getAbsolutePath", "()Ljava/lang/String;") : nullptr;
+    jstring path_string = get_absolute_path
+        ? static_cast<jstring>(env->CallObjectMethod(directory, get_absolute_path))
+        : nullptr;
+    if (env->ExceptionCheck()) {
+      env->ExceptionClear();
+      path_string = nullptr;
+    }
+    if (path_string) {
+      const char* chars = env->GetStringUTFChars(path_string, nullptr);
+      if (chars) {
+        base_path = chars;
+        env->ReleaseStringUTFChars(path_string, chars);
+      }
+      env->DeleteLocalRef(path_string);
+    }
+    if (file_class) env->DeleteLocalRef(file_class);
+    env->DeleteLocalRef(directory);
+  }
+
+  env->DeleteLocalRef(activity_class);
+  env->DeleteLocalRef(activity);
+
+  // Prefer /storage/emulated/0/Android/data/<package>/files. If Android
+  // reports external storage unavailable, fall back to SDL's app-private
+  // writable preference directory rather than using /data/.local.
+  if (base_path.empty()) {
+    char* pref_path = SDL_GetPrefPath("ReXGlue", "recvx");
+    if (pref_path) {
+      base_path = pref_path;
+      SDL_free(pref_path);
+    }
+  }
+  if (base_path.empty()) {
+    SDL_Log("[RECVX-DIAG] Could not resolve an app-writable data directory");
+    return false;
+  }
+
+  const std::filesystem::path data_path =
+      std::filesystem::path(base_path) / "rexglue-data";
+  std::error_code ec;
+  std::filesystem::create_directories(data_path, ec);
+  if (ec) {
+    SDL_Log("[RECVX-DIAG] Could not create runtime data directory %s: %s",
+            data_path.string().c_str(), ec.message().c_str());
+    return false;
+  }
+
+  if (setenv("XDG_DATA_HOME", data_path.c_str(), 1) != 0) {
+    SDL_Log("[RECVX-DIAG] Failed to set XDG_DATA_HOME");
+    return false;
+  }
+  SDL_Log("[RECVX-DIAG] XDG_DATA_HOME=%s", data_path.string().c_str());
+  return true;
+}
+
+}  // namespace
+
 extern "C" int SDL_main(int argc, char* argv[]) {
   SDL_Log("[RECVX-DIAG] SDL_main entered: argc=%d", argc);
   for (int i = 0; i < argc; ++i) SDL_Log("[RECVX-DIAG] argv[%d]=%s", i, argv && argv[i] ? argv[i] : "<null>");
+
+  // ReXGlue GetUserFolder() honors XDG_DATA_HOME before falling back to
+  // HOME/.local/share or the Android passwd home (/data). Set it before
+  // cvar/runtime initialization so Xenos and the runtime use app storage.
+  if (!ConfigureAndroidRuntimeDataDirectory()) return EXIT_FAILURE;
 
   // ReXGlue's default log directory is based on the executable folder. On
   // Android that can resolve to /system/bin, which is read-only. Give the
