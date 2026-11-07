@@ -13,16 +13,16 @@ if not source.is_file():
 text = source.read_text()
 
 if "#include <mutex>" not in text:
-    anchor = "#include <functional>\\n"
+    anchor = "#include <functional>\n"
     if text.count(anchor) != 1:
         raise SystemExit("Could not uniquely locate standard include anchor")
-    text = text.replace(anchor, anchor + "#include <mutex>\\n", 1)
+    text = text.replace(anchor, anchor + "#include <mutex>\n", 1)
 
 if "#include <android/api-level.h>" not in text:
-    anchor = "#include <mutex>\\n"
+    anchor = "#include <mutex>\n"
     if text.count(anchor) != 1:
         raise SystemExit("Could not uniquely locate mutex include")
-    text = text.replace(anchor, anchor + "#include <android/api-level.h>\\n", 1)
+    text = text.replace(anchor, anchor + "#include <android/api-level.h>\n", 1)
 
 # Replace only AndroidInitialize's body, preserving adjacent AndroidShutdown().
 init_pattern = re.compile(
