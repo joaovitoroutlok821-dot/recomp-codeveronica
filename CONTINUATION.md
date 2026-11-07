@@ -413,3 +413,12 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Objetivo: comparar o desempenho da variante otimizada Release com o APK #21 Debug no mesmo aparelho/cena. Isso é um teste de hipótese; não garante por si só aumento de FPS.
 - Controles táteis: ainda não implementados. O projeto atual instala `GameSDLActivity` derivada de `SDLActivity`, mas não tem overlay próprio nem ponte validada para injetar botões virtuais na entrada SDL. Não alegar que os controles já foram adicionados; requer implementação e teste separados.
 - Próximos passos: monitorar run #22, verificar logs confirmando checkout do branch `android-rebuild`, validar APK Release assinado e bibliotecas ARM64, e disponibilizar o artefato somente após sucesso. Depois continuar a integração real dos controles virtuais e medir FPS/CPU/GPU com logs.
+
+
+## Teste com controle Bluetooth: menus aceitáveis, cutscenes e gameplay lentos — 2026-11-08
+
+- O usuário conectou um controle Bluetooth e conseguiu pular a primeira cutscene no APK #21.
+- Observação de desempenho: menus rodam em nível aceitável; cutscenes e gameplay ficam muito lentos. Isso indica que o problema não se limita à apresentação inicial nem à falta de controles. O custo elevado aparece em cargas de jogo/cenas 3D.
+- Hipóteses ainda abertas: custo de CPU na execução recompilada (PPC), GPU Xenos/Vulkan, sincronização/present ou compilação/cache de shaders. Não há FPS medido nem logs/perfis suficientes para isolar o gargalo.
+- Workflow #22 (Release otimizada) está em andamento, run ID `42425746734`, job `128563518683`; checkout privado/XEX e checkout da fonte pública concluídos, validação XEX passou, geração privada de fontes em andamento. URL: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42425746734
+- Próximo passo: aguardar APK Release, testar exatamente a mesma cena/trecho no mesmo aparelho e comparar com APK #21. Em paralelo, coletar FPS e logcat em gameplay; só então decidir se a otimização deve focar CPU, Xenos/Vulkan, shaders ou frame pacing. Controle Bluetooth já serve como meio temporário para navegar/pular cutscenes; overlay touch continua como melhoria separada, não como causa primária da lentidão.
