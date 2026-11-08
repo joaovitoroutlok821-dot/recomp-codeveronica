@@ -19,19 +19,22 @@ if not manifest.is_file():
     raise SystemExit(f"SDL Android manifest not found: {manifest}")
 java.mkdir(parents=True, exist_ok=True)
 assets = Path(__file__).resolve().parents[1] / "assets"
-# The user-approved launcher artwork is a PNG even though its original upload
-# filename contains ".jpg.png". Keep the resource extension truthful so aapt
-# decodes it correctly, and use the same art for the in-app hero and launcher icon.
-cover = assets / "recvx-launcher.jpg.png"
+# Keep the clean launcher artwork separate from the game cover/logo asset.
+# The launcher artwork is shown in-app; the cover/logo image is used for the
+# Android app icon so text and settings are never baked into the launcher UI.
+cover = assets / "recvx-launcher.png"
+logo = assets / "recvx-logo.png"
 if not cover.is_file():
-    raise SystemExit(f"Approved Resident Evil launcher artwork not found: {cover}")
+    raise SystemExit(f"Approved clean Resident Evil launcher artwork not found: {cover}")
+if not logo.is_file():
+    raise SystemExit(f"Resident Evil game logo/icon artwork not found: {logo}")
 drawable = app / "src/main/res/drawable-nodpi"
 mipmap = app / "src/main/res/mipmap-nodpi"
 drawable.mkdir(parents=True, exist_ok=True)
 mipmap.mkdir(parents=True, exist_ok=True)
 (drawable / "recvx_cover.png").write_bytes(cover.read_bytes())
-(mipmap / "ic_launcher.png").write_bytes(cover.read_bytes())
-(mipmap / "ic_launcher_round.png").write_bytes(cover.read_bytes())
+(mipmap / "ic_launcher.png").write_bytes(logo.read_bytes())
+(mipmap / "ic_launcher_round.png").write_bytes(logo.read_bytes())
 
 setup_activity = r'''package org.libsdl.app;
 
