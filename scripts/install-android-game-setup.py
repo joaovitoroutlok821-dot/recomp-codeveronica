@@ -715,6 +715,7 @@ public final class TouchControlsView extends View {
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final boolean showFps;
+    private final android.content.SharedPreferences layoutPrefs;
     private final Handler fpsHandler = new Handler(Looper.getMainLooper());
     private float presentedFps;
     private final Runnable fpsRefresh = new Runnable() {
@@ -734,6 +735,7 @@ public final class TouchControlsView extends View {
     public TouchControlsView(Context context) {
         super(context);
         showFps = context.getSharedPreferences("recvx_settings", Context.MODE_PRIVATE).getBoolean("show_fps", true);
+        layoutPrefs = context.getSharedPreferences("recvx_settings", Context.MODE_PRIVATE);
         setClickable(true);
         setWillNotDraw(false);
         fpsHandler.post(fpsRefresh);
