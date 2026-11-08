@@ -56,7 +56,7 @@ public final class GameSettingsActivity extends Activity {
   private void buildUi() {
     LinearLayout root = new LinearLayout(this);
     root.setOrientation(LinearLayout.HORIZONTAL);
-    root.setPadding(dp(12), dp(10), dp(12), dp(10));
+    root.setPadding(dp(16), dp(12), dp(16), dp(12));
     root.setBackgroundColor(Color.rgb(4, 7, 12));
 
     LinearLayout side = new LinearLayout(this);
@@ -84,7 +84,7 @@ public final class GameSettingsActivity extends Activity {
     mp.leftMargin = dp(12);
     root.addView(main, mp);
 
-    TextView title = text("Configurações", 24, Color.WHITE, true);
+    TextView title = text("Configurações", 28, Color.WHITE, true);
     title.setPadding(dp(8), dp(2), dp(8), dp(8));
     main.addView(title);
 
@@ -93,7 +93,7 @@ public final class GameSettingsActivity extends Activity {
     String[] names = {"Gráficos", "Desempenho", "Controles", "Áudio"};
     for (String n : names) {
       Button t = button(n, n.equals(current));
-      LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, dp(44), 1);
+      LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, dp(52), 1);
       tp.setMargins(dp(3), dp(2), dp(3), dp(8));
       tabs.addView(t, tp);
       t.setOnClickListener(v -> { current = n; refreshTabs(); show(n); });
@@ -102,7 +102,7 @@ public final class GameSettingsActivity extends Activity {
 
     content = new LinearLayout(this);
     content.setOrientation(LinearLayout.VERTICAL);
-    content.setPadding(dp(10), dp(8), dp(10), dp(8));
+    content.setPadding(dp(14), dp(12), dp(14), dp(12));
     content.setBackground(shape(Color.rgb(12, 14, 18), Color.rgb(125, 28, 35), 12));
     ScrollView scroll = new ScrollView(this);
     scroll.setFillViewport(true);
@@ -134,9 +134,9 @@ public final class GameSettingsActivity extends Activity {
   private LinearLayout card(String heading) {
     LinearLayout box = new LinearLayout(this);
     box.setOrientation(LinearLayout.VERTICAL);
-    box.setPadding(dp(10), dp(8), dp(10), dp(8));
+    box.setPadding(dp(14), dp(12), dp(14), dp(12));
     box.setBackground(shape(panel, Color.rgb(95, 28, 34), 10));
-    TextView h = text(heading, 16, Color.WHITE, true);
+    TextView h = text(heading, 19, Color.WHITE, true);
     h.setPadding(dp(2), dp(2), dp(2), dp(8));
     box.addView(h);
     return box;
@@ -146,23 +146,45 @@ public final class GameSettingsActivity extends Activity {
     LinearLayout line = new LinearLayout(this);
     line.setGravity(Gravity.CENTER_VERTICAL);
     line.setOrientation(LinearLayout.HORIZONTAL);
-    TextView l = text(label, 13, Color.WHITE, false);
+    TextView l = text(label, 14, Color.WHITE, false);
     line.addView(l, new LinearLayout.LayoutParams(0, -2, 1));
-    if (control != null) line.addView(control, new LinearLayout.LayoutParams(dp(190), dp(40)));
+    if (control != null) line.addView(control, new LinearLayout.LayoutParams(dp(220), dp(46)));
     LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
     rp.bottomMargin = dp(5);
     box.addView(line, rp);
   }
 
   private void info(LinearLayout box, String label) {
-    TextView t = text(label, 12, muted, false);
+    TextView t = text(label, 13, muted, false);
     t.setPadding(dp(4), dp(5), dp(4), dp(7));
     box.addView(t);
   }
 
   private Spinner spinner(String[] values, int selected, String key) {
     Spinner s = new Spinner(this);
-    s.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, values));
+    ArrayAdapter<String> adapter = new ArrayAdapter<String>(
+        this, android.R.layout.simple_spinner_item, values) {
+      private TextView makeText(String value, boolean dropdown) {
+        TextView t = new TextView(GameSettingsActivity.this);
+        t.setText(value);
+        t.setTextColor(Color.WHITE);
+        t.setTextSize(14);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPadding(dp(12), dp(8), dp(12), dp(8));
+        if (dropdown) t.setBackgroundColor(Color.rgb(24, 25, 30));
+        return t;
+      }
+      @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
+        return makeText(getItem(position), false);
+      }
+      @Override public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
+        return makeText(getItem(position), true);
+      }
+    };
+    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    s.setAdapter(adapter);
+    s.setBackground(shape(Color.rgb(25, 25, 30), Color.rgb(145, 32, 42), 7));
+    s.setPadding(dp(8), dp(3), dp(8), dp(3));
     s.setSelection(Math.max(0, Math.min(selected, values.length - 1)));
     s.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
       public void onNothingSelected(android.widget.AdapterView<?> a) {}
