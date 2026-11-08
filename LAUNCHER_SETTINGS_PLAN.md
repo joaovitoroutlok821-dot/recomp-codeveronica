@@ -85,3 +85,14 @@ The pinned ReXGlue SDK declares these presenter cvars:
 The current private Android workflow explicitly passes -DREXGLUE_ENABLE_FIDELITYFX=OFF. Therefore this APK configuration cannot honestly offer CAS/FSR yet: the current presenter is limited to bilinear. The shader source files being present in the SDK does not mean the FidelityFX SDK/runtime is enabled in this Android build.
 
 No FPS-cap, shader-cache, particle-quality, reduced-effects, anti-aliasing or game-audio cvar was found in the inspected SDK flags/presenter sources. These controls must remain disabled or be implemented through verified game-specific hooks. The already-added presented-FPS counter is a readout, not a frame limiter.
+
+
+## Correções após avaliação do APK #28 — 2026-11-08
+
+- O usuário confirmou que o APK #28 ainda não corresponde à referência visual aprovada.
+- Commit `d390337051baa069ddd1757304c7ab8e4eecf313`: o instalador agora copia a arte fornecida também como `drawable/recvx_icon.png`, usa essa imagem diretamente no cabeçalho da tela inicial e atualiza os XMLs de ícone adaptativo do Android 8+ para não deixar os recursos adaptativos SDL sobreporem os PNGs.
+- Commit `ee9c0f14fac43c4578090920cd51e64038e97dc3`: ajustes de espaçamento, hierarquia tipográfica e seletores escuros na tela de configurações, aproximando a apresentação da identidade vermelha/preta da referência.
+- Estes commits ainda precisam passar pelo smoke test Android e por uma compilação privada completa antes de gerar APK para o usuário.
+- O editor de controles táteis com arrastar/soltar, persistência de posições e tamanho/opacidade continua pendente; não apresentar como implementado.
+- O funcionamento do controle Bluetooth continua pendente de confirmação no aparelho. O modo automático de ocultação deve continuar condicionado à entrada física confirmada, e nunca apenas à enumeração do gamepad virtual.
+- Os controles de renderização, FSR/CAS, limite de FPS, V-Sync, cache, efeitos e áudio só devem ser habilitados após integração com hooks reais do runtime.
