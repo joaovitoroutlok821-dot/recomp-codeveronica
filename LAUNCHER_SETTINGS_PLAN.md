@@ -68,3 +68,18 @@ This document tracks the requested launcher redesign for the Android ARM64 build
 - Touch overlay code exists, but the user's prior test reported that only on-screen controls worked; Bluetooth was not working.
 - The presented-FPS JNI path exists in the game activity, but it must be revalidated in the actual next APK.
 - FSR/CAS, resolution scaling, AA, shader cache, heavy-effect controls and audio sliders must not be claimed as working until mapped to real Android runtime/game settings.
+
+## Verified ReXGlue option mapping (SDK source inspection)
+
+The pinned ReXGlue SDK declares these presenter cvars:
+- present_effect: bilinear, cas, fsr, fsr2, fsr3 only when RE​​X_HAS_FIDELITYFX_SDK is compiled; otherwise bilinear is the only allowed value.
+- present_cas_additional_sharpness: CAS sharpness, only with FidelityFX SDK support.
+- present_fsr_quality_mode: auto, nativeaa, quality, balanced, performance, ultra_performance, only with FidelityFX SDK support.
+- present_fsr_max_upsampling_passes and present_fsr_sharpness_reduction: FSR tuning, only with FidelityFX SDK support.
+- present_letterbox, present_safe_area_x/y, present_dither, present_allow_overscan_cutoff.
+- window_width, window_height, fullscreen and resolution are declared by the SDK; actual Android surface behavior still needs device validation.
+- Vulkan exposes allow-present-mode switches (immediate, mailbox, FIFO relaxed); these are not equivalent to a user-selectable exact FPS cap.
+
+The current private Android workflow explicitly passes -DREXGLUE_ENABLE_FIDELITYFX=OFF. Therefore this APK configuration cannot honestly offer CAS/FSR yet: the current presenter is limited to bilinear. The shader source files being present in the SDK does not mean the FidelityFX SDK/runtime is enabled in this Android build.
+
+No FPS-cap, shader-cache, particle-quality, reduced-effects, anti-aliasing or game-audio cvar was found in the inspected SDK flags/presenter sources. These controls must remain disabled or be implemented through verified game-specific hooks. The already-added presented-FPS counter is a readout, not a frame limiter.
