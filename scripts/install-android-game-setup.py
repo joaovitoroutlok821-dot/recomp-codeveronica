@@ -41,6 +41,7 @@ setup_activity = r'''package org.libsdl.app;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
@@ -53,6 +54,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.FrameLayout;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -87,6 +89,7 @@ public final class GameSetupActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         setTitle("Resident Evil Code Veronica X HD");
         gameDir = new File(getFilesDir(), "game");
         buildUi();
@@ -105,76 +108,152 @@ public final class GameSetupActivity extends Activity {
     }
 
     private void buildUi() {
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setGravity(Gravity.CENTER);
-        int pad = (int)(24 * getResources().getDisplayMetrics().density);
-        layout.setPadding(pad, pad, pad, pad);
-        GradientDrawable background = new GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM,
-            new int[] { Color.rgb(5, 12, 24), Color.rgb(0, 0, 0), Color.rgb(12, 18, 25) });
-        layout.setBackground(background);
-
+        int pad = (int)(18 * getResources().getDisplayMetrics().density);
+        FrameLayout frame = new FrameLayout(this);
+        frame.setBackgroundColor(Color.rgb(3, 7, 13));
         int coverId = getResources().getIdentifier("recvx_cover", "drawable", getPackageName());
         if (coverId != 0) {
             ImageView cover = new ImageView(this);
             cover.setImageResource(coverId);
-            cover.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            LinearLayout.LayoutParams imageParams = new LinearLayout.LayoutParams(-1, 0, 1.0f);
-            imageParams.bottomMargin = (int)(18 * getResources().getDisplayMetrics().density);
-            layout.addView(cover, imageParams);
+            cover.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            frame.addView(cover, new FrameLayout.LayoutParams(-1, -1));
         }
+        View shade = new View(this);
+        shade.setBackgroundColor(0x77020710);
+        frame.addView(shade, new FrameLayout.LayoutParams(-1, -1));
 
-        TextView title = new TextView(this);
-        title.setText("RESIDENT EVIL CODE: VERONICA X HD");
-        title.setTextColor(Color.WHITE);
-        title.setTextSize(20);
-        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        title.setGravity(Gravity.CENTER);
-        layout.addView(title, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.HORIZONTAL);
+        root.setPadding(pad, pad, pad, pad);
+        LinearLayout menu = new LinearLayout(this);
+        menu.setOrientation(LinearLayout.VERTICAL);
+        menu.setPadding(pad / 2, pad, pad / 2, pad);
+        menu.setGravity(Gravity.CENTER_VERTICAL);
+        GradientDrawable menuBg = new GradientDrawable();
+        menuBg.setColor(0xDD080B11);
+        menuBg.setCornerRadius(dp(18));
+        menuBg.setStroke(dp(1), Color.rgb(190, 20, 32));
+        menu.setBackground(menuBg);
+
+        TextView brand = new TextView(this);
+        brand.setText("RESIDENT EVIL\nCODE: VERONICA X HD");
+        brand.setTextColor(Color.WHITE);
+        brand.setTextSize(18);
+        brand.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        brand.setGravity(Gravity.CENTER);
+        brand.setPadding(pad / 2, pad, pad / 2, pad * 2);
+        menu.addView(brand, new LinearLayout.LayoutParams(-1, -2));
+
+        start = new Button(this);
+        start.setText("▶  INICIAR JOGO");
+        start.setTextSize(15);
+        start.setAllCaps(false);
+        start.setTextColor(Color.WHITE);
+        start.setBackground(roundButton(0xFFE00018));
+        start.setOnClickListener(v -> {
+            if (findEntryPoint(gameDir) == null) chooseFolder();
+            else launchGame();
+        });
+        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, dp(54));
+        bp.bottomMargin = pad / 2;
+        menu.addView(start, bp);
+
+        Button settings = new Button(this);
+        settings.setText("⚙  CONFIGURAÇÕES");
+        settings.setTextSize(14);
+        settings.setAllCaps(false);
+        settings.setTextColor(Color.WHITE);
+        settings.setBackground(roundButton(0xCC1A1D24));
+        settings.setOnClickListener(v -> startActivity(new Intent(this, GameSettingsActivity.class)));
+        menu.addView(settings, new LinearLayout.LayoutParams(-1, dp(50)));
+
+        TextView edition = new TextView(this);
+        edition.setText("EDIÇÃO DUBLADA • ANDROID");
+        edition.setTextColor(Color.rgb(190, 205, 220));
+        edition.setTextSize(11);
+        edition.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(-1, -2);
+        ep.topMargin = pad;
+        menu.addView(edition, ep);
+        root.addView(menu, new LinearLayout.LayoutParams(dp(250), -1));
+
+        LinearLayout right = new LinearLayout(this);
+        right.setOrientation(LinearLayout.VERTICAL);
+        right.setGravity(Gravity.CENTER_VERTICAL);
+        right.setPadding(pad, pad, pad, pad);
+        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, -1, 1);
+        rp.leftMargin = pad;
+        root.addView(right, rp);
+
+        int logoId = getResources().getIdentifier("ic_launcher", "mipmap", getPackageName());
+        if (logoId != 0) {
+            ImageView logoView = new ImageView(this);
+            logoView.setImageResource(logoId);
+            logoView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            right.addView(logoView, new LinearLayout.LayoutParams(dp(210), dp(100)));
+        }
+        TextView heading = new TextView(this);
+        heading.setText("RESIDENT EVIL CODE: VERONICA X HD");
+        heading.setTextColor(Color.WHITE);
+        heading.setTextSize(24);
+        heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        right.addView(heading, new LinearLayout.LayoutParams(-1, -2));
 
         TextView subtitle = new TextView(this);
-        subtitle.setText("EDIÇÃO DUBLADA • ANDROID");
-        subtitle.setTextColor(Color.rgb(190, 205, 220));
-        subtitle.setTextSize(13);
-        subtitle.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams subtitleParams = new LinearLayout.LayoutParams(-1, -2);
-        subtitleParams.topMargin = (int)(6 * getResources().getDisplayMetrics().density);
-        layout.addView(subtitle, subtitleParams);
+        subtitle.setText("EDIÇÃO DUBLADA  •  VERSÃO ANDROID");
+        subtitle.setTextColor(Color.rgb(200, 210, 225));
+        subtitle.setTextSize(14);
+        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
+        sp.topMargin = dp(5);
+        right.addView(subtitle, sp);
 
         status = new TextView(this);
-        status.setTextColor(Color.LTGRAY);
-        status.setTextSize(14);
-        status.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(-1, -2);
-        statusParams.topMargin = pad;
-        layout.addView(status, statusParams);
+        status.setTextColor(Color.WHITE);
+        status.setTextSize(15);
+        status.setGravity(Gravity.CENTER_VERTICAL);
+        status.setPadding(dp(12), dp(10), dp(12), dp(10));
+        status.setBackground(roundPanel());
+        LinearLayout.LayoutParams stp = new LinearLayout.LayoutParams(-1, -2);
+        stp.topMargin = pad;
+        right.addView(status, stp);
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setIndeterminate(true);
         progress.setVisibility(View.GONE);
         LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-1, -2);
         pp.topMargin = pad / 2;
-        layout.addView(progress, pp);
+        right.addView(progress, pp);
 
-        start = new Button(this);
-        start.setText("INICIAR JOGO");
-        start.setEnabled(true);
-        start.setOnClickListener(v -> {
-            if (findEntryPoint(gameDir) == null) chooseFolder();
-            else launchGame();
-        });
-        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, -2);
-        bp.topMargin = pad;
-        layout.addView(start, bp);
+        TextView footer = new TextView(this);
+        footer.setText("Selecione a pasta do jogo uma única vez. Os arquivos serão preparados no armazenamento privado do aplicativo.");
+        footer.setTextColor(Color.rgb(190, 198, 210));
+        footer.setTextSize(12);
+        LinearLayout.LayoutParams ftp = new LinearLayout.LayoutParams(-1, -2);
+        ftp.topMargin = pad;
+        right.addView(footer, ftp);
 
-        Button settings = new Button(this);
-        settings.setText("CONFIGURAÇÕES");
-        settings.setOnClickListener(v -> startActivity(new Intent(this, GameSettingsActivity.class)));
-        LinearLayout.LayoutParams settingsParams = new LinearLayout.LayoutParams(-1, -2);
-        settingsParams.topMargin = pad / 2;
-        layout.addView(settings, settingsParams);
-        setContentView(layout);
+        frame.addView(root, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(frame);
+    }
+
+    private int dp(float value) {
+        return (int)(value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private GradientDrawable roundButton(int color) {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(color);
+        d.setCornerRadius(dp(9));
+        d.setStroke(dp(1), Color.rgb(180, 24, 36));
+        return d;
+    }
+
+    private GradientDrawable roundPanel() {
+        GradientDrawable d = new GradientDrawable();
+        d.setColor(0xCC080B11);
+        d.setCornerRadius(dp(9));
+        d.setStroke(dp(1), Color.rgb(145, 30, 40));
+        return d;
     }
 
     private void chooseFolder() {
