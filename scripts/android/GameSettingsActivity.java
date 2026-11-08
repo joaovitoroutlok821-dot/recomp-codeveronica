@@ -59,7 +59,7 @@ public final class GameSettingsActivity extends Activity {
       Spinner res = new Spinner(this);
       String[] modes = {"720p (1280 x 720)","1080p (1920 x 1080)"};
       res.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,modes));
-      res.setSelection(p.getInt("resolution",0));
+      res.setSelection(p.getInt("resolution",1));
       res.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
         public void onNothingSelected(android.widget.AdapterView<?> a) {}
         public void onItemSelected(android.widget.AdapterView<?> a, android.view.View v,int pos,long id) { p.edit().putInt("resolution",pos).apply(); }
