@@ -465,7 +465,7 @@ public final class GameSDLActivity extends SDLActivity
         String root = getIntent().getStringExtra(EXTRA_GAME_ROOT);
         if (root == null || root.isEmpty()) return new String[0];
         SharedPreferences prefs = getSharedPreferences("recvx_settings", MODE_PRIVATE);
-        int resolution = prefs.getInt("resolution", 0);
+        int resolution = prefs.getInt("resolution", 1);
         String width = resolution == 1 ? "1920" : "1280";
         String height = resolution == 1 ? "1080" : "720";
         return new String[] {
