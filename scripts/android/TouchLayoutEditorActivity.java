@@ -113,7 +113,7 @@ public final class TouchLayoutEditorActivity extends Activity {
       if (e.getActionMasked() == MotionEvent.ACTION_DOWN) {
         if (x > w - base * 0.23f && y < base * 0.11f) { reset(); return true; }
         if (x > w - base * 0.23f && y > h - base * 0.11f) { persist(); finishActivity(); return true; }
-        selected = -1;
+        selected = -2;
         float best = Float.MAX_VALUE;
         for (int i = 0; i < 9; i++) {
           float dx = x - xs[i] * w, dy = y - ys[i] * h;
