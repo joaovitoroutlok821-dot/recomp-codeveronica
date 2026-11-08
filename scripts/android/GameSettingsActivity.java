@@ -108,8 +108,6 @@ public final class GameSettingsActivity extends Activity {
     apply.setOnClickListener(v->{p.edit().apply();Toast.makeText(this,"Configurações salvas.",Toast.LENGTH_SHORT).show();finish();});
     LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(0,dp(42),1); fp.setMargins(dp(4),dp(5),dp(4),dp(2));
     footer.addView(reset,fp); footer.addView(apply,fp); main.addView(footer);
-    root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
-
     TextView status=label("▱  Diretório do jogo: consulte a tela inicial     •     ♧ Controle: estado detectado pelo Android     •     Controles na tela: configurável     •     Versão: v1.0.0",11,muted,false);
     status.setGravity(Gravity.CENTER_VERTICAL); status.setPadding(dp(8),dp(7),dp(8),dp(7));
     status.setBackground(shape(0xFF080A0E,0xFF6E1B25,5));
