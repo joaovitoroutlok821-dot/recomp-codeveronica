@@ -118,13 +118,13 @@ public final class GameSetupActivity extends Activity {
         if (saved != null) {
             selectedTree = Uri.parse(saved);
             if (findEntryPoint(gameDir) != null) {
-                status.setText("Arquivos do jogo preparados. Toque em INICIAR JOGO.");
+                status.setText("Pasta do jogo preparada. Você pode alterá-la pelo botão SELECIONAR PASTA DO JOGO.");
                 start.setEnabled(true);
             } else {
                 status.setText("Selecione novamente a pasta do jogo para preparar os arquivos.");
             }
         } else {
-            status.setText("Selecione a pasta que contém Default.xex. O aplicativo copiará os arquivos para seu armazenamento privado.");
+            status.setText("DIRETÓRIO DO JOGO: Não selecionado. Use SELECIONAR PASTA DO JOGO para escolher a pasta que contém Default.xex.");
         }
     }
 
@@ -187,6 +187,19 @@ public final class GameSetupActivity extends Activity {
         settings.setBackground(roundButton(0xCC1A1D24));
         settings.setOnClickListener(v -> startActivity(new Intent(this, GameSettingsActivity.class)));
         menu.addView(settings, new LinearLayout.LayoutParams(-1, dp(50)));
+
+        // Keep SAF folder selection permanently accessible from the launcher.
+        // Users must not need to press Start just to choose or change the game directory.
+        Button chooseGameFolder = new Button(this);
+        chooseGameFolder.setText("▣  SELECIONAR PASTA DO JOGO");
+        chooseGameFolder.setTextSize(12);
+        chooseGameFolder.setAllCaps(false);
+        chooseGameFolder.setTextColor(Color.WHITE);
+        chooseGameFolder.setBackground(roundButton(0xCC101820));
+        chooseGameFolder.setOnClickListener(v -> chooseFolder());
+        LinearLayout.LayoutParams chooseParams = new LinearLayout.LayoutParams(-1, dp(48));
+        chooseParams.topMargin = dp(8);
+        menu.addView(chooseGameFolder, chooseParams);
 
         TextView edition = new TextView(this);
         edition.setText("EDIÇÃO DUBLADA • ANDROID");
