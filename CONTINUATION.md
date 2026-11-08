@@ -493,7 +493,7 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 
 ### Validação e builds
 - Validação pública do commit atual: workflow #81, run ID 42437789117, conclusão success.
-- Smoke test Android SDL/SAF: workflow run ID 42437789139, ainda em andamento na última consulta; ele compila o projeto Java/manifest gerado pelo instalador.
+- Smoke test Android SDL/SAF: workflow run ID 42437789139, conclusão success; o APK de teste compilou e passou na validação de package, ABI, SDL/JNI, manifest, zipalign e assinatura. Artefato recvx-android-sdl-saf-test ID 13600595696. Esse APK é apenas o teste SDL/SAF, não contém ReXGlue nem o jogo.
 - Build privado #24: run ID 42437618738, ainda em andamento na última consulta. Foi iniciado antes da correção dos includes SDL explícitos; tratar seu resultado como diagnóstico, não presumir que contenha a revisão final.
 - Build privado #25: run ID 42437695379, ainda em andamento na última consulta. Verificar nos logs qual SHA público foi efetivamente baixado antes de atribuir a ele a versão final do contador FPS visível.
 - Workflow privado atualizado para executar ensure-rexglue-android-input-fps.py após os patches Android do SDK.
