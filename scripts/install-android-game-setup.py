@@ -100,6 +100,7 @@ public final class GameSetupActivity extends Activity {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
     private TextView status;
+    private TextView directoryStatus;
     private Button start;
     private Button choose;
     private ProgressBar progress;
@@ -120,6 +121,7 @@ public final class GameSetupActivity extends Activity {
             if (findEntryPoint(gameDir) != null) {
                 status.setText("Pasta do jogo preparada. Você pode alterá-la pelo botão SELECIONAR PASTA DO JOGO.");
                 start.setEnabled(true);
+                refreshDirectoryStatus();
             } else {
                 status.setText("Selecione novamente a pasta do jogo para preparar os arquivos.");
             }
@@ -268,8 +270,51 @@ public final class GameSetupActivity extends Activity {
         ftp.topMargin = pad;
         right.addView(footer, ftp);
 
+        // Persistent bottom status bar: the directory item is also the folder picker.
+        LinearLayout bottomBar = new LinearLayout(this);
+        bottomBar.setOrientation(LinearLayout.HORIZONTAL);
+        bottomBar.setGravity(Gravity.CENTER_VERTICAL);
+        bottomBar.setPadding(dp(10), dp(5), dp(10), dp(5));
+        bottomBar.setBackground(roundPanel());
+        directoryStatus = new TextView(this);
+        directoryStatus.setTextColor(Color.rgb(255, 220, 45));
+        directoryStatus.setTextSize(12);
+        directoryStatus.setText("▱  Diretório do jogo: Não selecionado");
+        directoryStatus.setOnClickListener(v -> chooseFolder());
+        bottomBar.addView(directoryStatus, new LinearLayout.LayoutParams(0, dp(34), 1));
+        TextView controllerStatus = new TextView(this);
+        controllerStatus.setTextColor(Color.rgb(210, 215, 225));
+        controllerStatus.setTextSize(12);
+        controllerStatus.setText("♧  Controle: verificar ao iniciar");
+        bottomBar.addView(controllerStatus, new LinearLayout.LayoutParams(-2, dp(34)));
+        TextView touchStatus = new TextView(this);
+        touchStatus.setTextColor(Color.rgb(100, 230, 120));
+        touchStatus.setTextSize(12);
+        touchStatus.setPadding(dp(12), 0, dp(4), 0);
+        touchStatus.setText("  Controles na tela: Ativado");
+        bottomBar.addView(touchStatus, new LinearLayout.LayoutParams(-2, dp(34)));
+        LinearLayout.LayoutParams bottomParams = new LinearLayout.LayoutParams(-1, -2);
+        bottomParams.topMargin = dp(6);
+        root.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout screenBody = new LinearLayout(this);
+        screenBody.setOrientation(LinearLayout.HORIZONTAL);
+        screenBody.addView(menu, new LinearLayout.LayoutParams(dp(250), -1));
+        screenBody.addView(right, rp);
+        root.removeAllViews();
+        root.addView(screenBody, new LinearLayout.LayoutParams(-1, 0, 1));
+        root.addView(bottomBar, bottomParams);
+
         frame.addView(root, new FrameLayout.LayoutParams(-1, -1));
         setContentView(frame);
+        refreshDirectoryStatus();
+    }
+
+    private void refreshDirectoryStatus() {
+        if (directoryStatus == null) return;
+        boolean ready = findEntryPoint(gameDir) != null;
+        directoryStatus.setText(ready
+            ? "▱  Diretório do jogo: Selecionado  •  Toque para alterar"
+            : "▱  Diretório do jogo: Não selecionado  •  Toque para escolher");
     }
 
     private int dp(float value) {
@@ -367,6 +412,7 @@ public final class GameSetupActivity extends Activity {
                     start.setEnabled(true);
                     start.setEnabled(false);
                     status.setText("Falha ao preparar os arquivos: " + e.getMessage());
+                    refreshDirectoryStatus();
                 });
             }
         });
