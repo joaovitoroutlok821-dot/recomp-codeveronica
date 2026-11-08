@@ -33,6 +33,7 @@ mipmap = app / "src/main/res/mipmap-nodpi"
 drawable.mkdir(parents=True, exist_ok=True)
 mipmap.mkdir(parents=True, exist_ok=True)
 (drawable / "recvx_cover.png").write_bytes(cover.read_bytes())
+(drawable / "recvx_icon.png").write_bytes(logo.read_bytes())
 # SDL ships density-qualified launcher icons. Android prefers those over
 # mipmap-nodpi, so replace every existing density variant as well.
 res = app / "src/main/res"
@@ -42,6 +43,19 @@ if mipmap not in icon_dirs:
 for icon_dir in icon_dirs:
     (icon_dir / "ic_launcher.png").write_bytes(logo.read_bytes())
     (icon_dir / "ic_launcher_round.png").write_bytes(logo.read_bytes())
+
+# SDL may also ship adaptive-icon XML files, which take precedence over PNG
+# density variants on Android 8+. Point those resources at the supplied art.
+adaptive_dir = res / "mipmap-anydpi-v26"
+if adaptive_dir.is_dir():
+    adaptive_xml = """<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@android:color/black" />
+    <foreground android:drawable="@drawable/recvx_icon" />
+</adaptive-icon>
+"""
+    (adaptive_dir / "ic_launcher.xml").write_text(adaptive_xml, encoding="utf-8")
+    (adaptive_dir / "ic_launcher_round.xml").write_text(adaptive_xml, encoding="utf-8")
 
 setup_activity = r'''package org.libsdl.app;
 
@@ -192,7 +206,9 @@ public final class GameSetupActivity extends Activity {
         rp.leftMargin = pad;
         root.addView(right, rp);
 
-        int logoId = getResources().getIdentifier("ic_launcher", "mipmap", getPackageName());
+        // Use the supplied game artwork directly. Adaptive launcher resources
+        // from SDL may otherwise keep displaying the SDL sample logo here.
+        int logoId = getResources().getIdentifier("recvx_icon", "drawable", getPackageName());
         if (logoId != 0) {
             ImageView logoView = new ImageView(this);
             logoView.setImageResource(logoId);
