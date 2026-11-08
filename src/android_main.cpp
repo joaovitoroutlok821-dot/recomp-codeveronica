@@ -8,6 +8,8 @@
 #include <SDL3/SDL_system.h>
 #include <SDL3/SDL_gamepad.h>
 #include <SDL3/SDL_joystick.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_init.h>
 
 #include <jni.h>
 #include <filesystem>
