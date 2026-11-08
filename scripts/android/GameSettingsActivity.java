@@ -22,13 +22,9 @@ public final class GameSettingsActivity extends Activity {
     title.setText("RESIDENT EVIL — CONFIGURAÇÕES");
     title.setTextColor(Color.WHITE); title.setTextSize(22);
     title.setGravity(Gravity.CENTER); root.addView(title);
-    TabHost tabs = new TabHost(this);
-    tabs.setup();
-    TabHost.TabSpec spec;
     body = new LinearLayout(this); body.setOrientation(LinearLayout.VERTICAL);
     ScrollView scroll = new ScrollView(this); scroll.addView(body);
-    tabs.addView(scroll);
-    root.addView(tabs, new LinearLayout.LayoutParams(-1,0,1));
+    root.addView(scroll, new LinearLayout.LayoutParams(-1,0,1));
     String[] names = {"Gráficos","Desempenho","Controles","Áudio"};
     LinearLayout nav = new LinearLayout(this);
     for (String n : names) {
