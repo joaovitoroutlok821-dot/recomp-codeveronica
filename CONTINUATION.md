@@ -450,3 +450,14 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Criado pedido de nova execução; Workflow #23 confirmado via API, run ID `42429276112`, estado inicial `queued`: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42429276112
 - Próximo passo: acompanhar #23 até completar validação nativa, zipalign e assinatura. Não solicitar teste do APK #22; aguardar o artefato validado do #23.
 - O contador de FPS permanece planejado para a compilação posterior, após resolver a validação e confirmar a instalação do Release.
+
+
+## Teste físico do APK #23 — desempenho melhorou; entradas sem funcionar — 2026-11-08
+- Usuário instalou e executou o APK do Workflow #23 no Motorola Edge 30 Pro.
+- Resultado de desempenho informado: a cutscene inicial agora roda em velocidade normal. É uma melhoria clara sobre o APK #21, cuja cutscene era muito lenta. Ainda não há medição numérica de FPS nem confirmação sobre a velocidade de gameplay completa.
+- Regressões/problemas informados: controle Bluetooth não funciona no APK #23 e os controles virtuais/táteis não aparecem na tela.
+- Workflow #23 run ID `42429276112`, conclusão `success`; job ID `128574326035`. Todas as etapas passaram: geração privada, compilação ARM64, verificação das bibliotecas, zipalign, assinatura, upload e limpeza dos dados privados. APK artifact ID `13598044311`, artefato `recvx-private-android-arm64`, digest SHA256 `72c4e22433f387aa5f3e70a1af49cc72e11db9d2669da063f5839e98cafde98d`, expira em 2026-11-11T01:14:43Z.
+- Inspeção do código da branch `android-rebuild`: `scripts/install-android-game-setup.py` instala uma `GameSDLActivity` que apenas estende `SDLActivity` e sobrescreve `getArguments()`; não adiciona overlay, botões virtuais ou joystick virtual. Portanto, a ausência de controles na tela é explicada pela implementação atual.
+- A mesma classe não sobrescreve callbacks Android de joystick/teclas nem registra mapeamento próprio. Ainda não foi isolado se o Bluetooth deixa de ser detectado pelo SDL/Android ou se os eventos chegam ao SDL mas não são mapeados para os controles do jogo/ReXGlue. Não declarar causa definitiva sem instrumentação.
+- Próxima prioridade: (1) instrumentar detecção de dispositivos SDL GameController/Joystick e eventos de botão/eixos, verificar lifecycle/foco Android e mapeamento para entrada do título; (2) projetar overlay touch de baixo custo com D-pad/stick e botões ABXY, Start/Back, encaminhando eventos à mesma camada de entrada do runtime; (3) manter Release otimizado que normalizou a cutscene; (4) adicionar FPS/frametime com medição do frame efetivamente apresentado, evitando overlay pesado.
+- Não desfazer Release nem fazer downgrade de desempenho. Não gerar nova build com controles fictícios: implementar e validar que os eventos alcançam o jogo antes de publicar.
