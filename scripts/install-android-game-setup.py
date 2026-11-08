@@ -167,6 +167,13 @@ public final class GameSetupActivity extends Activity {
         LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, -2);
         bp.topMargin = pad;
         layout.addView(start, bp);
+
+        Button settings = new Button(this);
+        settings.setText("CONFIGURAÇÕES");
+        settings.setOnClickListener(v -> startActivity(new Intent(this, GameSettingsActivity.class)));
+        LinearLayout.LayoutParams settingsParams = new LinearLayout.LayoutParams(-1, -2);
+        settingsParams.topMargin = pad / 2;
+        layout.addView(settings, settingsParams);
         setContentView(layout);
     }
 
@@ -788,6 +795,9 @@ public final class TouchControlsView extends View {
 }
 '''
 
+(java / "GameSettingsActivity.java").write_text(
+    (Path(__file__).resolve().parent / "android" / "GameSettingsActivity.java").read_text(encoding="utf-8"),
+    encoding="utf-8")
 (java / "GameSetupActivity.java").write_text(setup_activity, encoding="utf-8")
 (java / "GameSDLActivity.java").write_text(game_activity, encoding="utf-8")
 (java / "TouchControlsView.java").write_text(touch_controls, encoding="utf-8")
@@ -817,6 +827,17 @@ for filt in list(sdl.findall("intent-filter")):
     actions = [x.get(ns + "name") for x in filt.findall("action")]
     if "android.intent.action.MAIN" in actions:
         sdl.remove(filt)
+
+# Avoid duplicate settings activity if the installer is run more than once.
+for activity in list(app_node.findall("activity")):
+    if activity.get(ns + "name") == "org.libsdl.app.GameSettingsActivity":
+        app_node.remove(activity)
+settings_node = ET.Element("activity", {
+    ns + "name": "org.libsdl.app.GameSettingsActivity",
+    ns + "exported": "false",
+    ns + "label": "Configurações"
+})
+app_node.insert(0, settings_node)
 
 # Avoid duplicate setup activity if the installer is run more than once.
 for activity in list(app_node.findall("activity")):
