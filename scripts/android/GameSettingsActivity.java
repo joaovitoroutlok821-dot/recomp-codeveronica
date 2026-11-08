@@ -233,8 +233,16 @@ public final class GameSettingsActivity extends Activity {
       row(controls, "Controles na tela", spinner(new String[]{"Automático", "Sempre mostrar", "Sempre ocultar"}, p.getInt("touch_mode", 0), "touch_mode"));
       info(controls, "No modo automático, os controles táteis somem após o controle físico enviar entrada confirmada.");
       info(controls, "Ao desconectar o controle físico, os controles na tela voltam a aparecer.");
-      info(controls, "Mover botões, tamanho e opacidade: editor de layout ainda será integrado.");
-      info(controls, "Controle Bluetooth: detecção e envio de comandos precisam ser confirmados no aparelho.");
+      info(controls, "No modo automático, os controles na tela somem quando um controle físico envia entrada confirmada.");
+      info(controls, "Ao desconectar o controle físico, os controles na tela voltam a aparecer.");
+      Button arrange = button("↔  Mover botões na tela", true);
+      arrange.setOnClickListener(v -> startActivity(new android.content.Intent(
+          GameSettingsActivity.this, TouchLayoutEditorActivity.class)));
+      LinearLayout.LayoutParams arrangeParams = new LinearLayout.LayoutParams(-1, dp(50));
+      arrangeParams.topMargin = dp(10);
+      controls.addView(arrange, arrangeParams);
+      info(controls, "Arraste o joystick e cada botão para a posição desejada. As posições ficam salvas neste aparelho.");
+      info(controls, "O funcionamento do controle Bluetooth ainda precisa ser confirmado no aparelho.");
       content.addView(controls);
     } else {
       LinearLayout audio = card("Áudio");
