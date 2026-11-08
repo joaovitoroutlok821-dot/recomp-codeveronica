@@ -33,8 +33,15 @@ mipmap = app / "src/main/res/mipmap-nodpi"
 drawable.mkdir(parents=True, exist_ok=True)
 mipmap.mkdir(parents=True, exist_ok=True)
 (drawable / "recvx_cover.png").write_bytes(cover.read_bytes())
-(mipmap / "ic_launcher.png").write_bytes(logo.read_bytes())
-(mipmap / "ic_launcher_round.png").write_bytes(logo.read_bytes())
+# SDL ships density-qualified launcher icons. Android prefers those over
+# mipmap-nodpi, so replace every existing density variant as well.
+res = app / "src/main/res"
+icon_dirs = [p for p in res.glob("mipmap-*") if p.is_dir()]
+if mipmap not in icon_dirs:
+    icon_dirs.append(mipmap)
+for icon_dir in icon_dirs:
+    (icon_dir / "ic_launcher.png").write_bytes(logo.read_bytes())
+    (icon_dir / "ic_launcher_round.png").write_bytes(logo.read_bytes())
 
 setup_activity = r'''package org.libsdl.app;
 
