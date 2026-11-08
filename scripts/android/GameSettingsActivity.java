@@ -137,7 +137,19 @@ public final class GameSettingsActivity extends Activity {
   }
   private Spinner choice(String[] values,String key,int def) {
     Spinner s=new Spinner(this);
-    ArrayAdapter<String>a=new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,values);
+    ArrayAdapter<String>a=new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,values) {
+      @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
+        TextView t=(TextView)super.getView(position,convertView,parent);
+        t.setTextColor(Color.WHITE); t.setTextSize(13); t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPadding(dp(8),0,dp(4),0); return t;
+      }
+      @Override public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
+        TextView t=(TextView)super.getDropDownView(position,convertView,parent);
+        t.setTextColor(Color.WHITE); t.setTextSize(14); t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPadding(dp(12),dp(10),dp(8),dp(10));
+        t.setBackgroundColor(0xFF202126); return t;
+      }
+    };
     a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); s.setAdapter(a);
     s.setBackground(shape(0xFF202126,0xFF8E2932,6)); s.setSelection(p.getInt(key,def));
     s.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
@@ -146,7 +158,8 @@ public final class GameSettingsActivity extends Activity {
     }); return s;
   }
   private Switch toggle(String title,String key,boolean def) {
-    Switch s=new Switch(this); s.setText(title); s.setTextColor(Color.WHITE);
+    Switch s=new Switch(this); s.setText("");
+    s.setShowText(false);
     s.setChecked(p.getBoolean(key,def)); s.setOnCheckedChangeListener((v,on)->p.edit().putBoolean(key,on).apply()); return s;
   }
   private SeekBar slider(String key,int def) {
