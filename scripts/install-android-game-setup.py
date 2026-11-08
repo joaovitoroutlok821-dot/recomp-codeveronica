@@ -388,6 +388,7 @@ public final class GameSDLActivity extends SDLActivity
     private static final String EXTRA_GAME_ROOT = "org.libsdl.app.GAME_ROOT";
     static native void nativeSetTouchButton(int button, boolean pressed);
     static native void nativeSetTouchAxis(int axis, float value);
+    static native float nativeGetPresentedFps();
 
     private InputManager inputManager;
     private long lastMotionLogMs;
@@ -498,7 +499,10 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.SparseArray;
+import java.util.Locale;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -510,6 +514,15 @@ public final class TouchControlsView extends View {
     private static final float[] BUTTON_Y = {0.78f, 0.70f, 0.70f, 0.62f, 0.90f, 0.90f, 0.18f, 0.18f};
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Handler fpsHandler = new Handler(Looper.getMainLooper());
+    private float presentedFps;
+    private final Runnable fpsRefresh = new Runnable() {
+        @Override public void run() {
+            presentedFps = GameSDLActivity.nativeGetPresentedFps();
+            invalidate();
+            fpsHandler.postDelayed(this, 500);
+        }
+    };
     private final SparseArray<Integer> pointerTargets = new SparseArray<>();
     private final int[] buttonReferences = new int[21];
     private final boolean[] dpadState = new boolean[4];
@@ -521,6 +534,7 @@ public final class TouchControlsView extends View {
         super(context);
         setClickable(true);
         setWillNotDraw(false);
+        fpsHandler.post(fpsRefresh);
     }
 
     private float unit() { return Math.min(getWidth(), getHeight()); }
@@ -652,6 +666,19 @@ public final class TouchControlsView extends View {
             paint.setColor(Color.WHITE);
             canvas.drawText(BUTTON_LABELS[i], cx, cy + paint.getTextSize() * 0.34f, paint);
         }
+
+        paint.setStyle(Paint.Style.FILL);
+        paint.setTextAlign(Paint.Align.LEFT);
+        paint.setTextSize(base * 0.035f);
+        paint.setColor(Color.argb(220, 255, 255, 255));
+        String fpsText = presentedFps > 0.0f
+            ? String.format(Locale.US, "FPS %.1f", presentedFps) : "FPS --";
+        canvas.drawText(fpsText, getWidth() * 0.035f, getHeight() * 0.075f, paint);
+    }
+
+    @Override protected void onDetachedFromWindow() {
+        fpsHandler.removeCallbacks(fpsRefresh);
+        super.onDetachedFromWindow();
     }
 
     @Override public boolean onTouchEvent(MotionEvent event) {
