@@ -461,3 +461,12 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - A mesma classe não sobrescreve callbacks Android de joystick/teclas nem registra mapeamento próprio. Ainda não foi isolado se o Bluetooth deixa de ser detectado pelo SDL/Android ou se os eventos chegam ao SDL mas não são mapeados para os controles do jogo/ReXGlue. Não declarar causa definitiva sem instrumentação.
 - Próxima prioridade: (1) instrumentar detecção de dispositivos SDL GameController/Joystick e eventos de botão/eixos, verificar lifecycle/foco Android e mapeamento para entrada do título; (2) projetar overlay touch de baixo custo com D-pad/stick e botões ABXY, Start/Back, encaminhando eventos à mesma camada de entrada do runtime; (3) manter Release otimizado que normalizou a cutscene; (4) adicionar FPS/frametime com medição do frame efetivamente apresentado, evitando overlay pesado.
 - Não desfazer Release nem fazer downgrade de desempenho. Não gerar nova build com controles fictícios: implementar e validar que os eventos alcançam o jogo antes de publicar.
+
+
+## Investigação complementar após APK #23 (2026-11-08)
+- Comparação dos logs reais dos jobs #21 (job 128538620833) e #23 (job 128574326035): ambos executaram `bash ./build.sh --release --jobs 2`, configuraram o ReXGlue como Release, compilaram com `--config Release`, prepararam o mesmo SDL 3.5.0 no commit `8bf3b7215ad9fc3deb583c6a3a37c6c67f2e24e4` e construíram o APK com `assembleRelease`.
+- Portanto, a hipótese anterior de que a falha Bluetooth do #23 decorreu simplesmente de mudança Debug -> Release não é sustentada: os logs mostram Release nos dois builds comparados.
+- A sequência de etapas e o SDL pinado também são iguais nos dois jobs; a causa permanece indeterminada e deve ser isolada por diagnóstico em runtime e comparação dos commits/artefatos de origem.
+- O launcher gerado por `scripts/install-android-game-setup.py` cria `GameSDLActivity` que apenas estende `SDLActivity` e fornece argumentos. Não há camada de botões touch nem código próprio de captura de gamepad nesse projeto.
+- Próxima investigação: comparar o SHA do checkout do projeto público usado por cada run e as configurações/patches efetivos; instrumentar enumeração de dispositivos e eventos SDL Android sem substituir os handlers padrão do SDL. Depois, implementar overlay touch ligado ao mesmo caminho de entrada usado pelo jogo e FPS/frame-time no ponto real de apresentação.
+- Não iniciar novo build até concluir a revisão técnica e validar os patches; manter APK/game data fora do repositório público.
