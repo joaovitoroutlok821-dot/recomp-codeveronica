@@ -186,6 +186,13 @@ bool ConfigureAndroidRuntimeDataDirectory() {
 
 }  // namespace
 
+extern "C" float ReXGlue_GetPresentedFPS();
+
+extern "C" JNIEXPORT jfloat JNICALL
+Java_org_libsdl_app_GameSDLActivity_nativeGetPresentedFps(JNIEnv*, jclass) {
+  return static_cast<jfloat>(ReXGlue_GetPresentedFPS());
+}
+
 extern "C" JNIEXPORT void JNICALL
 Java_org_libsdl_app_GameSDLActivity_nativeSetTouchButton(
     JNIEnv*, jclass, jint button, jboolean pressed) {
