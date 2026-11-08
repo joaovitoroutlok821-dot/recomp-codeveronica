@@ -18,6 +18,17 @@ java = app / "src/main/java/org/libsdl/app"
 if not manifest.is_file():
     raise SystemExit(f"SDL Android manifest not found: {manifest}")
 java.mkdir(parents=True, exist_ok=True)
+assets = Path(__file__).resolve().parents[1] / "assets"
+cover = assets / "recvx-cover.jpg"
+if not cover.is_file():
+    raise SystemExit(f"Resident Evil cover artwork not found: {cover}")
+drawable = app / "src/main/res/drawable-nodpi"
+mipmap = app / "src/main/res/mipmap-nodpi"
+drawable.mkdir(parents=True, exist_ok=True)
+mipmap.mkdir(parents=True, exist_ok=True)
+(drawable / "recvx_cover.jpg").write_bytes(cover.read_bytes())
+(mipmap / "ic_launcher.jpg").write_bytes(cover.read_bytes())
+(mipmap / "ic_launcher_round.jpg").write_bytes(cover.read_bytes())
 
 setup_activity = r'''package org.libsdl.app;
 
@@ -35,6 +46,10 @@ import android.database.Cursor;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.graphics.Color;
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -73,7 +88,7 @@ public final class GameSetupActivity extends Activity {
         if (saved != null) {
             selectedTree = Uri.parse(saved);
             if (findEntryPoint(gameDir) != null) {
-                status.setText("Pasta do jogo preparada. Os dados já estão no armazenamento privado.");
+                status.setText("Arquivos do jogo preparados. Toque em INICIAR JOGO.");
                 start.setEnabled(true);
             } else {
                 status.setText("Selecione novamente a pasta do jogo para preparar os arquivos.");
@@ -89,27 +104,63 @@ public final class GameSetupActivity extends Activity {
         layout.setGravity(Gravity.CENTER);
         int pad = (int)(24 * getResources().getDisplayMetrics().density);
         layout.setPadding(pad, pad, pad, pad);
+        GradientDrawable background = new GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            new int[] { Color.rgb(5, 12, 24), Color.rgb(0, 0, 0), Color.rgb(12, 18, 25) });
+        layout.setBackground(background);
+
+        int coverId = getResources().getIdentifier("recvx_cover", "drawable", getPackageName());
+        if (coverId != 0) {
+            ImageView cover = new ImageView(this);
+            cover.setImageResource(coverId);
+            cover.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            LinearLayout.LayoutParams imageParams = new LinearLayout.LayoutParams(-1, 0, 1.0f);
+            imageParams.bottomMargin = (int)(18 * getResources().getDisplayMetrics().density);
+            layout.addView(cover, imageParams);
+        }
+
+        TextView title = new TextView(this);
+        title.setText("RESIDENT EVIL CODE: VERONICA X HD");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(20);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setGravity(Gravity.CENTER);
+        layout.addView(title, new LinearLayout.LayoutParams(-1, -2));
+
+        TextView subtitle = new TextView(this);
+        subtitle.setText("EDIÇÃO DUBLADA • ANDROID");
+        subtitle.setTextColor(Color.rgb(190, 205, 220));
+        subtitle.setTextSize(13);
+        subtitle.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams subtitleParams = new LinearLayout.LayoutParams(-1, -2);
+        subtitleParams.topMargin = (int)(6 * getResources().getDisplayMetrics().density);
+        layout.addView(subtitle, subtitleParams);
+
         status = new TextView(this);
-        status.setTextSize(16);
+        status.setTextColor(Color.LTGRAY);
+        status.setTextSize(14);
         status.setGravity(Gravity.CENTER);
-        layout.addView(status, new LinearLayout.LayoutParams(-1, -2));
+        LinearLayout.LayoutParams statusParams = new LinearLayout.LayoutParams(-1, -2);
+        statusParams.topMargin = pad;
+        layout.addView(status, statusParams);
+
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setIndeterminate(true);
         progress.setVisibility(View.GONE);
         LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-1, -2);
-        pp.topMargin = pad;
+        pp.topMargin = pad / 2;
         layout.addView(progress, pp);
-        choose = new Button(this);
-        choose.setText("Selecionar pasta do jogo");
-        choose.setOnClickListener(v -> chooseFolder());
+
+        start = new Button(this);
+        start.setText("INICIAR JOGO");
+        start.setEnabled(true);
+        start.setOnClickListener(v -> {
+            if (findEntryPoint(gameDir) == null) chooseFolder();
+            else launchGame();
+        });
         LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, -2);
         bp.topMargin = pad;
-        layout.addView(choose, bp);
-        start = new Button(this);
-        start.setText("Abrir teste SDL (não inicia o jogo)");
-        start.setEnabled(false);
-        start.setOnClickListener(v -> launchGame());
-        layout.addView(start, new LinearLayout.LayoutParams(-1, -2));
+        layout.addView(start, bp);
         setContentView(layout);
     }
 
@@ -178,7 +229,7 @@ public final class GameSetupActivity extends Activity {
                     choose.setEnabled(true);
                     start.setEnabled(true);
                     getPreferences(MODE_PRIVATE).edit().putString(PREF_URI, tree.toString()).apply();
-                    status.setText("Arquivos preparados. Cópia concluída no armazenamento privado.");
+                    status.setText("Arquivos preparados. Toque em INICIAR JOGO para continuar.");
                     Toast.makeText(this, "Pasta do jogo preparada.", Toast.LENGTH_LONG).show();
                 });
             } catch (Exception e) {
@@ -741,6 +792,9 @@ ns = "{http://schemas.android.com/apk/res/android}"
 app_node = mroot.find("application")
 if app_node is None:
     raise SystemExit("AndroidManifest.xml has no application element")
+app_node.set(ns + "label", "Resident Evil Code Veronica X HD")
+app_node.set(ns + "icon", "@mipmap/ic_launcher")
+app_node.set(ns + "roundIcon", "@mipmap/ic_launcher_round")
 
 # Convert the existing SDLActivity entry into the non-launcher game activity.
 sdl = None
