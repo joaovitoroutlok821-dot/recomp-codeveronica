@@ -440,3 +440,13 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Etapa atual: `Configure and compile Android ARM64 native libraries` em andamento. Verificação do APK, coleta de diagnóstico, upload e limpeza ainda pendentes.
 - Nenhum APK #22 disponível para teste neste momento. Não iniciar nova build enquanto esta estiver ativa.
 - Próximo passo: aguardar a conclusão, validar APK Release/ARM64 e só então solicitar teste no Motorola. A instrumentação de FPS permanece planejada para a compilação seguinte, depois de investigar o ponto real de apresentação dos frames.
+
+
+## Atualização — Workflow #22 e correção do validador (2026-11-08)
+- Workflow #22 terminou com conclusão `failure`, mas a compilação Gradle `assembleRelease` terminou em `BUILD SUCCESSFUL`.
+- O APK foi gerado e enviado como artefato privado `recvx-private-android-arm64` (artefato ID 13595979670; retenção até 2026-11-11). O APK contém bibliotecas ARM64 `libmain.so`, `libSDL3.so`, `librexruntimerd.so` e `librexgpu-xenosrd.so`; dados do jogo não foram embutidos.
+- A falha foi exclusivamente no validador: ele aceitava sufixo `d`, mas as bibliotecas foram produzidas com sufixo `rd` (RelWithDebInfo). A etapa interrompeu antes de executar zipalign/apksigner, então o artefato #22 não deve ser usado como entrega final.
+- Corrigido o workflow privado para aceitar nomes Release, Debug e RelWithDebInfo (`rd`): commit `d23718a6f81ddd984dfed4252be7e37846fd875c`.
+- Criado pedido de nova execução; Workflow #23 confirmado via API, run ID `42429276112`, estado inicial `queued`: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42429276112
+- Próximo passo: acompanhar #23 até completar validação nativa, zipalign e assinatura. Não solicitar teste do APK #22; aguardar o artefato validado do #23.
+- O contador de FPS permanece planejado para a compilação posterior, após resolver a validação e confirmar a instalação do Release.
