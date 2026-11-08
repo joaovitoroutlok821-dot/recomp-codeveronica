@@ -3,6 +3,7 @@ package org.libsdl.app;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.SharedPreferences;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -13,16 +14,13 @@ import android.widget.*;
 
 public final class GameSettingsActivity extends Activity {
   private SharedPreferences p;
-  private LinearLayout content;
-  private LinearLayout tabs;
-  private int activeRed = Color.rgb(235, 18, 32);
-  private int panel = Color.rgb(18, 20, 25);
-  private int muted = Color.rgb(160, 168, 180);
+  private LinearLayout content, tabs, main;
+  private int red = Color.rgb(238, 12, 28);
+  private int muted = Color.rgb(190, 198, 210);
   private String current = "Gráficos";
-
   private int dp(float v) { return (int)(v * getResources().getDisplayMetrics().density + 0.5f); }
 
-  public void onCreate(Bundle b) {
+  @Override public void onCreate(Bundle b) {
     super.onCreate(b);
     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
     p = getSharedPreferences("recvx_settings", MODE_PRIVATE);
@@ -36,217 +34,176 @@ public final class GameSettingsActivity extends Activity {
     if (stroke != 0) d.setStroke(dp(1), stroke);
     return d;
   }
-
-  private TextView text(String value, int size, int color, boolean bold) {
-    TextView t = new TextView(this);
-    t.setText(value); t.setTextSize(size); t.setTextColor(color);
+  private TextView label(String s, int size, int color, boolean bold) {
+    TextView t = new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(color);
     if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
     return t;
   }
-
-  private Button button(String label, boolean selected) {
-    Button b = new Button(this);
-    b.setText(label); b.setTextSize(12); b.setAllCaps(false);
+  private Button action(String s, boolean selected) {
+    Button b = new Button(this); b.setText(s); b.setTextSize(13); b.setAllCaps(false);
     b.setTextColor(Color.WHITE);
-    b.setBackground(shape(selected ? Color.rgb(115, 0, 8) : Color.rgb(28, 25, 28),
-                          selected ? activeRed : Color.rgb(95, 42, 45), 8));
+    b.setBackground(shape(selected ? 0xFF97000B : 0xFF17191F, selected ? red : 0xFF9A1522, 8));
     return b;
   }
-
   private void buildUi() {
     LinearLayout root = new LinearLayout(this);
-    root.setOrientation(LinearLayout.HORIZONTAL);
-    root.setPadding(dp(16), dp(12), dp(16), dp(12));
-    root.setBackgroundColor(Color.rgb(4, 7, 12));
+    root.setOrientation(LinearLayout.VERTICAL);
+    root.setBackgroundColor(Color.rgb(3,5,9));
+    root.setPadding(dp(12), dp(8), dp(12), dp(4));
+
+    LinearLayout body = new LinearLayout(this);
+    body.setOrientation(LinearLayout.HORIZONTAL);
+    root.addView(body, new LinearLayout.LayoutParams(-1, 0, 1));
 
     LinearLayout side = new LinearLayout(this);
     side.setOrientation(LinearLayout.VERTICAL);
     side.setPadding(dp(8), dp(8), dp(8), dp(8));
-    side.setBackground(shape(Color.rgb(12, 14, 19), Color.rgb(105, 22, 30), 12));
-    TextView brand = text("RESIDENT EVIL\nCODE: VERONICA X", 17, Color.WHITE, true);
-    brand.setGravity(Gravity.CENTER);
-    brand.setPadding(dp(4), dp(12), dp(4), dp(18));
-    side.addView(brand);
-    Button back = button("‹  VOLTAR", false);
-    back.setOnClickListener(v -> finish());
-    side.addView(back, new LinearLayout.LayoutParams(-1, dp(48)));
-    TextView section = text("CONFIGURAÇÕES", 13, activeRed, true);
-    section.setPadding(dp(8), dp(20), dp(4), dp(8));
-    side.addView(section);
-    TextView note = text("Ajuste as opções disponíveis para esta versão Android.", 11, muted, false);
-    note.setPadding(dp(8), dp(4), dp(8), dp(8));
-    side.addView(note);
-    root.addView(side, new LinearLayout.LayoutParams(dp(190), -1));
+    side.setBackground(shape(0xFF080A0F, red, 12));
+    TextView game = label("RESIDENT EVIL\nCODE: VERONICA X HD", 17, Color.WHITE, true);
+    game.setGravity(Gravity.CENTER);
+    game.setPadding(dp(4), dp(8), dp(4), dp(14));
+    side.addView(game, new LinearLayout.LayoutParams(-1, dp(92)));
+    String[] menu = {"▷  Iniciar Jogo", "⚙  Configurações", "♧  Controles", "▣  Salvar / Carregar", "ⓘ  Informações", "⏻  Sair"};
+    for (int i=0;i<menu.length;i++) {
+      final int item=i;
+      Button b=action(menu[i], i==1);
+      LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1, dp(48));
+      bp.bottomMargin=dp(7); side.addView(b,bp);
+      b.setOnClickListener(v -> {
+        if(item==0) { finish(); }
+        else if(item==1) { current="Gráficos"; refreshTabs(); show(current); }
+        else if(item==2) { current="Controles"; refreshTabs(); show(current); }
+        else if(item==3) Toast.makeText(this,"Salvar/carregar ainda não está integrado ao runtime.",Toast.LENGTH_SHORT).show();
+        else if(item==4) new android.app.AlertDialog.Builder(this).setTitle("Informações").setMessage("Resident Evil Code: Veronica X HD — edição dublada para Android ARM64.").setPositiveButton("OK",null).show();
+        else finish();
+      });
+    }
+    TextView edition=label("EDIÇÃO DUBLADA • ANDROID",11,muted,false);
+    edition.setGravity(Gravity.CENTER); edition.setPadding(0,dp(8),0,0); side.addView(edition);
+    body.addView(side,new LinearLayout.LayoutParams(dp(205),-1));
 
-    LinearLayout main = new LinearLayout(this);
-    main.setOrientation(LinearLayout.VERTICAL);
-    LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(0, -1, 1);
-    mp.leftMargin = dp(12);
-    root.addView(main, mp);
+    main=new LinearLayout(this); main.setOrientation(LinearLayout.VERTICAL);
+    LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(0,-1,1); mp.leftMargin=dp(10); body.addView(main,mp);
+    TextView title=label("Configurações",26,Color.WHITE,true);
+    title.setPadding(dp(4),0,0,dp(5)); main.addView(title);
 
-    TextView title = text("Configurações", 28, Color.WHITE, true);
-    title.setPadding(dp(8), dp(2), dp(8), dp(8));
-    main.addView(title);
-
-    tabs = new LinearLayout(this);
-    tabs.setOrientation(LinearLayout.HORIZONTAL);
-    String[] names = {"Gráficos", "Desempenho", "Controles", "Áudio"};
-    for (String n : names) {
-      Button t = button(n, n.equals(current));
-      LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(0, dp(52), 1);
-      tp.setMargins(dp(3), dp(2), dp(3), dp(8));
-      tabs.addView(t, tp);
-      t.setOnClickListener(v -> { current = n; refreshTabs(); show(n); });
+    tabs=new LinearLayout(this); tabs.setOrientation(LinearLayout.HORIZONTAL);
+    String[] names={"▣  Gráficos","◉  Desempenho","♧  Controles","◖  Áudio"};
+    String[] keys={"Gráficos","Desempenho","Controles","Áudio"};
+    for(int i=0;i<keys.length;i++){
+      final String key=keys[i]; Button b=action(names[i],key.equals(current));
+      LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,dp(46),1); tp.setMargins(dp(3),dp(2),dp(3),dp(6));
+      tabs.addView(b,tp); b.setOnClickListener(v->{current=key;refreshTabs();show(key);});
     }
     main.addView(tabs);
+    ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true);
+    content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);
+    content.setPadding(dp(7),dp(5),dp(7),dp(5));
+    scroll.addView(content); main.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
 
-    content = new LinearLayout(this);
-    content.setOrientation(LinearLayout.VERTICAL);
-    content.setPadding(dp(14), dp(12), dp(14), dp(12));
-    content.setBackground(shape(Color.rgb(12, 14, 18), Color.rgb(125, 28, 35), 12));
-    ScrollView scroll = new ScrollView(this);
-    scroll.setFillViewport(true);
-    scroll.addView(content);
-    main.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+    LinearLayout footer=new LinearLayout(this); footer.setOrientation(LinearLayout.HORIZONTAL);
+    Button reset=action("↶  Restaurar padrões",false);
+    reset.setOnClickListener(v->{p.edit().clear().apply();current="Gráficos";refreshTabs();show(current);});
+    Button apply=action("✓  Aplicar",true);
+    apply.setOnClickListener(v->{p.edit().apply();Toast.makeText(this,"Configurações salvas.",Toast.LENGTH_SHORT).show();finish();});
+    LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(0,dp(42),1); fp.setMargins(dp(4),dp(5),dp(4),dp(2));
+    footer.addView(reset,fp); footer.addView(apply,fp); main.addView(footer);
+    root.addView(body,new LinearLayout.LayoutParams(-1,0,1));
 
-    LinearLayout footer = new LinearLayout(this);
-    footer.setOrientation(LinearLayout.HORIZONTAL);
-    Button reset = button("↶  Restaurar padrões", false);
-    reset.setOnClickListener(v -> { p.edit().clear().apply(); current = "Gráficos"; refreshTabs(); show(current); });
-    Button apply = button("✓  Aplicar", true);
-    apply.setOnClickListener(v -> { Toast.makeText(this, "Configurações salvas.", Toast.LENGTH_SHORT).show(); finish(); });
-    LinearLayout.LayoutParams fp = new LinearLayout.LayoutParams(0, dp(46), 1);
-    fp.setMargins(dp(4), dp(8), dp(4), 0);
-    footer.addView(reset, fp); footer.addView(apply, fp);
-    main.addView(footer);
+    TextView status=label("▱  Diretório do jogo: consulte a tela inicial     •     ♧ Controle: estado detectado pelo Android     •     Controles na tela: configurável     •     Versão: v1.0.0",11,muted,false);
+    status.setGravity(Gravity.CENTER_VERTICAL); status.setPadding(dp(8),dp(7),dp(8),dp(7));
+    status.setBackground(shape(0xFF080A0E,0xFF6E1B25,5));
+    root.addView(status,new LinearLayout.LayoutParams(-1,dp(34)));
     setContentView(root);
   }
-
   private void refreshTabs() {
-    String[] names = {"Gráficos", "Desempenho", "Controles", "Áudio"};
-    for (int i = 0; i < tabs.getChildCount(); i++) {
-      Button b = (Button)tabs.getChildAt(i);
-      b.setBackground(shape(names[i].equals(current) ? Color.rgb(115,0,8) : Color.rgb(28,25,28),
-                            names[i].equals(current) ? activeRed : Color.rgb(95,42,45), 8));
+    String[] keys={"Gráficos","Desempenho","Controles","Áudio"};
+    for(int i=0;i<tabs.getChildCount();i++){
+      Button b=(Button)tabs.getChildAt(i);
+      b.setBackground(shape(keys[i].equals(current)?0xFF97000B:0xFF17191F,keys[i].equals(current)?red:0xFF9A1522,8));
     }
   }
-
-  private LinearLayout card(String heading) {
-    LinearLayout box = new LinearLayout(this);
-    box.setOrientation(LinearLayout.VERTICAL);
-    box.setPadding(dp(14), dp(12), dp(14), dp(12));
-    box.setBackground(shape(panel, Color.rgb(95, 28, 34), 10));
-    TextView h = text(heading, 19, Color.WHITE, true);
-    h.setPadding(dp(2), dp(2), dp(2), dp(8));
-    box.addView(h);
-    return box;
+  private LinearLayout panel(String heading) {
+    LinearLayout box=new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
+    box.setPadding(dp(11),dp(8),dp(11),dp(8)); box.setBackground(shape(0xFF111318,0xFF941824,10));
+    TextView h=label(heading,17,Color.WHITE,true); h.setPadding(dp(2),dp(1),dp(2),dp(5)); box.addView(h); return box;
   }
-
-  private void row(LinearLayout box, String label, View control) {
-    LinearLayout line = new LinearLayout(this);
-    line.setGravity(Gravity.CENTER_VERTICAL);
-    line.setOrientation(LinearLayout.HORIZONTAL);
-    TextView l = text(label, 14, Color.WHITE, false);
-    line.addView(l, new LinearLayout.LayoutParams(0, -2, 1));
-    if (control != null) line.addView(control, new LinearLayout.LayoutParams(dp(220), dp(46)));
-    LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
-    rp.bottomMargin = dp(5);
-    box.addView(line, rp);
+  private void row(LinearLayout box,String name,View control) {
+    LinearLayout line=new LinearLayout(this); line.setGravity(Gravity.CENTER_VERTICAL);
+    TextView l=label(name,13,Color.WHITE,false); line.addView(l,new LinearLayout.LayoutParams(0,dp(34),1));
+    if(control!=null) line.addView(control,new LinearLayout.LayoutParams(dp(190),dp(36)));
+    LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,-2); rp.bottomMargin=dp(2); box.addView(line,rp);
   }
-
-  private void info(LinearLayout box, String label) {
-    TextView t = text(label, 13, muted, false);
-    t.setPadding(dp(4), dp(5), dp(4), dp(7));
-    box.addView(t);
+  private void note(LinearLayout box,String s) {
+    TextView t=label(s,12,muted,false); t.setPadding(dp(4),dp(4),dp(4),dp(6)); box.addView(t);
   }
-
-  private Spinner spinner(String[] values, int selected, String key) {
-    Spinner s = new Spinner(this);
-    ArrayAdapter<String> adapter = new ArrayAdapter<String>(
-        this, android.R.layout.simple_spinner_item, values) {
-      private TextView makeText(String value, boolean dropdown) {
-        TextView t = new TextView(GameSettingsActivity.this);
-        t.setText(value);
-        t.setTextColor(Color.WHITE);
-        t.setTextSize(14);
-        t.setGravity(Gravity.CENTER_VERTICAL);
-        t.setPadding(dp(12), dp(8), dp(12), dp(8));
-        if (dropdown) t.setBackgroundColor(Color.rgb(24, 25, 30));
-        return t;
-      }
-      @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
-        return makeText(getItem(position), false);
-      }
-      @Override public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
-        return makeText(getItem(position), true);
-      }
-    };
-    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-    s.setAdapter(adapter);
-    s.setBackground(shape(Color.rgb(25, 25, 30), Color.rgb(145, 32, 42), 7));
-    s.setPadding(dp(8), dp(3), dp(8), dp(3));
-    s.setSelection(Math.max(0, Math.min(selected, values.length - 1)));
-    s.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
-      public void onNothingSelected(android.widget.AdapterView<?> a) {}
-      public void onItemSelected(android.widget.AdapterView<?> a, View v, int pos, long id) {
-        p.edit().putInt(key, pos).apply();
-      }
-    });
-    return s;
+  private Spinner choice(String[] values,String key,int def) {
+    Spinner s=new Spinner(this);
+    ArrayAdapter<String>a=new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,values);
+    a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); s.setAdapter(a);
+    s.setBackground(shape(0xFF202126,0xFF8E2932,6)); s.setSelection(p.getInt(key,def));
+    s.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
+      public void onNothingSelected(android.widget.AdapterView<?>x){}
+      public void onItemSelected(android.widget.AdapterView<?>x,View v,int pos,long id){p.edit().putInt(key,pos).apply();}
+    }); return s;
   }
-
-  private Switch toggle(String label, String key, boolean def) {
-    Switch s = new Switch(this);
-    s.setText(label); s.setTextColor(Color.WHITE);
-    s.setChecked(p.getBoolean(key, def));
-    s.setOnCheckedChangeListener((v, on) -> p.edit().putBoolean(key, on).apply());
-    return s;
+  private Switch toggle(String title,String key,boolean def) {
+    Switch s=new Switch(this); s.setText(title); s.setTextColor(Color.WHITE);
+    s.setChecked(p.getBoolean(key,def)); s.setOnCheckedChangeListener((v,on)->p.edit().putBoolean(key,on).apply()); return s;
   }
-
+  private SeekBar slider(String key,int def) {
+    SeekBar s=new SeekBar(this); s.setMax(100); s.setProgress(p.getInt(key,def));
+    s.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
+      public void onProgressChanged(SeekBar b,int v,boolean user){if(user)p.edit().putInt(key,v).apply();}
+      public void onStartTrackingTouch(SeekBar b){} public void onStopTrackingTouch(SeekBar b){}
+    }); return s;
+  }
   private void show(String tab) {
     content.removeAllViews();
-    if (tab.equals("Gráficos")) {
-      LinearLayout split = new LinearLayout(this);
-      split.setOrientation(LinearLayout.HORIZONTAL);
-      LinearLayout graphics = card("Gráficos");
-      LinearLayout quality = card("Imagem e qualidade");
-      row(graphics, "Resolução de saída", spinner(new String[]{"720p (1280 × 720)", "1080p (1920 × 1080)"}, p.getInt("resolution", 1), "resolution"));
-      info(graphics, "A resolução é aplicada ao iniciar o jogo novamente.");
-      row(graphics, "Filtro de imagem", spinner(new String[]{"Bilinear"}, 0, "filter"));
-      info(graphics, "Bilinear é o único filtro habilitado no renderer Android atual.");
-      info(quality, "Escala de renderização: indisponível no renderer atual.");
-      info(quality, "Qualidade, FSR, CAS, nitidez e anti-aliasing: aguardam integração real no runtime.");
-      info(quality, "Partículas e proporção manual: não expostas pelo jogo nesta compilação.");
-      LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(0, -2, 1);
-      cp.setMargins(dp(4), dp(4), dp(4), dp(4));
-      split.addView(graphics, cp); split.addView(quality, cp);
-      content.addView(split);
-    } else if (tab.equals("Desempenho")) {
-      LinearLayout perf = card("Desempenho");
-      row(perf, "Contador de FPS", toggle("Exibir FPS", "show_fps", true));
-      info(perf, "O contador mostra a taxa de apresentação medida pelo renderer.");
-      info(perf, "Limite de FPS e V-Sync: ainda sem controle confiável exposto pelo runtime.");
-      info(perf, "Cache de shaders e redução de efeitos: aguardam suporte real.");
-      content.addView(perf);
-    } else if (tab.equals("Controles")) {
-      LinearLayout controls = card("Controles");
-      row(controls, "Controles na tela", spinner(new String[]{"Automático", "Sempre mostrar", "Sempre ocultar"}, p.getInt("touch_mode", 0), "touch_mode"));
-      info(controls, "No modo automático, os controles táteis somem após o controle físico enviar entrada confirmada.");
-      info(controls, "Ao desconectar o controle físico, os controles na tela voltam a aparecer.");
-      info(controls, "No modo automático, os controles na tela somem quando um controle físico envia entrada confirmada.");
-      info(controls, "Ao desconectar o controle físico, os controles na tela voltam a aparecer.");
-      Button arrange = button("↔  Mover botões na tela", true);
-      arrange.setOnClickListener(v -> startActivity(new android.content.Intent(
-          GameSettingsActivity.this, TouchLayoutEditorActivity.class)));
-      LinearLayout.LayoutParams arrangeParams = new LinearLayout.LayoutParams(-1, dp(50));
-      arrangeParams.topMargin = dp(10);
-      controls.addView(arrange, arrangeParams);
-      info(controls, "Arraste o joystick e cada botão para a posição desejada. As posições ficam salvas neste aparelho.");
-      info(controls, "O funcionamento do controle Bluetooth ainda precisa ser confirmado no aparelho.");
+    if(tab.equals("Gráficos")) {
+      LinearLayout split=new LinearLayout(this); split.setOrientation(LinearLayout.HORIZONTAL);
+      LinearLayout g=panel("Gráficos"), q=panel("Qualidade de imagem");
+      row(g,"Resolução de saída",choice(new String[]{"720p (1280×720)","1080p (1920×1080)"}, "resolution",1));
+      row(g,"Escala de renderização",choice(new String[]{"100% (Nativa)"}, "render_scale",0));
+      row(g,"Qualidade de imagem",choice(new String[]{"Alta","Média","Baixa"}, "image_quality",0));
+      row(g,"Filtro de imagem",choice(new String[]{"Bilinear"}, "image_filter",0));
+      row(g,"Filtro FSR",choice(new String[]{"Desativado","FSR (FidelityFX)"}, "fsr",0));
+      row(g,"Modo FSR",choice(new String[]{"Quality","Balanced","Performance"}, "fsr_mode",0));
+      row(g,"Nitidez (CAS)",slider("cas_sharpness",70));
+      row(g,"Anti-aliasing (AA)",choice(new String[]{"Desativado","Ativado"}, "anti_aliasing",0));
+      row(g,"Efeitos de partículas",choice(new String[]{"Alto","Médio","Baixo"}, "particles",0));
+      row(g,"Proporção da tela",choice(new String[]{"Automática (16:9)","4:3","16:9","16:10"}, "aspect_ratio",0));
+      note(q,"As opções de qualidade, FSR, CAS, anti-aliasing, partículas e proporção serão aplicadas somente quando o runtime oferecer suporte real.");
+      note(q,"Filtro bilinear e resolução são as opções atualmente expostas pelo renderer Android.");
+      LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1); cp.setMargins(dp(3),dp(3),dp(3),dp(3));
+      split.addView(g,cp); split.addView(q,cp); content.addView(split);
+    } else if(tab.equals("Desempenho")) {
+      LinearLayout split=new LinearLayout(this); split.setOrientation(LinearLayout.HORIZONTAL);
+      LinearLayout perf=panel("Desempenho"), info=panel("Informações");
+      row(perf,"Limite de FPS",choice(new String[]{"30 FPS","60 FPS","120 FPS","Ilimitado"},"fps_limit",1));
+      row(perf,"Sincronização vertical (V-Sync)",toggle("Ativado","vsync",true));
+      row(perf,"Contador de FPS",toggle("Exibir FPS","show_fps",true));
+      row(perf,"Cache de shaders",toggle("Ativado","shader_cache",true));
+      row(perf,"Reduzir efeitos pesados",toggle("Ativado","reduce_effects",false));
+      note(info,"O contador apresenta a taxa de apresentação medida pelo renderer.");
+      note(info,"Limite de FPS, V-Sync, cache e redução de efeitos ainda precisam de integração e validação no runtime antes de produzirem efeito no jogo.");
+      LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1); cp.setMargins(dp(3),dp(3),dp(3),dp(3));
+      split.addView(perf,cp); split.addView(info,cp); content.addView(split);
+    } else if(tab.equals("Controles")) {
+      LinearLayout controls=panel("Controles");
+      row(controls,"Controles na tela",choice(new String[]{"Automático","Sempre mostrar","Sempre ocultar"},"touch_mode",0));
+      Button edit=action("↔  Editar posição dos controles",true);
+      edit.setOnClickListener(v->startActivity(new Intent(this,TouchLayoutEditorActivity.class)));
+      controls.addView(edit,new LinearLayout.LayoutParams(-1,dp(42)));
+      note(controls,"O editor permite arrastar o joystick e os botões. Ajustes de tamanho e transparência ainda não estão disponíveis.");
+      note(controls,"O modo automático deve ocultar os controles após entrada física confirmada e mostrá-los novamente quando o controle for desconectado. Validar no aparelho.");
       content.addView(controls);
     } else {
-      LinearLayout audio = card("Áudio");
-      info(audio, "Volume geral, música e efeitos ainda não possuem controles reais expostos pelo runtime.");
+      LinearLayout audio=panel("Áudio");
+      row(audio,"Volume geral",slider("audio_master",100));
+      row(audio,"Volume da música",slider("audio_music",100));
+      row(audio,"Volume dos efeitos",slider("audio_sfx",100));
+      note(audio,"Os controles de volume são armazenados, mas ainda não estão conectados ao mixer do runtime.");
       content.addView(audio);
     }
   }
