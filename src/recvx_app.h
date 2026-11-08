@@ -12,6 +12,10 @@
 #include <thread>
 #include <vector>
 
+#if defined(__ANDROID__)
+extern "C" void RecvX_ShutdownTouchGamepad();
+#endif
+
 #include <rex/logging.h>
 #include <rex/rex_app.h>
 #include <rex/system/interfaces/graphics.h>
@@ -49,6 +53,9 @@ class RecvXApp : public rex::ReXApp {
     if (capture_thread_.joinable()) {
       capture_thread_.join();
     }
+#if defined(__ANDROID__)
+    RecvX_ShutdownTouchGamepad();
+#endif
   }
 
  private:

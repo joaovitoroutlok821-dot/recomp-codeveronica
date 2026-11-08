@@ -373,19 +373,340 @@ public final class GameSetupActivity extends Activity {
 
 game_activity = r'''package org.libsdl.app;
 
-public final class GameSDLActivity extends SDLActivity {
+import android.hardware.input.InputManager;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.SystemClock;
+import android.util.Log;
+import android.view.InputDevice;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.ViewGroup;
+
+public final class GameSDLActivity extends SDLActivity
+        implements InputManager.InputDeviceListener {
     private static final String EXTRA_GAME_ROOT = "org.libsdl.app.GAME_ROOT";
+    static native void nativeSetTouchButton(int button, boolean pressed);
+    static native void nativeSetTouchAxis(int axis, float value);
+
+    private InputManager inputManager;
+    private long lastMotionLogMs;
 
     @Override protected String[] getArguments() {
         String root = getIntent().getStringExtra(EXTRA_GAME_ROOT);
         if (root == null || root.isEmpty()) return new String[0];
         return new String[] { "--game_data_root=" + root };
     }
+
+    @Override protected void onCreate(Bundle state) {
+        super.onCreate(state);
+        if (!mBrokenLibraries) {
+            addContentView(new TouchControlsView(this),
+                new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                                           ViewGroup.LayoutParams.MATCH_PARENT));
+        }
+        inputManager = (InputManager)getSystemService(INPUT_SERVICE);
+        if (inputManager != null) {
+            inputManager.registerInputDeviceListener(this, new Handler());
+        }
+        logInputDevices("onCreate");
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        logInputDevices("onResume");
+    }
+
+    @Override protected void onDestroy() {
+        if (inputManager != null) {
+            inputManager.unregisterInputDeviceListener(this);
+        }
+        super.onDestroy();
+    }
+
+    private boolean isControllerSource(int source) {
+        return (source & InputDevice.SOURCE_CLASS_JOYSTICK) == InputDevice.SOURCE_CLASS_JOYSTICK ||
+               (source & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
+               (source & InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD;
+    }
+
+    private void logInputDevices(String reason) {
+        int[] ids = InputDevice.getDeviceIds();
+        Log.i("RECVX-INPUT", reason + ": Android reports " + ids.length + " input device(s)");
+        for (int id : ids) {
+            InputDevice device = InputDevice.getDevice(id);
+            if (device != null) {
+                Log.i("RECVX-INPUT", "device id=" + id + " name=" + device.getName() +
+                    " sources=0x" + Integer.toHexString(device.getSources()) +
+                    " vendor=0x" + Integer.toHexString(device.getVendorId()) +
+                    " product=0x" + Integer.toHexString(device.getProductId()));
+            }
+        }
+    }
+
+    @Override public void onInputDeviceAdded(int id) {
+        InputDevice device = InputDevice.getDevice(id);
+        Log.i("RECVX-INPUT", "device added id=" + id +
+            (device == null ? "" : " name=" + device.getName() +
+                " sources=0x" + Integer.toHexString(device.getSources())));
+    }
+
+    @Override public void onInputDeviceChanged(int id) {
+        InputDevice device = InputDevice.getDevice(id);
+        Log.i("RECVX-INPUT", "device changed id=" + id +
+            (device == null ? "" : " name=" + device.getName() +
+                " sources=0x" + Integer.toHexString(device.getSources())));
+    }
+
+    @Override public void onInputDeviceRemoved(int id) {
+        Log.i("RECVX-INPUT", "device removed id=" + id);
+    }
+
+    @Override public boolean dispatchKeyEvent(KeyEvent event) {
+        if (isControllerSource(event.getSource())) {
+            Log.i("RECVX-INPUT", "key action=" + event.getAction() +
+                " keyCode=" + event.getKeyCode() + " device=" + event.getDeviceId() +
+                " source=0x" + Integer.toHexString(event.getSource()));
+        }
+        return super.dispatchKeyEvent(event);
+    }
+
+    @Override public boolean dispatchGenericMotionEvent(MotionEvent event) {
+        if (isControllerSource(event.getSource()) &&
+            event.getActionMasked() == MotionEvent.ACTION_MOVE) {
+            long now = SystemClock.uptimeMillis();
+            if (now - lastMotionLogMs >= 1000) {
+                lastMotionLogMs = now;
+                Log.i("RECVX-INPUT", "motion device=" + event.getDeviceId() +
+                    " source=0x" + Integer.toHexString(event.getSource()) +
+                    " x=" + event.getAxisValue(MotionEvent.AXIS_X) +
+                    " y=" + event.getAxisValue(MotionEvent.AXIS_Y) +
+                    " rx=" + event.getAxisValue(MotionEvent.AXIS_RX) +
+                    " ry=" + event.getAxisValue(MotionEvent.AXIS_RY) +
+                    " hatX=" + event.getAxisValue(MotionEvent.AXIS_HAT_X) +
+                    " hatY=" + event.getAxisValue(MotionEvent.AXIS_HAT_Y));
+            }
+        }
+        return super.dispatchGenericMotionEvent(event);
+    }
+}
+'''
+
+touch_controls = r'''package org.libsdl.app;
+
+import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.util.SparseArray;
+import android.view.MotionEvent;
+import android.view.View;
+
+public final class TouchControlsView extends View {
+    private static final int STICK = -1;
+    private static final int[] BUTTON_CODES = {0, 1, 2, 3, 4, 6, 9, 10};
+    private static final String[] BUTTON_LABELS = {"A", "B", "X", "Y", "BACK", "START", "LB", "RB"};
+    private static final float[] BUTTON_X = {0.84f, 0.92f, 0.76f, 0.84f, 0.43f, 0.57f, 0.12f, 0.88f};
+    private static final float[] BUTTON_Y = {0.78f, 0.70f, 0.70f, 0.62f, 0.90f, 0.90f, 0.18f, 0.18f};
+
+    private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final SparseArray<Integer> pointerTargets = new SparseArray<>();
+    private final int[] buttonReferences = new int[21];
+    private final boolean[] dpadState = new boolean[4];
+    private int stickPointer = -1;
+    private float stickX;
+    private float stickY;
+
+    public TouchControlsView(Context context) {
+        super(context);
+        setClickable(true);
+        setWillNotDraw(false);
+    }
+
+    private float unit() { return Math.min(getWidth(), getHeight()); }
+    private float stickCenterX() { return getWidth() * 0.17f; }
+    private float stickCenterY() { return getHeight() * 0.76f; }
+    private float stickRadius() { return unit() * 0.135f; }
+
+    private float buttonRadius(int index) {
+        return unit() * ((index == 4 || index == 5) ? 0.043f :
+                         (index == 6 || index == 7) ? 0.052f : 0.058f);
+    }
+    private float buttonCenterX(int index) { return getWidth() * BUTTON_X[index]; }
+    private float buttonCenterY(int index) { return getHeight() * BUTTON_Y[index]; }
+
+    private void setButtonReference(int button, boolean down) {
+        if (button < 0 || button >= buttonReferences.length) return;
+        if (down) {
+            if (buttonReferences[button]++ == 0) {
+                GameSDLActivity.nativeSetTouchButton(button, true);
+            }
+        } else if (buttonReferences[button] > 0) {
+            if (--buttonReferences[button] == 0) {
+                GameSDLActivity.nativeSetTouchButton(button, false);
+            }
+        }
+    }
+
+    private void setDpad(int index, int button, boolean down) {
+        if (dpadState[index] != down) {
+            dpadState[index] = down;
+            GameSDLActivity.nativeSetTouchButton(button, down);
+        }
+    }
+
+    private void updateStick(float x, float y) {
+        float dx = (x - stickCenterX()) / stickRadius();
+        float dy = (y - stickCenterY()) / stickRadius();
+        float length = (float)Math.sqrt(dx * dx + dy * dy);
+        if (length > 1.0f) {
+            dx /= length;
+            dy /= length;
+        }
+        if (Math.sqrt(dx * dx + dy * dy) < 0.12) {
+            dx = 0;
+            dy = 0;
+        }
+        stickX = dx;
+        stickY = dy;
+        GameSDLActivity.nativeSetTouchAxis(0, dx);
+        GameSDLActivity.nativeSetTouchAxis(1, dy);
+        setDpad(0, 11, dy < -0.45f);
+        setDpad(1, 12, dy > 0.45f);
+        setDpad(2, 13, dx < -0.45f);
+        setDpad(3, 14, dx > 0.45f);
+        invalidate();
+    }
+
+    private int hitButton(float x, float y) {
+        for (int i = 0; i < BUTTON_CODES.length; ++i) {
+            float dx = x - buttonCenterX(i);
+            float dy = y - buttonCenterY(i);
+            float radius = buttonRadius(i) * 1.55f;
+            if (dx * dx + dy * dy <= radius * radius) return i;
+        }
+        return -1;
+    }
+
+    private boolean hitStick(float x, float y) {
+        float dx = x - stickCenterX();
+        float dy = y - stickCenterY();
+        float radius = stickRadius() * 1.5f;
+        return dx * dx + dy * dy <= radius * radius;
+    }
+
+    private void releasePointer(int id) {
+        Integer target = pointerTargets.get(id);
+        if (target == null) return;
+        pointerTargets.remove(id);
+        if (target == STICK) {
+            if (stickPointer == id) {
+                stickPointer = -1;
+                stickX = 0;
+                stickY = 0;
+                GameSDLActivity.nativeSetTouchAxis(0, 0);
+                GameSDLActivity.nativeSetTouchAxis(1, 0);
+                setDpad(0, 11, false);
+                setDpad(1, 12, false);
+                setDpad(2, 13, false);
+                setDpad(3, 14, false);
+            }
+        } else {
+            setButtonReference(BUTTON_CODES[target], false);
+        }
+        invalidate();
+    }
+
+    @Override protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
+        float base = unit();
+        if (base <= 0) return;
+
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.argb(38, 255, 255, 255));
+        canvas.drawCircle(stickCenterX(), stickCenterY(), stickRadius(), paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(base * 0.006f);
+        paint.setColor(Color.argb(150, 255, 255, 255));
+        canvas.drawCircle(stickCenterX(), stickCenterY(), stickRadius(), paint);
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(Color.argb(115, 230, 230, 230));
+        canvas.drawCircle(stickCenterX() + stickX * stickRadius() * 0.68f,
+                          stickCenterY() + stickY * stickRadius() * 0.68f,
+                          stickRadius() * 0.36f, paint);
+
+        for (int i = 0; i < BUTTON_CODES.length; ++i) {
+            float cx = buttonCenterX(i);
+            float cy = buttonCenterY(i);
+            float radius = buttonRadius(i);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.argb(72, 245, 245, 245));
+            canvas.drawCircle(cx, cy, radius, paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(base * 0.005f);
+            paint.setColor(Color.argb(175, 255, 255, 255));
+            canvas.drawCircle(cx, cy, radius, paint);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextAlign(Paint.Align.CENTER);
+            paint.setTextSize(radius * ((i == 4 || i == 5 || i == 6 || i == 7) ? 0.48f : 0.9f));
+            paint.setColor(Color.WHITE);
+            canvas.drawText(BUTTON_LABELS[i], cx, cy + paint.getTextSize() * 0.34f, paint);
+        }
+    }
+
+    @Override public boolean onTouchEvent(MotionEvent event) {
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            int index = event.getActionIndex();
+            int id = event.getPointerId(index);
+            float x = event.getX(index);
+            float y = event.getY(index);
+            int button = hitButton(x, y);
+            if (button >= 0) {
+                pointerTargets.put(id, button);
+                setButtonReference(BUTTON_CODES[button], true);
+                invalidate();
+                return true;
+            }
+            if (stickPointer < 0 && hitStick(x, y)) {
+                stickPointer = id;
+                pointerTargets.put(id, STICK);
+                updateStick(x, y);
+                return true;
+            }
+            return pointerTargets.size() > 0;
+        }
+
+        if (action == MotionEvent.ACTION_MOVE) {
+            for (int i = 0; i < event.getPointerCount(); ++i) {
+                int id = event.getPointerId(i);
+                Integer target = pointerTargets.get(id);
+                if (target != null && target == STICK) {
+                    updateStick(event.getX(i), event.getY(i));
+                }
+            }
+            return pointerTargets.size() > 0;
+        }
+
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP) {
+            releasePointer(event.getPointerId(event.getActionIndex()));
+            return true;
+        }
+
+        if (action == MotionEvent.ACTION_CANCEL) {
+            for (int i = pointerTargets.size() - 1; i >= 0; --i) {
+                releasePointer(pointerTargets.keyAt(i));
+            }
+            return true;
+        }
+        return pointerTargets.size() > 0;
+    }
 }
 '''
 
 (java / "GameSetupActivity.java").write_text(setup_activity, encoding="utf-8")
 (java / "GameSDLActivity.java").write_text(game_activity, encoding="utf-8")
+(java / "TouchControlsView.java").write_text(touch_controls, encoding="utf-8")
 
 tree = ET.parse(manifest)
 mroot = tree.getroot()

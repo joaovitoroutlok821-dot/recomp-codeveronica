@@ -6,6 +6,8 @@
 #include <SDL3/SDL_filesystem.h>
 #include <SDL3/SDL_stdinc.h>
 #include <SDL3/SDL_system.h>
+#include <SDL3/SDL_gamepad.h>
+#include <SDL3/SDL_joystick.h>
 
 #include <jni.h>
 #include <filesystem>
@@ -14,6 +16,7 @@
 #include <exception>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <algorithm>
 #include <string>
 #include <vector>
@@ -24,6 +27,52 @@
 #include <rex/ui/windowed_app_context_sdl.h>
 
 namespace {
+
+std::mutex g_touch_joystick_mutex;
+SDL_Joystick* g_touch_joystick = nullptr;
+SDL_JoystickID g_touch_joystick_id = 0;
+bool g_touch_joystick_attempted = false;
+
+bool EnsureTouchJoystickLocked() {
+  if (g_touch_joystick) return true;
+  if (g_touch_joystick_attempted) return false;
+  g_touch_joystick_attempted = true;
+
+  if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) {
+    SDL_Log("[RECVX-TOUCH] SDL gamepad subsystem initialization failed: %s", SDL_GetError());
+    return false;
+  }
+
+  SDL_VirtualJoystickDesc desc;
+  SDL_INIT_INTERFACE(&desc);
+  desc.type = SDL_JOYSTICK_TYPE_GAMEPAD;
+  desc.vendor_id = 0x1209;
+  desc.product_id = 0x0001;
+  desc.naxes = SDL_GAMEPAD_AXIS_COUNT;
+  desc.nbuttons = SDL_GAMEPAD_BUTTON_COUNT;
+  desc.button_mask = (1u << SDL_GAMEPAD_BUTTON_COUNT) - 1u;
+  desc.axis_mask = (1u << SDL_GAMEPAD_AXIS_COUNT) - 1u;
+  desc.name = "Resident Evil Code Veronica Touch";
+
+  g_touch_joystick_id = SDL_AttachVirtualJoystick(&desc);
+  if (!g_touch_joystick_id) {
+    SDL_Log("[RECVX-TOUCH] Could not attach virtual gamepad: %s", SDL_GetError());
+    return false;
+  }
+
+  g_touch_joystick = SDL_OpenJoystick(g_touch_joystick_id);
+  if (!g_touch_joystick) {
+    SDL_Log("[RECVX-TOUCH] Could not open virtual gamepad: %s", SDL_GetError());
+    SDL_DetachVirtualJoystick(g_touch_joystick_id);
+    g_touch_joystick_id = 0;
+    return false;
+  }
+
+  SDL_Log("[RECVX-TOUCH] Virtual gamepad attached (instance=%u)",
+          static_cast<unsigned>(g_touch_joystick_id));
+  SDL_PumpEvents();
+  return true;
+}
 
 bool ConfigureAndroidRuntimeDataDirectory() {
   auto* env = static_cast<JNIEnv*>(SDL_GetAndroidJNIEnv());
@@ -134,6 +183,49 @@ bool ConfigureAndroidRuntimeDataDirectory() {
 }
 
 }  // namespace
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_libsdl_app_GameSDLActivity_nativeSetTouchButton(
+    JNIEnv*, jclass, jint button, jboolean pressed) {
+  if (button < 0 || button >= SDL_GAMEPAD_BUTTON_COUNT) return;
+  std::lock_guard<std::mutex> lock(g_touch_joystick_mutex);
+  if (!EnsureTouchJoystickLocked()) return;
+  if (!SDL_SetJoystickVirtualButton(g_touch_joystick, button, pressed == JNI_TRUE)) {
+    SDL_Log("[RECVX-TOUCH] Virtual button update failed: %s", SDL_GetError());
+    return;
+  }
+  SDL_PumpEvents();
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_libsdl_app_GameSDLActivity_nativeSetTouchAxis(
+    JNIEnv*, jclass, jint axis, jfloat value) {
+  if (axis < 0 || axis >= SDL_GAMEPAD_AXIS_COUNT) return;
+  const float clamped = std::max(-1.0f, std::min(1.0f, value));
+  const auto scaled = static_cast<Sint16>(clamped <= -1.0f ? -32768
+                                  : clamped >= 1.0f ? 32767
+                                  : clamped * 32767.0f);
+  std::lock_guard<std::mutex> lock(g_touch_joystick_mutex);
+  if (!EnsureTouchJoystickLocked()) return;
+  if (!SDL_SetJoystickVirtualAxis(g_touch_joystick, axis, scaled)) {
+    SDL_Log("[RECVX-TOUCH] Virtual axis update failed: %s", SDL_GetError());
+    return;
+  }
+  SDL_PumpEvents();
+}
+
+extern "C" void RecvX_ShutdownTouchGamepad() {
+  std::lock_guard<std::mutex> lock(g_touch_joystick_mutex);
+  if (g_touch_joystick) {
+    SDL_CloseJoystick(g_touch_joystick);
+    g_touch_joystick = nullptr;
+  }
+  if (g_touch_joystick_id) {
+    SDL_DetachVirtualJoystick(g_touch_joystick_id);
+    g_touch_joystick_id = 0;
+  }
+  g_touch_joystick_attempted = false;
+}
 
 extern "C" int SDL_main(int argc, char* argv[]) {
   SDL_Log("[RECVX-DIAG] SDL_main entered: argc=%d", argc);
