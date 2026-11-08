@@ -64,7 +64,9 @@ This document tracks the requested launcher redesign for the Android ARM64 build
 
 ## Current known baseline
 - Workflow #26 opens the game successfully on the user's phone.
-- The current installer script still generates a simple portrait SAF/setup screen with one Start button and uses assets/recvx-cover.jpg; it does not yet implement the approved launcher artwork or requested settings panels.
+- The installer now generates a separate native `GameSettingsActivity` with Gráficos, Desempenho, Controles and Áudio sections, a 720p/1080p output-mode selector (1080p default), FPS-counter toggle, and touch-overlay policy selector. The setup screen opens this settings page without changing the existing SAF copy/launch path.
+- The selected output mode is passed to ReXGlue as `window_width` / `window_height`; the current image effect is explicitly `bilinear`. The FPS preference controls the on-screen readout. Automatic touch mode hides the overlay only after a physical key/joystick event is received and restores it after controller removal.
+- The new settings screen is an initial functional implementation, not yet a pixel-matched recreation of the approved red/black artwork. FSR/CAS, render scaling, AA, FPS cap, V-Sync, shader cache, effects and audio controls remain unavailable/disabled because the Android runtime does not yet expose verified working hooks for them.
 - Touch overlay code exists, but the user's prior test reported that only on-screen controls worked; Bluetooth was not working.
 - The presented-FPS JNI path exists in the game activity, but it must be revalidated in the actual next APK.
 - FSR/CAS, resolution scaling, AA, shader cache, heavy-effect controls and audio sliders must not be claimed as working until mapped to real Android runtime/game settings.
