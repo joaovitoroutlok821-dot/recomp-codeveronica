@@ -25,6 +25,27 @@ if new_synthetic not in input_file.read_text(encoding="utf-8"):
     raise SystemExit("Touch gamepad synthetic-device classification verification failed")
 
 presenter = presenter_file.read_text(encoding="utf-8")
+
+fps_export_anchor = """namespace rex {
+namespace ui {
+namespace vulkan {
+"""
+fps_export = """namespace rex {
+namespace ui {
+namespace vulkan {
+
+namespace {
+std::atomic<float> g_recvx_presented_fps{0.0f};
+}  // namespace
+
+extern "C" __attribute__((visibility("default"))) float ReXGlue_GetPresentedFPS() {
+  return g_recvx_presented_fps.load(std::memory_order_relaxed);
+}
+"""
+if fps_export not in presenter:
+    if presenter.count(fps_export_anchor) != 1:
+        raise SystemExit("Could not uniquely locate Vulkan presenter namespace")
+    presenter = presenter.replace(fps_export_anchor, fps_export, 1)
 for include in ("#include <chrono>", "#include <mutex>"):
     if include not in presenter:
         anchor = "#include <cmath>"
@@ -54,6 +75,7 @@ new_present = """  switch (present_result) {
         if (elapsed_ms >= 2000) {
           const double fps = static_cast<double>(fps_frames) * 1000.0 /
                              static_cast<double>(elapsed_ms);
+          g_recvx_presented_fps.store(static_cast<float>(fps), std::memory_order_relaxed);
           REXLOG_INFO("[RECVX-FPS] Presented FPS: {:.1f} ({} frames / {} ms)",
                       fps, fps_frames, elapsed_ms);
           fps_frames = 0;
@@ -72,4 +94,4 @@ if new_present not in presenter_file.read_text(encoding="utf-8"):
     raise SystemExit("Vulkan presented-FPS instrumentation verification failed")
 
 print("[recvx-android-input-fps] touch gamepad is routed as a synthetic user-0 device")
-print("[recvx-android-input-fps] successful Vulkan presentations are sampled every 2 seconds")
+print("[recvx-android-input-fps] successful Vulkan presentations are sampled every 2 seconds and exported for the overlay")
