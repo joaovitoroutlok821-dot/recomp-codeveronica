@@ -499,3 +499,15 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Workflow privado atualizado para executar ensure-rexglue-android-input-fps.py após os patches Android do SDK.
 - Não declarar APK pronto até Gradle, validação das bibliotecas, zipalign, assinatura e upload terminarem com sucesso. Depois confirmar no Motorola Edge 30 Pro: overlay visível, botões táteis funcionando, controle Bluetooth detectado e FPS atualizado durante menus, cutscenes e gameplay.
 - O Default.xex e as fontes geradas continuam exclusivamente no runner privado e devem ser removidos no passo de limpeza.
+
+
+## Editor de posições dos controles táteis — 2026-11-08
+
+- Adicionado `scripts/android/TouchLayoutEditorActivity.java`, um editor visual em orientação paisagem para arrastar joystick e os oito botões táteis.
+- A aba Controles de `GameSettingsActivity` agora inclui o botão **Mover botões na tela**, que abre o editor; há opção para restaurar as posições padrão e concluir.
+- As coordenadas são persistidas em `recvx_settings` (`touch_stick_x/y` e `touch_btn_x_0..7/y_0..7`).
+- `TouchControlsView`, gerado por `install-android-game-setup.py`, agora lê essas preferências para desenhar e detectar os controles nas posições escolhidas.
+- O instalador copia a nova Activity e a registra no AndroidManifest.
+- Commits: `3fc21c7a` (persistência no overlay e manifesto), `de0c056f` (editor visual), `705640d2` (correção de seleção no editor), `89d4e23a` (integração na aba Controles).
+- Validação automatizada do repositório: workflow #113, run ID `42499960948`, conclusão success. Isso valida o repositório, mas não substitui compilação Android nem teste no Motorola.
+- Ainda não foi gerado APK privado com essa mudança. Não declarar o editor validado no aparelho até testar arraste, salvamento, restauração e posicionamento no jogo.
