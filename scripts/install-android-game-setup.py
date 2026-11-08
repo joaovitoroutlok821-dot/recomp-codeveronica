@@ -438,6 +438,7 @@ public final class GameSetupActivity extends Activity {
 game_activity = r'''package org.libsdl.app;
 
 import android.hardware.input.InputManager;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
@@ -456,17 +457,32 @@ public final class GameSDLActivity extends SDLActivity
 
     private InputManager inputManager;
     private long lastMotionLogMs;
+    private TouchControlsView touchView;
+    private int touchMode;
 
     @Override protected String[] getArguments() {
         String root = getIntent().getStringExtra(EXTRA_GAME_ROOT);
         if (root == null || root.isEmpty()) return new String[0];
-        return new String[] { "--game_data_root=" + root };
+        SharedPreferences prefs = getSharedPreferences("recvx_settings", MODE_PRIVATE);
+        int resolution = prefs.getInt("resolution", 0);
+        String width = resolution == 1 ? "1920" : "1280";
+        String height = resolution == 1 ? "1080" : "720";
+        return new String[] {
+            "--game_data_root=" + root,
+            "--window_width=" + width,
+            "--window_height=" + height,
+            "--present_effect=bilinear"
+        };
     }
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         if (!mBrokenLibraries) {
-            addContentView(new TouchControlsView(this),
+            SharedPreferences prefs = getSharedPreferences("recvx_settings", MODE_PRIVATE);
+            touchMode = prefs.getInt("touch_mode", 0);
+            touchView = new TouchControlsView(this);
+            if (touchMode == 2) touchView.setVisibility(View.GONE);
+            addContentView(touchView,
                 new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                                            ViewGroup.LayoutParams.MATCH_PARENT));
         }
@@ -525,6 +541,21 @@ public final class GameSDLActivity extends SDLActivity
 
     @Override public void onInputDeviceRemoved(int id) {
         Log.i("RECVX-INPUT", "device removed id=" + id);
+        if (touchView != null && touchMode == 0 && !hasPhysicalController()) {
+            touchView.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private boolean hasPhysicalController() {
+        for (int id : InputDevice.getDeviceIds()) {
+            InputDevice d = InputDevice.getDevice(id);
+            if (d != null && !d.isVirtual() && isControllerSource(d.getSources())) return true;
+        }
+        return false;
+    }
+
+    private void confirmPhysicalInput() {
+        if (touchView != null && touchMode == 0) touchView.setVisibility(View.GONE);
     }
 
     @Override public boolean dispatchKeyEvent(KeyEvent event) {
@@ -533,6 +564,7 @@ public final class GameSDLActivity extends SDLActivity
                 " keyCode=" + event.getKeyCode() + " device=" + event.getDeviceId() +
                 " source=0x" + Integer.toHexString(event.getSource()));
         }
+        if (isControllerSource(event.getSource()) && event.getAction() == KeyEvent.ACTION_DOWN) confirmPhysicalInput();
         return super.dispatchKeyEvent(event);
     }
 
@@ -552,6 +584,7 @@ public final class GameSDLActivity extends SDLActivity
                     " hatY=" + event.getAxisValue(MotionEvent.AXIS_HAT_Y));
             }
         }
+        if (isControllerSource(event.getSource()) && event.getActionMasked() == MotionEvent.ACTION_MOVE) confirmPhysicalInput();
         return super.dispatchGenericMotionEvent(event);
     }
 }
@@ -578,6 +611,7 @@ public final class TouchControlsView extends View {
     private static final float[] BUTTON_Y = {0.78f, 0.70f, 0.70f, 0.62f, 0.90f, 0.90f, 0.18f, 0.18f};
 
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final boolean showFps;
     private final Handler fpsHandler = new Handler(Looper.getMainLooper());
     private float presentedFps;
     private final Runnable fpsRefresh = new Runnable() {
@@ -596,6 +630,7 @@ public final class TouchControlsView extends View {
 
     public TouchControlsView(Context context) {
         super(context);
+        showFps = context.getSharedPreferences("recvx_settings", Context.MODE_PRIVATE).getBoolean("show_fps", true);
         setClickable(true);
         setWillNotDraw(false);
         fpsHandler.post(fpsRefresh);
@@ -731,6 +766,7 @@ public final class TouchControlsView extends View {
             canvas.drawText(BUTTON_LABELS[i], cx, cy + paint.getTextSize() * 0.34f, paint);
         }
 
+        if (showFps) {
         paint.setStyle(Paint.Style.FILL);
         paint.setTextAlign(Paint.Align.LEFT);
         paint.setTextSize(base * 0.035f);
@@ -738,6 +774,7 @@ public final class TouchControlsView extends View {
         String fpsText = presentedFps > 0.0f
             ? String.format(Locale.US, "FPS %.1f", presentedFps) : "FPS --";
         canvas.drawText(fpsText, getWidth() * 0.035f, getHeight() * 0.075f, paint);
+        }
     }
 
     @Override protected void onDetachedFromWindow() {
