@@ -211,15 +211,15 @@ public final class GameSetupActivity extends Activity {
         LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(-1, -2);
         ep.topMargin = pad;
         menu.addView(edition, ep);
-        root.addView(menu, new LinearLayout.LayoutParams(dp(250), -1));
-
+        // The menu is attached once, later inside screenBody. Do not attach it
+        // to root here or Android will reject adding the same View twice.
         LinearLayout right = new LinearLayout(this);
         right.setOrientation(LinearLayout.VERTICAL);
         right.setGravity(Gravity.CENTER_VERTICAL);
         right.setPadding(pad, pad, pad, pad);
         LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, -1, 1);
         rp.leftMargin = pad;
-        root.addView(right, rp);
+        // right is attached once, below, inside screenBody.
 
         // Use the supplied game artwork directly. Adaptive launcher resources
         // from SDL may otherwise keep displaying the SDL sample logo here.
