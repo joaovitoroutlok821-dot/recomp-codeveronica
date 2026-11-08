@@ -741,8 +741,6 @@ public final class TouchControlsView extends View {
         fpsHandler.post(fpsRefresh);
     }
 
-    private final android.content.SharedPreferences layoutPrefs =
-        context.getSharedPreferences("recvx_settings", Context.MODE_PRIVATE);
     private float unit() { return Math.min(getWidth(), getHeight()); }
     private float stickCenterX() { return getWidth() * layoutPrefs.getFloat("touch_stick_x", 0.17f); }
     private float stickCenterY() { return getHeight() * layoutPrefs.getFloat("touch_stick_y", 0.76f); }
