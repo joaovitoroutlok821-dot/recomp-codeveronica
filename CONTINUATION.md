@@ -470,3 +470,32 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - O launcher gerado por `scripts/install-android-game-setup.py` cria `GameSDLActivity` que apenas estende `SDLActivity` e fornece argumentos. Não há camada de botões touch nem código próprio de captura de gamepad nesse projeto.
 - Próxima investigação: comparar o SHA do checkout do projeto público usado por cada run e as configurações/patches efetivos; instrumentar enumeração de dispositivos e eventos SDL Android sem substituir os handlers padrão do SDL. Depois, implementar overlay touch ligado ao mesmo caminho de entrada usado pelo jogo e FPS/frame-time no ponto real de apresentação.
 - Não iniciar novo build até concluir a revisão técnica e validar os patches; manter APK/game data fora do repositório público.
+
+
+## Implementação de controles Android, diagnóstico Bluetooth e FPS — 2026-11-08
+
+### Comparação da entrada Bluetooth entre os Builds #21 e #23
+- O Build #21 usou o código público 38f62c55a099f54fc8302293366c9f602f98901f.
+- O Build #23 usou 720427a4e48e35307c54d481ebc0f89a09d848aa.
+- A comparação dos commits mostra oito commits de diferença, mas todos alteraram somente CONTINUATION.md; nenhum arquivo executável, JNI, SDL, CMake ou código de entrada foi alterado.
+- Portanto, não há evidência de regressão de código entre #21 e #23 para explicar o controle Bluetooth. A causa permanece aberta e será isolada pelos novos logs Android/SDL.
+
+### Código adicionado à branch android-rebuild
+- Commit inicial: c30882eed982af4a51aa4f87fe04a1d8970a2cbf.
+- Commit de correção de includes SDL: 55b671b6a5f69587307b7896637872e564ae5b14.
+- Commit atual após instrumentação FPS visível: c0a7f790569c31410fbb3f3dfc983e571f5e7dbd.
+- scripts/install-android-game-setup.py agora gera TouchControlsView.java e atualiza GameSDLActivity com enumeração de dispositivos Android e logs de eventos de teclas/eixos do controle.
+- A camada tátil apresenta joystick analógico, D-pad digital, A/B/X/Y, LB/RB, Back e Start; os eventos são encaminhados a um gamepad virtual SDL.
+- src/android_main.cpp cria o gamepad virtual sob demanda por JNI e atualiza seus eixos/botões com as APIs virtuais SDL. O gamepad tem nome estável Resident Evil Code Veronica Touch.
+- scripts/ensure-rexglue-android-input-fps.py classifica esse dispositivo como sintético no driver SDL do ReXGlue para que ele seja atribuído ao usuário 0 sem deslocar controles físicos; também instrumenta as apresentações Vulkan bem-sucedidas.
+- O FPS é calculado a partir de apresentações Vulkan confirmadas, amostrado a cada 2 segundos, registrado como [RECVX-FPS] e exposto por JNI para o rótulo FPS no overlay.
+- O código de diagnóstico Bluetooth registra os dispositivos de entrada vistos pelo Android, eventos de teclas e movimentos de eixos, sem substituir os handlers SDL existentes.
+
+### Validação e builds
+- Validação pública do commit atual: workflow #81, run ID 42437789117, conclusão success.
+- Smoke test Android SDL/SAF: workflow run ID 42437789139, ainda em andamento na última consulta; ele compila o projeto Java/manifest gerado pelo instalador.
+- Build privado #24: run ID 42437618738, ainda em andamento na última consulta. Foi iniciado antes da correção dos includes SDL explícitos; tratar seu resultado como diagnóstico, não presumir que contenha a revisão final.
+- Build privado #25: run ID 42437695379, ainda em andamento na última consulta. Verificar nos logs qual SHA público foi efetivamente baixado antes de atribuir a ele a versão final do contador FPS visível.
+- Workflow privado atualizado para executar ensure-rexglue-android-input-fps.py após os patches Android do SDK.
+- Não declarar APK pronto até Gradle, validação das bibliotecas, zipalign, assinatura e upload terminarem com sucesso. Depois confirmar no Motorola Edge 30 Pro: overlay visível, botões táteis funcionando, controle Bluetooth detectado e FPS atualizado durante menus, cutscenes e gameplay.
+- O Default.xex e as fontes geradas continuam exclusivamente no runner privado e devem ser removidos no passo de limpeza.
