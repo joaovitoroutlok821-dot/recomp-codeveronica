@@ -81,7 +81,7 @@ public final class GameSetupActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        setTitle("Resident Evil Code Veronica X - Preparação");
+        setTitle("Resident Evil Code Veronica X HD");
         gameDir = new File(getFilesDir(), "game");
         buildUi();
         String saved = getPreferences(MODE_PRIVATE).getString(PREF_URI, null);
@@ -186,7 +186,7 @@ public final class GameSetupActivity extends Activity {
     }
 
     private void prepareGame(Uri tree) {
-        choose.setEnabled(false);
+        start.setEnabled(false);
         start.setEnabled(false);
         progress.setVisibility(View.VISIBLE);
         status.setText("Verificando arquivos e espaço disponível...");
@@ -226,7 +226,7 @@ public final class GameSetupActivity extends Activity {
                 deleteRecursively(backup);
                 main.post(() -> {
                     progress.setVisibility(View.GONE);
-                    choose.setEnabled(true);
+                    start.setEnabled(true);
                     start.setEnabled(true);
                     getPreferences(MODE_PRIVATE).edit().putString(PREF_URI, tree.toString()).apply();
                     status.setText("Arquivos preparados. Toque em INICIAR JOGO para continuar.");
@@ -236,7 +236,7 @@ public final class GameSetupActivity extends Activity {
                 deleteRecursively(new File(getFilesDir(), "game.new"));
                 main.post(() -> {
                     progress.setVisibility(View.GONE);
-                    choose.setEnabled(true);
+                    start.setEnabled(true);
                     start.setEnabled(false);
                     status.setText("Falha ao preparar os arquivos: " + e.getMessage());
                 });
