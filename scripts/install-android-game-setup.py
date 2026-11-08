@@ -739,17 +739,23 @@ public final class TouchControlsView extends View {
         fpsHandler.post(fpsRefresh);
     }
 
+    private final android.content.SharedPreferences layoutPrefs =
+        context.getSharedPreferences("recvx_settings", Context.MODE_PRIVATE);
     private float unit() { return Math.min(getWidth(), getHeight()); }
-    private float stickCenterX() { return getWidth() * 0.17f; }
-    private float stickCenterY() { return getHeight() * 0.76f; }
+    private float stickCenterX() { return getWidth() * layoutPrefs.getFloat("touch_stick_x", 0.17f); }
+    private float stickCenterY() { return getHeight() * layoutPrefs.getFloat("touch_stick_y", 0.76f); }
     private float stickRadius() { return unit() * 0.135f; }
 
     private float buttonRadius(int index) {
         return unit() * ((index == 4 || index == 5) ? 0.043f :
                          (index == 6 || index == 7) ? 0.052f : 0.058f);
     }
-    private float buttonCenterX(int index) { return getWidth() * BUTTON_X[index]; }
-    private float buttonCenterY(int index) { return getHeight() * BUTTON_Y[index]; }
+    private float buttonCenterX(int index) {
+        return getWidth() * layoutPrefs.getFloat("touch_btn_x_" + index, BUTTON_X[index]);
+    }
+    private float buttonCenterY(int index) {
+        return getHeight() * layoutPrefs.getFloat("touch_btn_y_" + index, BUTTON_Y[index]);
+    }
 
     private void setButtonReference(int button, boolean down) {
         if (button < 0 || button >= buttonReferences.length) return;
@@ -938,6 +944,9 @@ public final class TouchControlsView extends View {
 (java / "GameSettingsActivity.java").write_text(
     (Path(__file__).resolve().parent / "android" / "GameSettingsActivity.java").read_text(encoding="utf-8"),
     encoding="utf-8")
+(java / "TouchLayoutEditorActivity.java").write_text(
+    (Path(__file__).resolve().parent / "android" / "TouchLayoutEditorActivity.java").read_text(encoding="utf-8"),
+    encoding="utf-8")
 (java / "GameSetupActivity.java").write_text(setup_activity, encoding="utf-8")
 (java / "GameSDLActivity.java").write_text(game_activity, encoding="utf-8")
 (java / "TouchControlsView.java").write_text(touch_controls, encoding="utf-8")
@@ -978,6 +987,18 @@ settings_node = ET.Element("activity", {
     ns + "label": "Configurações"
 })
 app_node.insert(0, settings_node)
+
+# Register the visual touch-layout editor.
+for activity in list(app_node.findall("activity")):
+    if activity.get(ns + "name") == "org.libsdl.app.TouchLayoutEditorActivity":
+        app_node.remove(activity)
+editor_node = ET.Element("activity", {
+    ns + "name": "org.libsdl.app.TouchLayoutEditorActivity",
+    ns + "exported": "false",
+    ns + "label": "Personalizar controles",
+    ns + "screenOrientation": "landscape"
+})
+app_node.insert(0, editor_node)
 
 # Avoid duplicate setup activity if the installer is run more than once.
 for activity in list(app_node.findall("activity")):
