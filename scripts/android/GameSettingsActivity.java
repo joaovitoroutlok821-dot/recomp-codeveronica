@@ -8,6 +8,9 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.LayerDrawable;
+import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.*;
@@ -23,6 +26,7 @@ public final class GameSettingsActivity extends Activity {
   @Override public void onCreate(Bundle b) {
     super.onCreate(b);
     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
     p = getSharedPreferences("recvx_settings", MODE_PRIVATE);
     buildUi();
     show(current);
@@ -48,7 +52,14 @@ public final class GameSettingsActivity extends Activity {
   private void buildUi() {
     LinearLayout root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
-    root.setBackgroundColor(Color.rgb(3,5,9));
+    int coverId=getResources().getIdentifier("recvx_cover","drawable",getPackageName());
+    if(coverId!=0) {
+      Drawable art=getResources().getDrawable(coverId);
+      Drawable shade=new ColorDrawable(0x99020710);
+      root.setBackground(new LayerDrawable(new Drawable[]{art,shade}));
+    } else {
+      root.setBackgroundColor(Color.rgb(3,5,9));
+    }
     root.setPadding(dp(12), dp(8), dp(12), dp(4));
 
     LinearLayout body = new LinearLayout(this);
@@ -58,7 +69,7 @@ public final class GameSettingsActivity extends Activity {
     LinearLayout side = new LinearLayout(this);
     side.setOrientation(LinearLayout.VERTICAL);
     side.setPadding(dp(8), dp(8), dp(8), dp(8));
-    side.setBackground(shape(0xFF080A0F, red, 12));
+    side.setBackground(shape(0xD9080A0F, red, 12));
     TextView game = label("RESIDENT EVIL\nCODE: VERONICA X HD", 17, Color.WHITE, true);
     game.setGravity(Gravity.CENTER);
     game.setPadding(dp(4), dp(8), dp(4), dp(14));
@@ -123,7 +134,7 @@ public final class GameSettingsActivity extends Activity {
   }
   private LinearLayout panel(String heading) {
     LinearLayout box=new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
-    box.setPadding(dp(11),dp(8),dp(11),dp(8)); box.setBackground(shape(0xFF111318,0xFF941824,10));
+    box.setPadding(dp(11),dp(8),dp(11),dp(8)); box.setBackground(shape(0xD9111318,0xFF941824,10));
     TextView h=label(heading,17,Color.WHITE,true); h.setPadding(dp(2),dp(1),dp(2),dp(5)); box.addView(h); return box;
   }
   private void row(LinearLayout box,String name,View control) {
