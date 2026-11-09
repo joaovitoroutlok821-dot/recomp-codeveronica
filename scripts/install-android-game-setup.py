@@ -221,15 +221,8 @@ public final class GameSetupActivity extends Activity {
         rp.leftMargin = pad;
         // right is attached once, below, inside screenBody.
 
-        // Use the supplied game artwork directly. Adaptive launcher resources
-        // from SDL may otherwise keep displaying the SDL sample logo here.
-        int logoId = getResources().getIdentifier("recvx_icon", "drawable", getPackageName());
-        if (logoId != 0) {
-            ImageView logoView = new ImageView(this);
-            logoView.setImageResource(logoId);
-            logoView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            right.addView(logoView, new LinearLayout.LayoutParams(dp(210), dp(100)));
-        }
+        // Não exibir miniatura/capa no centro da tela inicial.
+        // A arte de fundo já identifica o jogo; manter somente o título e o texto.
         TextView heading = new TextView(this);
         heading.setText("RESIDENT EVIL CODE: VERONICA X HD");
         heading.setTextColor(Color.WHITE);
