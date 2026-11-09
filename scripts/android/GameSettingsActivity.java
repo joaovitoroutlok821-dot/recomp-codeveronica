@@ -191,24 +191,26 @@ public final class GameSettingsActivity extends Activity {
       public void onItemSelected(android.widget.AdapterView<?>x,View v,int pos,long id){p.edit().putInt(key,pos).apply();}
     }); return s;
   }
-  private Switch toggle(String title,String key,boolean def) {
-    Switch s=new Switch(this);
-    s.setText("");
-    s.setShowText(false);
-    s.setMinimumWidth(dp(60));
-    s.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    int[][] states = new int[][] {
-      new int[] { android.R.attr.state_checked },
-      new int[] {}
-    };
-    int[] thumbColors = new int[] { 0xFFFFFFFF, 0xFFE4E6EA };
-    int[] trackColors = new int[] { 0xFFE50920, 0xFF555A63 };
-    s.setThumbTintList(new ColorStateList(states, thumbColors));
-    s.setTrackTintList(new ColorStateList(states, trackColors));
-    s.setChecked(p.getBoolean(key,def));
-    s.setOnCheckedChangeListener((v,on)->p.edit().putBoolean(key,on).apply());
-    return s;
-  }
+  private TextView toggle(String title,String key,boolean def) {
+     TextView t=label("",12,Color.WHITE,true);
+     t.setTag("recvx-toggle");
+     t.setGravity(Gravity.CENTER);
+     t.setPadding(dp(5),dp(3),dp(5),dp(3));
+     final boolean[] checked = {p.getBoolean(key,def)};
+     Runnable paint = () -> {
+       t.setText(checked[0] ? "ATIVADO" : "DESATIVADO");
+       t.setTextColor(Color.WHITE);
+       t.setBackground(shape(checked[0] ? 0xFF97000B : 0xFF30343C,
+                             checked[0] ? 0xFFFF2638 : 0xFF737985,6));
+     };
+     paint.run();
+     t.setOnClickListener(v -> {
+       checked[0] = !checked[0];
+       p.edit().putBoolean(key,checked[0]).apply();
+       paint.run();
+     });
+     return t;
+   }
   private SeekBar slider(String key,int def) {
     SeekBar s=new SeekBar(this); s.setMax(100); s.setProgress(p.getInt(key,def));
     s.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
