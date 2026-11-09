@@ -1,276 +1,182 @@
 package org.libsdl.app;
 
 import android.app.Activity;
-import android.os.Bundle;
-import android.content.SharedPreferences;
+import android.app.AlertDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.graphics.Color;
-import android.content.res.ColorStateList;
-import android.graphics.Typeface;
-import android.graphics.drawable.GradientDrawable;
-import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.LayerDrawable;
+import android.graphics.*;
 import android.graphics.drawable.Drawable;
-import android.view.Gravity;
+import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
-import android.widget.*;
+import android.widget.Toast;
 
 public final class GameSettingsActivity extends Activity {
-  private SharedPreferences p;
-  private LinearLayout content, tabs, main;
-  private int red = Color.rgb(238, 12, 28);
-  private int muted = Color.rgb(190, 198, 210);
-  private String current = "Gráficos";
-  private int dp(float v) { return (int)(v * getResources().getDisplayMetrics().density + 0.5f); }
-
-  @Override public void onCreate(Bundle b) {
+  private SharedPreferences prefs;
+  private LauncherView launcher;
+  private final String[] tabs={"Gráficos","Desempenho","Controles","Áudio"};
+  private int tab=0;
+  private int page=1;
+  private int red=Color.rgb(255,18,34), white=Color.WHITE;
+  private int muted=Color.rgb(190,198,210);
+  private int bg=Color.rgb(5,6,9);
+  private int dp(float v){return (int)(v*getResources().getDisplayMetrics().density+.5f);}
+  @Override public void onCreate(Bundle b){
     super.onCreate(b);
     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
-    p = getSharedPreferences("recvx_settings", MODE_PRIVATE);
-    buildUi();
-    show(current);
+    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_LAYOUT_STABLE|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
+    prefs=getSharedPreferences("recvx_settings",MODE_PRIVATE);
+    launcher=new LauncherView(); setContentView(launcher);
   }
+  private void choose(String title,String key,String[] values,int def){
+    int selected=prefs.getInt(key,def);
+    new AlertDialog.Builder(this).setTitle(title).setSingleChoiceItems(values,selected,(d,w)->{prefs.edit().putInt(key,w).apply();d.dismiss();launcher.invalidate();}).setNegativeButton("Cancelar",null).show();
+  }
+  private void toggle(String key,boolean def){prefs.edit().putBoolean(key,!prefs.getBoolean(key,def)).apply();launcher.invalidate();}
+  private void message(String s){Toast.makeText(this,s,Toast.LENGTH_SHORT).show();}
 
-  private GradientDrawable shape(int color, int stroke, int radius) {
-    GradientDrawable d = new GradientDrawable();
-    d.setCornerRadius(dp(radius));
-    if (color == 0xFF97000B) {
-      d.setOrientation(GradientDrawable.Orientation.TOP_BOTTOM);
-      d.setColors(new int[]{0xFFFF2638,0xFFB50012,0xFF76000A});
-    } else if (color == 0xFF17191F) {
-      d.setColor(0xF5101117);
-    } else {
-      d.setColor(color);
+  private final class LauncherView extends View {
+    Canvas c; Paint p=new Paint(3); Bitmap art; float sx,sy,downX,downY; boolean moved;
+    LauncherView(){
+      super(GameSettingsActivity.this);
+      int id=getResources().getIdentifier("recvx_cover","drawable",getPackageName());
+      if(id!=0) try{art=BitmapFactory.decodeResource(getResources(),id);}catch(Exception ignored){}
+      setLayerType(View.LAYER_TYPE_SOFTWARE,null);
     }
-    if (stroke != 0) d.setStroke(dp(1.5f), stroke);
-    return d;
-  }
-  private TextView label(String s, int size, int color, boolean bold) {
-    TextView t = new TextView(this); t.setText(s); t.setTextSize(size); t.setTextColor(color);
-    if (bold) t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-    return t;
-  }
-  private Button action(String s, boolean selected) {
-    Button b = new Button(this); b.setText(s); b.setTextSize(13); b.setAllCaps(false);
-    b.setTextColor(Color.WHITE);
-    b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-    b.setBackground(shape(selected ? 0xFF97000B : 0xFF17191F, selected ? 0xFFFF2638 : 0xFFB51A2A, 8));
-    b.setElevation(dp(selected ? 7 : 2));
-    b.setPadding(dp(8),dp(3),dp(8),dp(3));
-    return b;
-  }
-  private void buildUi() {
-    LinearLayout root = new LinearLayout(this);
-    root.setOrientation(LinearLayout.VERTICAL);
-    int coverId=getResources().getIdentifier("recvx_cover","drawable",getPackageName());
-    if(coverId!=0) {
-      Drawable art=getResources().getDrawable(coverId);
-      Drawable shade=new ColorDrawable(0x99020710);
-      root.setBackground(new LayerDrawable(new Drawable[]{art,shade}));
-    } else {
-      root.setBackgroundColor(Color.rgb(3,5,9));
+    void paint(int color){p.setColor(color);p.setStyle(Paint.Style.FILL);p.setShader(null);p.clearShadowLayer();}
+    void rect(float x,float y,float w,float h,int color,float r,int stroke){
+      paint(color); c.drawRoundRect(x,y,x+w,y+h,r,r,p);
+      if(stroke!=0){p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.5f);p.setColor(red);c.drawRoundRect(x,y,x+w,y+h,r,r,p);p.setStyle(Paint.Style.FILL);}
     }
-    root.setPadding(dp(12), dp(8), dp(12), dp(4));
-
-    LinearLayout body = new LinearLayout(this);
-    body.setOrientation(LinearLayout.HORIZONTAL);
-    root.addView(body, new LinearLayout.LayoutParams(-1, 0, 1));
-
-    LinearLayout side = new LinearLayout(this);
-    side.setOrientation(LinearLayout.VERTICAL);
-    side.setPadding(dp(8), dp(8), dp(8), dp(8));
-    side.setBackground(shape(0xD9080A0F, 0xFFFF2638, 12));
-    side.setElevation(dp(8));
-    TextView game = label("RESIDENT EVIL\nCODE: VERONICA X HD", 17, Color.WHITE, true);
-    game.setGravity(Gravity.CENTER);
-    game.setPadding(dp(4), dp(8), dp(4), dp(14));
-    side.addView(game, new LinearLayout.LayoutParams(-1, dp(92)));
-    String[] menu = {"▷  Iniciar Jogo", "⚙  Configurações", "♧  Controles", "▣  Salvar / Carregar", "ⓘ  Informações", "⏻  Sair"};
-    for (int i=0;i<menu.length;i++) {
-      final int item=i;
-      Button b=action(menu[i], i==1);
-      LinearLayout.LayoutParams bp=new LinearLayout.LayoutParams(-1, dp(48));
-      bp.bottomMargin=dp(7); side.addView(b,bp);
-      b.setOnClickListener(v -> {
-        if(item==0) { finish(); }
-        else if(item==1) { current="Gráficos"; refreshTabs(); show(current); }
-        else if(item==2) { current="Controles"; refreshTabs(); show(current); }
-        else if(item==3) Toast.makeText(this,"Salvar/carregar ainda não está integrado ao runtime.",Toast.LENGTH_SHORT).show();
-        else if(item==4) new android.app.AlertDialog.Builder(this).setTitle("Informações").setMessage("Resident Evil Code: Veronica X HD — edição dublada para Android ARM64.").setPositiveButton("OK",null).show();
-        else finish();
-      });
+    void text(String s,float x,float y,float size,int color,boolean bold){
+      paint(color);p.setTextSize(size);p.setTypeface(bold?Typeface.create("sans-serif",Typeface.BOLD):Typeface.create("sans-serif",Typeface.NORMAL));p.setTextAlign(Paint.Align.LEFT);c.drawText(s,x,y,p);
     }
-    TextView edition=label("EDIÇÃO DUBLADA • ANDROID",11,muted,false);
-    edition.setGravity(Gravity.CENTER); edition.setPadding(0,dp(8),0,0); side.addView(edition);
-    body.addView(side,new LinearLayout.LayoutParams(dp(205),-1));
-
-    main=new LinearLayout(this); main.setOrientation(LinearLayout.VERTICAL);
-    LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(0,-1,1); mp.leftMargin=dp(10); body.addView(main,mp);
-    TextView title=label("Configurações",24,Color.WHITE,true);
-    title.setPadding(dp(4),0,0,dp(5)); main.addView(title);
-
-    tabs=new LinearLayout(this); tabs.setOrientation(LinearLayout.HORIZONTAL);
-    String[] names={"▣  Gráficos","◉  Desempenho","♧  Controles","◖  Áudio"};
-    String[] keys={"Gráficos","Desempenho","Controles","Áudio"};
-    for(int i=0;i<keys.length;i++){
-      final String key=keys[i]; Button b=action(names[i],key.equals(current));
-      LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,dp(42),1); tp.setMargins(dp(3),dp(2),dp(3),dp(6));
-      tabs.addView(b,tp); b.setOnClickListener(v->{current=key;refreshTabs();show(key);});
+    void center(String s,float x,float y,float size,int color,boolean bold){
+      paint(color);p.setTextSize(size);p.setTypeface(bold?Typeface.create("sans-serif",Typeface.BOLD):Typeface.create("sans-serif",Typeface.NORMAL));p.setTextAlign(Paint.Align.CENTER);c.drawText(s,x,y,p);
     }
-    main.addView(tabs);
-    ScrollView scroll=new ScrollView(this); scroll.setFillViewport(true);
-    content=new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL);
-    content.setPadding(dp(7),dp(5),dp(7),dp(5));
-    scroll.addView(content); main.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
-
-    LinearLayout footer=new LinearLayout(this); footer.setOrientation(LinearLayout.HORIZONTAL);
-    Button reset=action("↶  Restaurar padrões",false);
-    reset.setOnClickListener(v->{p.edit().clear().apply();current="Gráficos";refreshTabs();show(current);});
-    Button apply=action("✓  Aplicar",true);
-    apply.setOnClickListener(v->{p.edit().apply();Toast.makeText(this,"Configurações salvas.",Toast.LENGTH_SHORT).show();finish();});
-    LinearLayout.LayoutParams fp=new LinearLayout.LayoutParams(0,dp(42),1); fp.setMargins(dp(4),dp(5),dp(4),dp(2));
-    footer.addView(reset,fp); footer.addView(apply,fp); main.addView(footer);
-    TextView status=label("▱  Diretório do jogo: consulte a tela inicial     •     ♧ Controle: estado detectado pelo Android     •     Controles na tela: configurável     •     Versão: v1.0.0",11,muted,false);
-    status.setGravity(Gravity.CENTER_VERTICAL); status.setPadding(dp(8),dp(7),dp(8),dp(7));
-    status.setBackground(shape(0xFF080A0E,0xFF6E1B25,5));
-    root.addView(status,new LinearLayout.LayoutParams(-1,dp(34)));
-    setContentView(root);
-  }
-  private void refreshTabs() {
-    String[] keys={"Gráficos","Desempenho","Controles","Áudio"};
-    for(int i=0;i<tabs.getChildCount();i++){
-      Button b=(Button)tabs.getChildAt(i);
-      b.setBackground(shape(keys[i].equals(current)?0xFF97000B:0xFF17191F,keys[i].equals(current)?0xFFFF2638:0xFFB51A2A,8));
-      b.setElevation(dp(keys[i].equals(current)?7:2));
+    void panel(float x,float y,float w,float h,String title){
+      rect(x,y,w,h,0xE908090D,18,1);
+      text(title,x+22,y+43,30,white,true);
     }
-  }
-  private LinearLayout panel(String heading) {
-    LinearLayout box=new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
-    box.setPadding(dp(13),dp(10),dp(13),dp(10)); box.setBackground(shape(0xE5090B10,0xFFFF1B30,10));
-    TextView h=label(heading,19,Color.WHITE,true); h.setPadding(dp(2),dp(1),dp(2),dp(5)); box.addView(h); return box;
-  }
-  private void row(LinearLayout box,String name,View control) {
-    LinearLayout line=new LinearLayout(this); line.setGravity(Gravity.CENTER_VERTICAL);
-    TextView l=label(name,14,Color.WHITE,false); line.addView(l,new LinearLayout.LayoutParams(0,dp(30),1));
-    if(control!=null) {
-      LinearLayout.LayoutParams controlParams;
-      if (control instanceof Switch) {
-        controlParams = new LinearLayout.LayoutParams(dp(64), dp(30));
-        controlParams.gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
-      } else {
-        controlParams = new LinearLayout.LayoutParams(dp(190), dp(32));
+    void button(float x,float y,float w,float h,String label,boolean active){
+      rect(x,y,w,h,active?0xFFB90013:0xF5111218,14,1);
+      if(active){paint(0xFFFF2438);p.setShader(new LinearGradient(x,y,x,y+h,0xFFFF2538,0xFF8E000B,Shader.TileMode.CLAMP));c.drawRoundRect(x,y,x+w,y+h,14,14,p);p.setShader(null);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.5f);p.setColor(red);c.drawRoundRect(x,y,x+w,y+h,14,14,p);p.setStyle(Paint.Style.FILL);}
+      center(label,x+w/2,y+h/2+8,active?24:22,white,true);
+    }
+    String val(String key,String[] opts,int def){int n=prefs.getInt(key,def);return opts[Math.max(0,Math.min(n,opts.length-1))];}
+    void selectRow(float x,float y,float w,String label,String value){
+      text(label,x,y+25,20,white,false);rect(x+w-330,y-8,320,48,0xFF202126,10,1);text(value,x+w-306,y+23,19,white,false);text("▼",x+w-45,y+22,16,red,true);
+    }
+    void switchRow(float x,float y,float w,String label,String key,boolean def){
+      text(label,x,y+25,20,white,false);boolean on=prefs.getBoolean(key,def);
+      rect(x+w-75,y-2,62,32,on?0xFFED1528:0xFF484B52,18,0);
+      paint(white);c.drawCircle(x+w-(on?28:60),y+14,12,p);
+    }
+    void sliderRow(float x,float y,float w,String label,String key,int def){
+      text(label,x,y+25,20,white,false);int v=prefs.getInt(key,def);
+      paint(0xFF5D6066);c.drawRoundRect(x+w-340,y+5,x+w-55,y+17,8,8,p);
+      paint(0xFFFF182B);c.drawRoundRect(x+w-340,y+5,x+w-340+285*v/100f,y+17,8,8,p);
+      paint(white);c.drawCircle(x+w-340+285*v/100f,y+11,10,p);text(v+"%",x+w-45,y+24,18,white,true);
+    }
+    @Override protected void onDraw(Canvas canvas){
+      super.onDraw(canvas);c=canvas;sx=getWidth()/1536f;sy=getHeight()/864f;c.save();c.scale(sx,sy);
+      if(art!=null){paint(white);p.setFilterBitmap(true);c.drawBitmap(art,null,new Rect(0,0,1536,864),p);paint(0x55000000);c.drawRect(0,0,1536,864,p);}else{paint(bg);c.drawRect(0,0,1536,864,p);}
+      // Side navigation and game branding
+      rect(38,16,350,744,0xE90A0B10,24,1);
+      center("RESIDENT EVIL",213,85,27,white,true);center("CODE: VERONICA X",213,119,27,white,true);center("HD",213,153,27,white,true);
+      String[] menu={"▷  Iniciar Jogo","⚙  Configurações","♧  Controles","▣  Salvar / Carregar","ⓘ  Informações","⏻  Sair"};
+      for(int i=0;i<menu.length;i++)button(54,178+i*91,318,78,menu[i],i==(page==0?0:1));
+      // Main title and tabs
+      text(page==0?"Iniciar Jogo":"Configurações",414,67,42,white,true);
+      String[] icons={"▣  Gráficos","◉  Desempenho","♧  Controles","◖  Áudio"};
+      for(int i=0;i<4;i++)button(410+i*278,92,266,80,icons[i],i==tab);
+      if(page==0){
+        panel(410,190,1090,460,"Iniciar Jogo");
+        text("DIRETÓRIO DO JOGO: "+(prefs.getString("game_root","").isEmpty()?"Não selecionado":"Selecionado"),440,285,25,white,true);
+        text("Use SELECIONAR PASTA DO JOGO na tela inicial para escolher Default.xex.",440,340,21,muted,false);
+      }else if(tab==0){
+        panel(410,190,675,480,"Gráficos");panel(1098,190,402,480,"Desempenho");
+        String[] res={"720p (1280×720)","1080p (1920×1080)"};
+        String[] scale={"100% (Nativa)","75%","50%"},quality={"Alta","Média","Baixa"},filter={"Bilinear","Nearest"};
+        String[] fsr={"Desativado","FSR (FidelityFX)"},mode={"Quality (Melhor qualidade)","Balanced","Performance"};
+        String[] aa={"Desativado","Ativado"},particles={"Alto","Médio","Baixo"},aspect={"Automática (16:9)","4:3","16:9","16:10"};
+        String[] labels={"Resolução de saída","Escala de renderização","Qualidade de imagem","Filtro de imagem","Filtro FSR","Modo FSR","Nitidez (CAS)","Anti-aliasing (AA)","Efeitos de partículas","Proporção da tela"};
+        String[] keys={"resolution","render_scale","image_quality","image_filter","fsr","fsr_mode","cas_sharpness","anti_aliasing","particles","aspect_ratio"};
+        String[][] opts={res,scale,quality,filter,fsr,mode,null,aa,particles,aspect};
+        int[] defs={1,0,0,0,0,0,70,0,0,0};
+        for(int i=0;i<labels.length;i++){float yy=248+i*42;if(i==6)sliderRow(438,yy,620,labels[i],keys[i],70);else selectRow(438,yy,620,labels[i],val(keys[i],opts[i],defs[i]));}
+        selectRow(1120,248,350,"Limite de FPS",val("fps_limit",new String[]{"30 FPS","60 FPS","120 FPS","Ilimitado"},1));
+        switchRow(1120,294,350,"Sincronização vertical (V-Sync)","vsync",true);
+        switchRow(1120,340,350,"Contador de FPS","show_fps",true);
+        switchRow(1120,386,350,"Cache de shaders","shader_cache",true);
+        switchRow(1120,432,350,"Reduzir efeitos pesados","reduce_effects",false);
+        rect(1110,500,370,150,0xD91A1B20,12,1);
+        text("ⓘ  Melhora a qualidade da imagem",1130,540,18,muted,false);text("com upscaling e nitidez (FSR/CAS),",1130,570,18,muted,false);text("com equilíbrio entre qualidade e",1130,600,18,muted,false);text("desempenho.",1130,630,18,muted,false);
+      }else if(tab==1){
+        panel(410,190,675,480,"Desempenho");panel(1098,190,402,480,"Informações");
+        selectRow(438,255,620,"Limite de FPS",val("fps_limit",new String[]{"30 FPS","60 FPS","120 FPS","Ilimitado"},1));
+        switchRow(438,320,620,"Sincronização vertical (V-Sync)","vsync",true);
+        switchRow(438,380,620,"Contador de FPS","show_fps",true);
+        switchRow(438,440,620,"Cache de shaders","shader_cache",true);
+        switchRow(438,500,620,"Reduzir efeitos pesados","reduce_effects",false);
+        text("O contador apresenta a taxa de",1120,270,18,muted,false);text("apresentação medida pelo renderer.",1120,300,18,muted,false);
+        text("As opções ainda dependem de",1120,355,18,muted,false);text("integração real no runtime.",1120,385,18,muted,false);
+      }else if(tab==2){
+        panel(410,190,1090,480,"Controles");
+        selectRow(440,270,1020,"Controles na tela",val("touch_mode",new String[]{"Automático","Sempre mostrar","Sempre ocultar"},0));
+        button(440,340,1020,78,"↔  Editar posição dos controles",true);
+        text("O editor permite arrastar o joystick e os botões.",450,470,20,muted,false);
+        text("Ajustes de tamanho e transparência ainda não estão disponíveis.",450,510,20,muted,false);
+        text("O modo automático deve ocultar os controles após entrada física confirmada.",450,560,20,muted,false);
+      }else{
+        panel(410,190,1090,480,"Áudio");
+        sliderRow(440,280,1020,"Volume geral","audio_master",100);
+        sliderRow(440,370,1020,"Volume da música","audio_music",100);
+        sliderRow(440,460,1020,"Volume dos efeitos","audio_sfx",100);
+        text("Os volumes são armazenados, mas ainda não estão conectados ao mixer.",450,570,19,muted,false);
       }
-      line.addView(control, controlParams);
+      button(410,692,520,68,"↶  Restaurar padrões",false);
+      button(940,692,560,68,"✓  Aplicar",true);
+      rect(38,778,1462,70,0xF008090D,10,1);
+      text("▱  Diretório do jogo: Não selecionado",62,820,18,muted,false);
+      text("♧  Controle: Desconectado",650,820,18,muted,false);
+      text("♧  Controles na tela: Ativado",1010,820,18,0xFF35E66B,false);
+      text("Versão: v1.0.0",1370,820,18,white,false);
+      c.restore();
     }
-    LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,-2); rp.bottomMargin=dp(2); box.addView(line,rp);
-  }
-  private void note(LinearLayout box,String s) {
-    TextView t=label(s,12,muted,false); t.setPadding(dp(4),dp(4),dp(4),dp(6)); box.addView(t);
-  }
-  private Spinner choice(String[] values,String key,int def) {
-    Spinner s=new Spinner(this);
-    ArrayAdapter<String>a=new ArrayAdapter<String>(this,android.R.layout.simple_spinner_item,values) {
-      @Override public View getView(int position, View convertView, android.view.ViewGroup parent) {
-        TextView t=(TextView)super.getView(position,convertView,parent);
-        t.setTextColor(Color.WHITE); t.setTextSize(13); t.setGravity(Gravity.CENTER_VERTICAL);
-        t.setPadding(dp(8),0,dp(4),0); return t;
+    @Override public boolean onTouchEvent(MotionEvent e){
+      float x=e.getX()/sx,y=e.getY()/sy;
+      if(e.getAction()==MotionEvent.ACTION_DOWN){downX=x;downY=y;moved=false;return true;}
+      if(e.getAction()==MotionEvent.ACTION_MOVE){if(Math.abs(x-downX)>15||Math.abs(y-downY)>15)moved=true;return true;}
+      if(e.getAction()==MotionEvent.ACTION_UP&&!moved){handle(x,y);performClick();return true;}
+      return true;
+    }
+    @Override public boolean performClick(){super.performClick();return true;}
+    void handle(float x,float y){
+      if(y>=92&&y<=172&&x>=410){tab=Math.max(0,Math.min(3,(int)((x-410)/278)));invalidate();return;}
+      if(x>=38&&x<=388&&y>=178&&y<=720){
+        int item=(int)((y-178)/91);
+        if(item==0){finish();return;} if(item==1){page=1;invalidate();return;}
+        if(item==2){tab=2;page=1;invalidate();return;}
+        if(item==3){message("Salvar/carregar ainda não integrado ao runtime.");return;}
+        if(item==4){new AlertDialog.Builder(GameSettingsActivity.this).setTitle("Informações").setMessage("Resident Evil Code: Veronica X HD — edição dublada para Android ARM64.").setPositiveButton("OK",null).show();return;}
+        if(item==5){finish();return;}
       }
-      @Override public View getDropDownView(int position, View convertView, android.view.ViewGroup parent) {
-        TextView t=(TextView)super.getDropDownView(position,convertView,parent);
-        t.setTextColor(Color.WHITE); t.setTextSize(14); t.setGravity(Gravity.CENTER_VERTICAL);
-        t.setPadding(dp(12),dp(10),dp(8),dp(10));
-        t.setBackgroundColor(0xFF202126); return t;
-      }
-    };
-    a.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); s.setAdapter(a);
-    s.setBackground(shape(0xFF202126,0xFF8E2932,6)); s.setSelection(p.getInt(key,def));
-    s.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener(){
-      public void onNothingSelected(android.widget.AdapterView<?>x){}
-      public void onItemSelected(android.widget.AdapterView<?>x,View v,int pos,long id){p.edit().putInt(key,pos).apply();}
-    }); return s;
-  }
-  private TextView toggle(String title,String key,boolean def) {
-     TextView t=label("",12,Color.WHITE,true);
-     t.setTag("recvx-toggle");
-     t.setGravity(Gravity.CENTER);
-     t.setPadding(dp(5),dp(3),dp(5),dp(3));
-     final boolean[] checked = {p.getBoolean(key,def)};
-     Runnable paint = () -> {
-       t.setText(checked[0] ? "ATIVADO" : "DESATIVADO");
-       t.setTextColor(Color.WHITE);
-       t.setBackground(shape(checked[0] ? 0xFF97000B : 0xFF30343C,
-                             checked[0] ? 0xFFFF2638 : 0xFF737985,6));
-     };
-     paint.run();
-     t.setOnClickListener(v -> {
-       checked[0] = !checked[0];
-       p.edit().putBoolean(key,checked[0]).apply();
-       paint.run();
-     });
-     return t;
-   }
-  private SeekBar slider(String key,int def) {
-    SeekBar s=new SeekBar(this); s.setMax(100); s.setProgress(p.getInt(key,def));
-    s.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){
-      public void onProgressChanged(SeekBar b,int v,boolean user){if(user)p.edit().putInt(key,v).apply();}
-      public void onStartTrackingTouch(SeekBar b){} public void onStopTrackingTouch(SeekBar b){}
-    }); return s;
-  }
-  private void show(String tab) {
-    content.removeAllViews();
-    if(tab.equals("Gráficos")) {
-      LinearLayout split=new LinearLayout(this); split.setOrientation(LinearLayout.HORIZONTAL);
-      LinearLayout g=panel("Gráficos"), q=panel("Qualidade de imagem");
-      row(g,"Resolução de saída",choice(new String[]{"720p (1280×720)","1080p (1920×1080)"}, "resolution",1));
-      row(g,"Escala de renderização",choice(new String[]{"100% (Nativa)"}, "render_scale",0));
-      row(g,"Qualidade de imagem",choice(new String[]{"Alta","Média","Baixa"}, "image_quality",0));
-      row(g,"Filtro de imagem",choice(new String[]{"Bilinear"}, "image_filter",0));
-      row(g,"Filtro FSR",choice(new String[]{"Desativado","FSR (FidelityFX)"}, "fsr",0));
-      row(g,"Modo FSR",choice(new String[]{"Quality","Balanced","Performance"}, "fsr_mode",0));
-      row(g,"Nitidez (CAS)",slider("cas_sharpness",70));
-      row(g,"Anti-aliasing (AA)",choice(new String[]{"Desativado","Ativado"}, "anti_aliasing",0));
-      row(g,"Efeitos de partículas",choice(new String[]{"Alto","Médio","Baixo"}, "particles",0));
-      row(g,"Proporção da tela",choice(new String[]{"Automática (16:9)","4:3","16:9","16:10"}, "aspect_ratio",0));
-      note(q,"As opções de qualidade, FSR, CAS, anti-aliasing, partículas e proporção serão aplicadas somente quando o runtime oferecer suporte real.");
-      note(q,"Filtro bilinear e resolução são as opções atualmente expostas pelo renderer Android.");
-      LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1); cp.setMargins(dp(3),dp(3),dp(3),dp(3));
-      LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(0,-2,2.05f); gp.setMargins(dp(3),dp(3),dp(5),dp(3));
-      LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(0,-2,1.0f); qp.setMargins(dp(5),dp(3),dp(3),dp(3));
-      g.setElevation(dp(5)); q.setElevation(dp(5));
-      split.addView(g,gp); split.addView(q,qp); content.addView(split);
-    } else if(tab.equals("Desempenho")) {
-      LinearLayout split=new LinearLayout(this); split.setOrientation(LinearLayout.HORIZONTAL);
-      LinearLayout perf=panel("Desempenho"), info=panel("Informações");
-      row(perf,"Limite de FPS",choice(new String[]{"30 FPS","60 FPS","120 FPS","Ilimitado"},"fps_limit",1));
-      row(perf,"Sincronização vertical (V-Sync)",toggle("Ativado","vsync",true));
-      row(perf,"Contador de FPS",toggle("Exibir FPS","show_fps",true));
-      row(perf,"Cache de shaders",toggle("Ativado","shader_cache",true));
-      row(perf,"Reduzir efeitos pesados",toggle("Ativado","reduce_effects",false));
-      note(info,"O contador apresenta a taxa de apresentação medida pelo renderer.");
-      note(info,"Limite de FPS, V-Sync, cache e redução de efeitos ainda precisam de integração e validação no runtime antes de produzirem efeito no jogo.");
-      LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1); cp.setMargins(dp(3),dp(3),dp(3),dp(3));
-      LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(0,-2,1.55f); pp.setMargins(dp(3),dp(3),dp(5),dp(3));
-      LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(0,-2,1.0f); ip.setMargins(dp(5),dp(3),dp(3),dp(3));
-      perf.setElevation(dp(5)); info.setElevation(dp(5));
-      split.addView(perf,pp); split.addView(info,ip); content.addView(split);
-    } else if(tab.equals("Controles")) {
-      LinearLayout controls=panel("Controles");
-      row(controls,"Controles na tela",choice(new String[]{"Automático","Sempre mostrar","Sempre ocultar"},"touch_mode",0));
-      Button edit=action("↔  Editar posição dos controles",true);
-      edit.setOnClickListener(v->startActivity(new Intent(this,TouchLayoutEditorActivity.class)));
-      controls.addView(edit,new LinearLayout.LayoutParams(-1,dp(42)));
-      note(controls,"O editor permite arrastar o joystick e os botões. Ajustes de tamanho e transparência ainda não estão disponíveis.");
-      note(controls,"O modo automático deve ocultar os controles após entrada física confirmada e mostrá-los novamente quando o controle for desconectado. Validar no aparelho.");
-      content.addView(controls);
-    } else {
-      LinearLayout audio=panel("Áudio");
-      row(audio,"Volume geral",slider("audio_master",100));
-      row(audio,"Volume da música",slider("audio_music",100));
-      row(audio,"Volume dos efeitos",slider("audio_sfx",100));
-      note(audio,"Os controles de volume são armazenados, mas ainda não estão conectados ao mixer do runtime.");
-      content.addView(audio);
+      if(y>=692&&y<=765&&x>=410&&x<930){prefs.edit().clear().apply();invalidate();message("Padrões restaurados.");return;}
+      if(y>=692&&y<=765&&x>=940){prefs.edit().apply();message("Configurações salvas.");return;}
+      if(tab==0){
+        if(x>=740&&x<=1080&&y>=230&&y<670){
+          int i=(int)((y-240)/42);String[] keys={"resolution","render_scale","image_quality","image_filter","fsr","fsr_mode","cas_sharpness","anti_aliasing","particles","aspect_ratio"};
+          String[][] opts={{"720p (1280×720)","1080p (1920×1080)"},{"100% (Nativa)","75%","50%"},{"Alta","Média","Baixa"},{"Bilinear","Nearest"},{"Desativado","FSR (FidelityFX)"},{"Quality (Melhor qualidade)","Balanced","Performance"},null,{"Desativado","Ativado"},{"Alto","Médio","Baixo"},{"Automática (16:9)","4:3","16:9","16:10"}};
+          if(i==6){int v=prefs.getInt("cas_sharpness",70);prefs.edit().putInt(keys[i],Math.min(100,v+10)).apply();invalidate();return;}
+          if(i>=0&&i<keys.length)choose(keys[i],keys[i],opts[i],0);
+          return;
+        }
+        if(x>1090&&y>230&&y<480){if(y<285)choose("Limite de FPS","fps_limit",new String[]{"30 FPS","60 FPS","120 FPS","Ilimitado"},1);else if(y<330)toggle("vsync",true);else if(y<375)toggle("show_fps",true);else if(y<420)toggle("shader_cache",true);else toggle("reduce_effects",false);invalidate();return;}
+      }else if(tab==1&&x>430&&x<1080){if(y<300)choose("Limite de FPS","fps_limit",new String[]{"30 FPS","60 FPS","120 FPS","Ilimitado"},1);else if(y<365)toggle("vsync",true);else if(y<425)toggle("show_fps",true);else if(y<485)toggle("shader_cache",true);else toggle("reduce_effects",false);invalidate();return;}
+      else if(tab==2){if(y>245&&y<320)choose("Controles na tela","touch_mode",new String[]{"Automático","Sempre mostrar","Sempre ocultar"},0);else if(y>330&&y<430)startActivity(new Intent(GameSettingsActivity.this,TouchLayoutEditorActivity.class));invalidate();return;}
+      else if(tab==3&&y>240&&y<520){String[] keys={"audio_master","audio_music","audio_sfx"};int i=Math.max(0,Math.min(2,(int)((y-260)/90)));prefs.edit().putInt(keys[i],Math.min(100,prefs.getInt(keys[i],100)-10)).apply();invalidate();}
     }
   }
 }
