@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ColorDrawable;
@@ -107,7 +108,7 @@ public final class GameSettingsActivity extends Activity {
 
     main=new LinearLayout(this); main.setOrientation(LinearLayout.VERTICAL);
     LinearLayout.LayoutParams mp=new LinearLayout.LayoutParams(0,-1,1); mp.leftMargin=dp(10); body.addView(main,mp);
-    TextView title=label("Configurações",26,Color.WHITE,true);
+    TextView title=label("Configurações",24,Color.WHITE,true);
     title.setPadding(dp(4),0,0,dp(5)); main.addView(title);
 
     tabs=new LinearLayout(this); tabs.setOrientation(LinearLayout.HORIZONTAL);
@@ -115,7 +116,7 @@ public final class GameSettingsActivity extends Activity {
     String[] keys={"Gráficos","Desempenho","Controles","Áudio"};
     for(int i=0;i<keys.length;i++){
       final String key=keys[i]; Button b=action(names[i],key.equals(current));
-      LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,dp(46),1); tp.setMargins(dp(3),dp(2),dp(3),dp(6));
+      LinearLayout.LayoutParams tp=new LinearLayout.LayoutParams(0,dp(42),1); tp.setMargins(dp(3),dp(2),dp(3),dp(6));
       tabs.addView(b,tp); b.setOnClickListener(v->{current=key;refreshTabs();show(key);});
     }
     main.addView(tabs);
@@ -152,8 +153,17 @@ public final class GameSettingsActivity extends Activity {
   }
   private void row(LinearLayout box,String name,View control) {
     LinearLayout line=new LinearLayout(this); line.setGravity(Gravity.CENTER_VERTICAL);
-    TextView l=label(name,14,Color.WHITE,false); line.addView(l,new LinearLayout.LayoutParams(0,dp(34),1));
-    if(control!=null) line.addView(control,new LinearLayout.LayoutParams(dp(205),dp(38)));
+    TextView l=label(name,14,Color.WHITE,false); line.addView(l,new LinearLayout.LayoutParams(0,dp(30),1));
+    if(control!=null) {
+      LinearLayout.LayoutParams controlParams;
+      if (control instanceof Switch) {
+        controlParams = new LinearLayout.LayoutParams(dp(64), dp(30));
+        controlParams.gravity = Gravity.RIGHT | Gravity.CENTER_VERTICAL;
+      } else {
+        controlParams = new LinearLayout.LayoutParams(dp(190), dp(32));
+      }
+      line.addView(control, controlParams);
+    }
     LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,-2); rp.bottomMargin=dp(2); box.addView(line,rp);
   }
   private void note(LinearLayout box,String s) {
@@ -182,9 +192,22 @@ public final class GameSettingsActivity extends Activity {
     }); return s;
   }
   private Switch toggle(String title,String key,boolean def) {
-    Switch s=new Switch(this); s.setText("");
+    Switch s=new Switch(this);
+    s.setText("");
     s.setShowText(false);
-    s.setChecked(p.getBoolean(key,def)); s.setOnCheckedChangeListener((v,on)->p.edit().putBoolean(key,on).apply()); return s;
+    s.setMinimumWidth(dp(60));
+    s.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+    int[][] states = new int[][] {
+      new int[] { android.R.attr.state_checked },
+      new int[] {}
+    };
+    int[] thumbColors = new int[] { 0xFFFFFFFF, 0xFFE4E6EA };
+    int[] trackColors = new int[] { 0xFFE50920, 0xFF555A63 };
+    s.setThumbTintList(new ColorStateList(states, thumbColors));
+    s.setTrackTintList(new ColorStateList(states, trackColors));
+    s.setChecked(p.getBoolean(key,def));
+    s.setOnCheckedChangeListener((v,on)->p.edit().putBoolean(key,on).apply());
+    return s;
   }
   private SeekBar slider(String key,int def) {
     SeekBar s=new SeekBar(this); s.setMax(100); s.setProgress(p.getInt(key,def));
