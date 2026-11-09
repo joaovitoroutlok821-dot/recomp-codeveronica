@@ -169,7 +169,9 @@ public final class GameSetupActivity extends Activity {
 
         start = new Button(this);
         start.setText("▶  INICIAR JOGO");
-        start.setTextSize(15);
+        start.setTextSize(17);
+        start.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        start.setElevation(dp(8));
         start.setAllCaps(false);
         start.setTextColor(Color.WHITE);
         start.setBackground(roundButton(0xFFE00018));
@@ -183,7 +185,9 @@ public final class GameSetupActivity extends Activity {
 
         Button settings = new Button(this);
         settings.setText("⚙  CONFIGURAÇÕES");
-        settings.setTextSize(14);
+        settings.setTextSize(15);
+        settings.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        settings.setElevation(dp(4));
         settings.setAllCaps(false);
         settings.setTextColor(Color.WHITE);
         settings.setBackground(roundButton(0xCC1A1D24));
@@ -194,7 +198,9 @@ public final class GameSetupActivity extends Activity {
         // Users must not need to press Start just to choose or change the game directory.
         Button chooseGameFolder = new Button(this);
         chooseGameFolder.setText("▣  SELECIONAR PASTA DO JOGO");
-        chooseGameFolder.setTextSize(12);
+        chooseGameFolder.setTextSize(13);
+        chooseGameFolder.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        chooseGameFolder.setElevation(dp(4));
         chooseGameFolder.setAllCaps(false);
         chooseGameFolder.setTextColor(Color.WHITE);
         chooseGameFolder.setBackground(roundButton(0xCC101820));
@@ -316,9 +322,14 @@ public final class GameSetupActivity extends Activity {
 
     private GradientDrawable roundButton(int color) {
         GradientDrawable d = new GradientDrawable();
-        d.setColor(color);
         d.setCornerRadius(dp(9));
-        d.setStroke(dp(1), Color.rgb(180, 24, 36));
+        if (color == 0xFFE00018) {
+            d.setOrientation(GradientDrawable.Orientation.TOP_BOTTOM);
+            d.setColors(new int[]{0xFFFF3042,0xFFE00018,0xFF97000B});
+        } else {
+            d.setColor(color);
+        }
+        d.setStroke(dp(1), Color.rgb(255, 35, 52));
         return d;
     }
 
