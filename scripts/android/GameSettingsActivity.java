@@ -34,8 +34,16 @@ public final class GameSettingsActivity extends Activity {
 
   private GradientDrawable shape(int color, int stroke, int radius) {
     GradientDrawable d = new GradientDrawable();
-    d.setColor(color); d.setCornerRadius(dp(radius));
-    if (stroke != 0) d.setStroke(dp(1), stroke);
+    d.setCornerRadius(dp(radius));
+    if (color == 0xFF97000B) {
+      d.setOrientation(GradientDrawable.Orientation.TOP_BOTTOM);
+      d.setColors(new int[]{0xFFFF2638,0xFFB50012,0xFF76000A});
+    } else if (color == 0xFF17191F) {
+      d.setColor(0xF5101117);
+    } else {
+      d.setColor(color);
+    }
+    if (stroke != 0) d.setStroke(dp(1.5f), stroke);
     return d;
   }
   private TextView label(String s, int size, int color, boolean bold) {
@@ -46,7 +54,10 @@ public final class GameSettingsActivity extends Activity {
   private Button action(String s, boolean selected) {
     Button b = new Button(this); b.setText(s); b.setTextSize(13); b.setAllCaps(false);
     b.setTextColor(Color.WHITE);
-    b.setBackground(shape(selected ? 0xFF97000B : 0xFF17191F, selected ? red : 0xFF9A1522, 8));
+    b.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+    b.setBackground(shape(selected ? 0xFF97000B : 0xFF17191F, selected ? 0xFFFF2638 : 0xFFB51A2A, 8));
+    b.setElevation(dp(selected ? 7 : 2));
+    b.setPadding(dp(8),dp(3),dp(8),dp(3));
     return b;
   }
   private void buildUi() {
@@ -69,7 +80,8 @@ public final class GameSettingsActivity extends Activity {
     LinearLayout side = new LinearLayout(this);
     side.setOrientation(LinearLayout.VERTICAL);
     side.setPadding(dp(8), dp(8), dp(8), dp(8));
-    side.setBackground(shape(0xD9080A0F, red, 12));
+    side.setBackground(shape(0xD9080A0F, 0xFFFF2638, 12));
+    side.setElevation(dp(8));
     TextView game = label("RESIDENT EVIL\nCODE: VERONICA X HD", 17, Color.WHITE, true);
     game.setGravity(Gravity.CENTER);
     game.setPadding(dp(4), dp(8), dp(4), dp(14));
@@ -129,18 +141,19 @@ public final class GameSettingsActivity extends Activity {
     String[] keys={"Gráficos","Desempenho","Controles","Áudio"};
     for(int i=0;i<tabs.getChildCount();i++){
       Button b=(Button)tabs.getChildAt(i);
-      b.setBackground(shape(keys[i].equals(current)?0xFF97000B:0xFF17191F,keys[i].equals(current)?red:0xFF9A1522,8));
+      b.setBackground(shape(keys[i].equals(current)?0xFF97000B:0xFF17191F,keys[i].equals(current)?0xFFFF2638:0xFFB51A2A,8));
+      b.setElevation(dp(keys[i].equals(current)?7:2));
     }
   }
   private LinearLayout panel(String heading) {
     LinearLayout box=new LinearLayout(this); box.setOrientation(LinearLayout.VERTICAL);
-    box.setPadding(dp(11),dp(8),dp(11),dp(8)); box.setBackground(shape(0xD9111318,0xFF941824,10));
-    TextView h=label(heading,17,Color.WHITE,true); h.setPadding(dp(2),dp(1),dp(2),dp(5)); box.addView(h); return box;
+    box.setPadding(dp(13),dp(10),dp(13),dp(10)); box.setBackground(shape(0xE5090B10,0xFFFF1B30,10));
+    TextView h=label(heading,19,Color.WHITE,true); h.setPadding(dp(2),dp(1),dp(2),dp(5)); box.addView(h); return box;
   }
   private void row(LinearLayout box,String name,View control) {
     LinearLayout line=new LinearLayout(this); line.setGravity(Gravity.CENTER_VERTICAL);
-    TextView l=label(name,13,Color.WHITE,false); line.addView(l,new LinearLayout.LayoutParams(0,dp(34),1));
-    if(control!=null) line.addView(control,new LinearLayout.LayoutParams(dp(190),dp(36)));
+    TextView l=label(name,14,Color.WHITE,false); line.addView(l,new LinearLayout.LayoutParams(0,dp(34),1));
+    if(control!=null) line.addView(control,new LinearLayout.LayoutParams(dp(205),dp(38)));
     LinearLayout.LayoutParams rp=new LinearLayout.LayoutParams(-1,-2); rp.bottomMargin=dp(2); box.addView(line,rp);
   }
   private void note(LinearLayout box,String s) {
@@ -198,7 +211,10 @@ public final class GameSettingsActivity extends Activity {
       note(q,"As opções de qualidade, FSR, CAS, anti-aliasing, partículas e proporção serão aplicadas somente quando o runtime oferecer suporte real.");
       note(q,"Filtro bilinear e resolução são as opções atualmente expostas pelo renderer Android.");
       LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1); cp.setMargins(dp(3),dp(3),dp(3),dp(3));
-      split.addView(g,cp); split.addView(q,cp); content.addView(split);
+      LinearLayout.LayoutParams gp=new LinearLayout.LayoutParams(0,-2,2.05f); gp.setMargins(dp(3),dp(3),dp(5),dp(3));
+      LinearLayout.LayoutParams qp=new LinearLayout.LayoutParams(0,-2,1.0f); qp.setMargins(dp(5),dp(3),dp(3),dp(3));
+      g.setElevation(dp(5)); q.setElevation(dp(5));
+      split.addView(g,gp); split.addView(q,qp); content.addView(split);
     } else if(tab.equals("Desempenho")) {
       LinearLayout split=new LinearLayout(this); split.setOrientation(LinearLayout.HORIZONTAL);
       LinearLayout perf=panel("Desempenho"), info=panel("Informações");
@@ -210,7 +226,10 @@ public final class GameSettingsActivity extends Activity {
       note(info,"O contador apresenta a taxa de apresentação medida pelo renderer.");
       note(info,"Limite de FPS, V-Sync, cache e redução de efeitos ainda precisam de integração e validação no runtime antes de produzirem efeito no jogo.");
       LinearLayout.LayoutParams cp=new LinearLayout.LayoutParams(0,-2,1); cp.setMargins(dp(3),dp(3),dp(3),dp(3));
-      split.addView(perf,cp); split.addView(info,cp); content.addView(split);
+      LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(0,-2,1.55f); pp.setMargins(dp(3),dp(3),dp(5),dp(3));
+      LinearLayout.LayoutParams ip=new LinearLayout.LayoutParams(0,-2,1.0f); ip.setMargins(dp(5),dp(3),dp(3),dp(3));
+      perf.setElevation(dp(5)); info.setElevation(dp(5));
+      split.addView(perf,pp); split.addView(info,ip); content.addView(split);
     } else if(tab.equals("Controles")) {
       LinearLayout controls=panel("Controles");
       row(controls,"Controles na tela",choice(new String[]{"Automático","Sempre mostrar","Sempre ocultar"},"touch_mode",0));
