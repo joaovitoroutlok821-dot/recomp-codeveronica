@@ -210,6 +210,16 @@ public final class GameSetupActivity extends Activity {
         }
 
         @android.webkit.JavascriptInterface
+        public void resetSettings() {
+            SharedPreferences prefs = getSharedPreferences("recvx_settings", MODE_PRIVATE);
+            prefs.edit().clear()
+                .putInt("resolution", 1)
+                .putInt("touch_mode", 0)
+                .putBoolean("show_fps", true)
+                .apply();
+        }
+
+        @android.webkit.JavascriptInterface
         public String loadSettings() {
             SharedPreferences prefs = getSharedPreferences("recvx_settings", MODE_PRIVATE);
             org.json.JSONObject values = new org.json.JSONObject();
