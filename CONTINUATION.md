@@ -594,3 +594,12 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Importante: esses workflows produzem um APK de smoke test SDL/JNI/SAF com launcher, não o APK privado completo com ReXGlue e a recompilação do jogo. O sucesso de compilação não confirma o funcionamento do FPS/resolução/overlay no jogo nem a inicialização do título.
 - O HTML mantém os toggles de interface simples; a confirmação final de persistência e comportamento precisa ser feita no APK instalado. A resolução altera os argumentos de largura/altura, FPS altera a preferência lida pelo overlay, e touch_mode controla a exibição do overlay.
 - Não foi encontrada uma ação disponível no conector GitHub para disparar manualmente um workflow novo; não declarar que o build privado foi iniciado. Próximo passo: continuar a auditoria do caminho de entrada Bluetooth e dos hooks de runtime, preservando as opções ainda desativadas, e depois gerar/validar o APK privado completo.
+
+
+## Continuação — ação Restaurar padrões da launcher (2026-11-10)
+
+- Commit `db348237ef473dc848a2b8406d198d1115c1bbca`: o botão **Restaurar padrões** deixou de exibir apenas uma mensagem demonstrativa e agora chama a ponte nativa `GameBridge.resetSettings()`, recarregando os valores restaurados na interface.
+- Commit `f19d7a6538ec38513581aeb750ab7dc46392b427`: implementado `LauncherBridge.resetSettings()` no instalador Android. Ele limpa as preferências antigas e grava os padrões efetivamente suportados: resolução 1080p, contador FPS ativado e controles na tela ativados.
+- Esta alteração não habilita opções ainda sem suporte e não altera a arte/layout da launcher.
+- Ainda não houve compilação nem teste no Motorola após estes commits. É necessário reconstruir o APK para validar a ponte JavaScript/Android.
+- **Salvar estado / Carregar estado** continuam sendo demonstrações sem backend de save-state. Não foi adicionada uma falsa implementação: é necessário localizar uma API real de snapshot/restore no runtime antes de ligar esses botões.
