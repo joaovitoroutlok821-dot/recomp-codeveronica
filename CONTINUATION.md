@@ -662,3 +662,38 @@ Continuação da leitura do SDK upstream `rexglue/rexglue-sdk`, commit `398e2ba7
 4. Só depois propor uma mudança no SDK com formato de estado versionado, captura cooperativa, recriação de threads e retomada testável. Fazer teste unitário de round-trip em thread controlada antes de expor Save/Load na launcher.
 
 Nenhum arquivo de runtime/SDK foi modificado nesta etapa; foi uma auditoria de leitura. Os botões Save/Load continuam sem backend e devem permanecer indisponíveis/demonstrativos até que captura e retomada reais sejam implementadas.
+
+## Mapeamento de execução PPC e fibras — 2026-11-10
+
+Leitura do SDK fixado `rexglue/rexglue-sdk@398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`, incluindo `XThread::Execute`, `FunctionDispatcher`, `rexcrt threading.cpp` e o backend POSIX de fibras:
+
+### Como o código recompilado realmente executa
+
+- Cada `XThread` possui um `runtime::ThreadState` com um `PPCContext`; a thread host é criada suspensa e, ao iniciar, faz bind desse estado e chama `Execute()`.
+- `FunctionDispatcher::Execute()` resolve o endereço guest para um ponteiro `PPCFunc*` e chama diretamente a função C++ recompilada: `fn(*ctx, memory_->virtual_membase())`. Não há interpretação/instrução PPC individual nesse caminho.
+- O dispatcher ajusta temporariamente o SP guest, salva/restaura LR ao redor da chamada e retorna quando a função recompilada termina. Portanto, durante uma função recompilada ativa, a continuação real também depende da pilha de chamadas C++ nativa do host; não existe necessariamente um único PC guest que permita reconstruir o ponto exato.
+- O caminho de interrupção usa o mesmo dispatcher e protege a execução com uma região crítica global, mas isso não é um mecanismo de checkpoint nem uma barreira geral para todas as threads.
+
+### Como as fibras são representadas
+
+- `X_FIBER_CONTEXT` é uma estrutura em memória guest de 0xA50 bytes. Ela guarda parâmetros, limites/base da pilha guest, SP guest e uma área de registradores não voláteis PPC.
+- `SwitchToFiber_entry()` salva os registradores não voláteis e SP guest da fibra de saída, restaura os dados da fibra de destino e então chama `rex::thread::Fiber::SwitchTo()`.
+- O backend POSIX usado em plataformas Linux/macOS implementa a troca com `ucontext_t` (`getcontext/makecontext/swapcontext`) e mantém uma pilha host separada em um `std::vector<uint8_t>` para cada fibra criada. A troca preserva a pilha C++ inteira durante a execução normal.
+- A estrutura guest `X_FIBER_CONTEXT` não contém `ucontext_t`, a pilha host, os endereços de retorno C++ nem o estado de alocação do objeto host Fiber. Salvar somente a memória guest e essa estrutura não é suficiente para restaurar uma fibra que estava no meio de uma função recompilada.
+- A fibra principal convertida por `ConvertThreadToFiber` representa a execução da própria thread host; as fibras criadas por `CreateFiber` têm pilhas guest e host distintas. O mapa `KernelState::fiber_map_` contém ponteiros host e metadados que também não são serializados pelo caminho de KernelState observado.
+
+### Implicações para Save/Load
+
+- O obstáculo não é apenas copiar o PC e registradores PPC. O ReXGlue executa funções recompiladas como chamadas C++ nativas, e o backend de fibras preserva continuação por meio de contexto e pilha host.
+- Uma captura no meio de uma função precisaria preservar/relocar de forma segura a pilha host e o contexto de troca de cada fibra, incluindo referências e endereços internos, ou mudar a arquitetura de execução para pontos de checkpoint explícitos. Copiar bytes de uma pilha host para outro processo/execução não é uma solução segura presumível.
+- Uma alternativa potencialmente mais simples seria permitir snapshots somente em pontos cooperativos comprovados nos quais todas as threads e fibras estejam fora de funções recompiladas e em estados reiniciáveis; a auditoria ainda não provou que o jogo oferece tais pontos nem que o estado de todas as chamadas pode ser reconstruído.
+- O SDK fixado tem backend de fibra POSIX baseado em `ucontext`; não confundir isso com o backend Win32 baseado em `ConvertThreadToFiber/CreateFiber`. A serialização teria que ser desenhada e testada para a plataforma Android efetivamente usada.
+
+### Próxima etapa
+
+1. Rastrear os chamadores de `FunctionDispatcher::Execute` e os caminhos de entrada/saída do módulo principal para identificar fronteiras reais entre chamadas guest.
+2. Verificar quais estados de espera/bloqueio deixam `PPCContext`, pilha guest e fibras em uma condição consistente e se a pilha host está fora de qualquer função recompilada.
+3. Avaliar um protótipo isolado de checkpoint cooperativo para uma thread de teste, sem tocar ainda no jogo nem expor Save/Load na launcher.
+4. Definir se o escopo viável é snapshot de sessão em execução, ou apenas save em pontos específicos/retomada após reinício. Não prometer compatibilidade universal antes dos testes.
+
+Nenhum código do SDK ou do jogo foi alterado; esta etapa foi somente leitura e atualização documental. Save/Load continua sem backend funcional.
