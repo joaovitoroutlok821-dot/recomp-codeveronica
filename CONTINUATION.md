@@ -862,3 +862,6 @@ Nenhum arquivo de jogo, XEX, código de launcher ou runtime de produção foi al
 - O log não apresentou erro de compilação C++ nem erro de `ucontext`; o compilador NDK ainda não foi executado.
 - Commit `4b3ac3787cd4d0848fd0a70c74a5c10ce2b91969` removeu essa ação e passou a usar o Android SDK pré-instalado no runner em `/usr/local/lib/android/sdk`, instalando diretamente o NDK `27.2.12479018`.
 - A nova execução deve ser consultada antes de considerar o cross-compile concluído. O job Linux de round-trip permanece separado.
+
+- Segunda tentativa Android (#42907697532) falhou no passo de localizar o `sdkmanager`: o caminho fixo `cmdline-tools/16.0/bin/sdkmanager` não existe nessa imagem do runner. O job Linux voltou a passar.
+- Commit `7e0e6605a7ece088e273e087b46b762a04cba9d4` substituiu o caminho fixo por descoberta do executável dentro de `cmdline-tools`. A nova execução precisa confirmar se a instalação do NDK e a compilação ARM64 avançam.
