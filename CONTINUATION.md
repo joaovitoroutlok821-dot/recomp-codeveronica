@@ -865,3 +865,11 @@ Nenhum arquivo de jogo, XEX, código de launcher ou runtime de produção foi al
 
 - Segunda tentativa Android (#42907697532) falhou no passo de localizar o `sdkmanager`: o caminho fixo `cmdline-tools/16.0/bin/sdkmanager` não existe nessa imagem do runner. O job Linux voltou a passar.
 - Commit `7e0e6605a7ece088e273e087b46b762a04cba9d4` substituiu o caminho fixo por descoberta do executável dentro de `cmdline-tools`. A nova execução precisa confirmar se a instalação do NDK e a compilação ARM64 avançam.
+
+
+## Correção do pipeline de instalação do NDK — 2026-11-10
+
+- A execução [#42907983712](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/42907983712) confirmou que a descoberta dinâmica do `sdkmanager` funcionou e que o NDK 27.2.12479018 foi baixado e descompactado.
+- A etapa falhou depois da extração porque o workflow usa `set -o pipefail`: o `sdkmanager` encerrou a leitura de stdin ao terminar e o processo `yes` recebeu SIGPIPE (exit 141, mensagem `yes: standard output: Broken pipe`). Isso foi um falso negativo do pipeline, não uma falha de download do NDK nem de compilação C++.
+- Ajustado o passo para desabilitar `pipefail` somente durante o pipeline `yes | sdkmanager`, mantendo `set -e` para que o status do próprio sdkmanager continue determinando o resultado; `pipefail` é reativado imediatamente depois.
+- O job Linux continuou passando. A etapa Android ainda não compilou o teste; aguardar a próxima execução para verificar instalação, compilação AArch64 e inspeção ELF.
