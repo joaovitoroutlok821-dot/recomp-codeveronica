@@ -971,3 +971,18 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Esta prova testa diretamente os registradores callee-saved especificados pela AAPCS64; x30 é o endereço de retorno da chamada e sua retomada é exercitada pelo fluxo de retorno, não como registrador callee-saved.
 - Alterações ainda são exclusivas do APK de diagnóstico; nenhuma integração no runtime de produção e nenhum Save/Load.
 - O workflow Android ARM64 precisa compilar e validar o novo APK antes de qualquer teste no aparelho.
+
+
+## Resultado do APK de teste explícito de registradores ARM64 — 2026-11-10
+
+- O workflow Android ARM64 #13 concluiu com sucesso: https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/42914685645
+- Run ID: `42914685645`; commit: `5b4703b79b51b88168984f6c0ab7c65968b9156c`.
+- Job `build-apk` ID `130173959425`: `success`.
+- Gradle: `BUILD SUCCESSFUL`.
+- Verificações do APK passaram: pacote `org.rexglue.fiberprobe`, biblioteca `lib/arm64-v8a/libfiber_test.so`, alinhamento `zipalign` e assinatura `apksigner`.
+- Artefato: `recvx-android-arm64-fiber-test-apk`, ID `13808981777`, 131.223 bytes; SHA-256 `c71f05d302c39f463c6d7f498f40a3a9a90ecb0fa814d5e1f828c7b0d06cdf6f`; expira em 2026-11-24T22:28:19Z.
+- A revisão do assembly e harness confirmou que a prova carrega sentinelas independentes em x19-x29 e d8-d15, cede para a fibra principal e compara os valores ao retomar. O teste também preserva os registradores originais do chamador antes de retornar.
+- **Limite:** o workflow prova compilação, empacotamento ARM64, alinhamento e assinatura; ainda não prova que o teste foi executado no aparelho com esta nova prova explícita. O teste físico anterior de 32 ciclos/256 alternâncias não cobria cada registrador individualmente.
+- Próximo passo obrigatório: instalar o APK do artefato #13 no Motorola Edge 30 Pro, abrir `Fiber Probe`, tocar em `EXECUTAR TESTE` e enviar o resultado mostrado. Sucesso esperado: `ANDROID_ARM64_FIBER_RESUME=PASS` com menção a x19-x29 e d8-d15.
+- Se falhar ou fechar, capturar logcat do pacote `org.rexglue.fiberprobe`; não integrar o backend ao ReXGlue de produção antes de resolver.
+- Save/Load continua desabilitado. Nenhum código do runtime de produção, launcher ou conteúdo do jogo foi alterado.
