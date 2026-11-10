@@ -626,3 +626,16 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Conclusão: ainda não há uma barreira global demonstrada para congelar consistentemente guest threads/fibers, callbacks de kernel, áudio e CommandProcessor. Não implementar os botões Save/Load chamando isoladamente `Memory::Save`, `KernelState::Save`, `AudioSystem::Save` e `GraphicsSystem::Save` enquanto o jogo continua executando.
 - Próxima etapa técnica: auditar o ponto de lançamento e a coordenação de threads/fibers no SDK (incluindo todos os threads do title process e execução assíncrona do GPU/audio); definir uma barreira cooperativa com timeout e rollback antes de qualquer serialização. Validar primeiro round-trip no mesmo processo e só então persistência após reiniciar o app.
 - Nenhum código de jogo, launcher, APK ou runtime foi alterado nesta auditoria; nenhum Save/Load foi declarado funcional.
+
+
+## Bloqueador confirmado no serializador de threads do ReXGlue — 2026-11-10
+
+Auditoria adicional no SDK upstream `rexglue/rexglue-sdk`, commit fixado `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`:
+
+- `KernelState::Save()` percorre objetos `XThread` e tenta serializar threads guest antes dos demais objetos. Threads host são omitidas porque devem ser recriadas.
+- `XThread::Save()` retorna `false` imediatamente quando `running_ == true`, emitindo `serialization not implemented`. O próprio código contém TODO sobre serialização compatível com ReXGlue; o bloco que salvaria contexto de execução é inalcançável para threads em execução por causa desse retorno.
+- Consequência: a thread principal do jogo e quaisquer outras threads guest ativas não podem ser salvas pelo serializador atual. Suspender a thread antes de chamar Save não resolve por si só: o estado de contexto/PC da thread ainda não tem suporte implementado no SDK.
+- `AudioSystem::Pause()/Resume()` existem na implementação concreta de áudio, mas não fazem parte da interface abstrata `IAudioSystem`; exigiriam acesso/capacidade específica do backend ou extensão da interface.
+- `IGraphicsSystem` também não expõe Pause/Resume/Save/Restore na interface pública revisada. O CommandProcessor exige pausa para Save/Restore, portanto a integração gráfica precisa de uma API explícita e sincronizada.
+- Decisão: não conectar os botões Save/Load ao serializador atual. O próximo trabalho necessário é no SDK: implementar captura/restauração de contexto de XThread (PC, registradores, estado PPC/fiber e stack), definir como restaurar threads guest ativas sem executar parcialmente, e fornecer barreiras/APIs de pausa e retomada para GPU e áudio. Só depois integrar snapshots de memória + kernel + GPU + áudio em uma operação transacional com validação de versão e recuperação em falha.
+- Este achado é um bloqueador técnico comprovado no código upstream fixado, não apenas ausência de uma função global. Nenhum APK ou teste de save-state foi produzido nesta etapa.
