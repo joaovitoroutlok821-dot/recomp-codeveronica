@@ -526,3 +526,15 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Ainda falta executar e validar o workflow. Esse teste cobre a integração SDL/JNI/SAF e o empacotamento; não prova que a recompilação do jogo inicia ou que todos os ajustes alteram o runtime.
 
 - A interface também restaura ao abrir Configurações as preferências já salvas de resolução (1080p/720p) e controles na tela; opções sem suporte nativo continuam sem efeito declarado. Commit: `395dbb44ced60047b1c879d8fd8ae406209f1275`.
+
+
+## Teste físico do APK SDL/SAF com launcher HTML — 2026-11-10
+
+- O usuário instalou e executou o APK do workflow Android #37 no Motorola Edge 30 Pro.
+- Resultado confirmado pelo usuário: o aplicativo abriu corretamente e exibiu os menus da launcher.
+- Isso valida no aparelho o carregamento do WebView e a apresentação da interface HTML dentro da Activity Android; também confirma que o APK de teste não fecha imediatamente ao abrir a launcher.
+- Workflow #37: run ID `42740989435`, conclusão `success`, commit `395dbb44ced60047b1c879d8fd8ae406209f1275`.
+- Artefato `recvx-android-sdl-saf-test`, ID `13729935435`, aproximadamente 29 MB, retenção até 2026-11-24.
+- Escopo ainda não confirmado pelo teste relatado: seleção de pasta via SAF, cópia/validação do `Default.xex`, persistência de preferências e inicialização do runtime do jogo. Não assumir que essas etapas foram testadas só porque os menus apareceram.
+- Este APK continua sendo smoke test SDL/JNI/SAF com launcher HTML; não contém a recompilação real do Resident Evil nem demonstra inicialização do jogo.
+- Próxima etapa técnica: usar o sucesso do WebView como base e avançar na integração do entrypoint Android com ReXGlue/runtime e no caminho de dados SAF, mantendo a interface visual. Depois gerar um APK de jogo separado e validar seleção de pasta, inicialização e logs.
