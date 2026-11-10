@@ -1,0 +1,57 @@
+name: ReXGlue cooperative fiber checkpoint prototype
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - android-rebuild
+    paths:
+      - '.github/workflows/fiber-checkpoint-prototype.yml'
+      - 'tests/fiber-checkpoint/**'
+      - 'CONTINUATION.md'
+
+permissions:
+  contents: read
+
+jobs:
+  linux-fiber-roundtrip:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout project branch
+        uses: actions/checkout@v4
+        with:
+          ref: android-rebuild
+
+      - name: Install Clang
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y clang
+
+      - name: Checkout exact ReXGlue SDK revision
+        run: |
+          set -euo pipefail
+          git clone https://github.com/rexglue/rexglue-sdk.git "$RUNNER_TEMP/rexglue-sdk"
+          git -C "$RUNNER_TEMP/rexglue-sdk" checkout --detach 398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb
+          test "$(git -C "$RUNNER_TEMP/rexglue-sdk" rev-parse HEAD)" = "398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb"
+
+      - name: Build and run cooperative fiber round-trip test
+        run: |
+          set -euo pipefail
+          clang++ -std=c++23 -O0 -g -Wall -Wextra \
+            -I "$RUNNER_TEMP/rexglue-sdk/include" \
+            tests/fiber-checkpoint/fiber_checkpoint_test.cpp \
+            "$RUNNER_TEMP/rexglue-sdk/src/core/fiber_posix.cpp" \
+            -pthread -o "$RUNNER_TEMP/fiber_checkpoint_test"
+          "$RUNNER_TEMP/fiber_checkpoint_test" | tee fiber-checkpoint-result.txt
+          grep -qx 'FIBER_COOPERATIVE_RESUME=PASS' fiber-checkpoint-result.txt
+
+      - name: Upload prototype result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recvx-fiber-checkpoint-prototype
+          path: fiber-checkpoint-result.txt
+          if-no-files-found: warn
+          retention-days: 14
