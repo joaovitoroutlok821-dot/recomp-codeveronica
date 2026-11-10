@@ -830,3 +830,28 @@ Commits desta etapa:
 - `16dd10aa955197fd0e460b95db75370260fcae52` — adiciona o workflow.
 
 Nenhum arquivo de jogo, XEX, código de launcher ou runtime de produção foi alterado. O resultado do teste ainda está pendente; nenhum APK foi compilado nesta etapa.
+
+## Resultado verificado do protótipo de fibra e etapa Android ARM64 — 2026-11-10
+
+### Teste Linux x86-64
+
+- Workflow [#42904963200](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/42904963200), execução #3 de `ReXGlue cooperative fiber checkpoint prototype`, concluído com `success`.
+- Commit testado: `515eb95962d2516b7eae8c894aecc78eebb0907e`.
+- Job `linux-fiber-roundtrip` passou ao compilar o teste com o backend real `src/core/fiber_posix.cpp` do SDK fixado e executar o binário.
+- Saída confirmada: `FIBER_COOPERATIVE_RESUME=PASS`.
+- Artefato `recvx-fiber-checkpoint-prototype`, ID `13803624185`, contém o resultado textual de 200 bytes. Não é APK nem binário Android.
+
+### Próxima etapa automatizada
+
+- Commit `d83b9da2b5813bca24518ba413184f1da0f8cdb5` acrescentou ao workflow um job separado `android-arm64-cross-compile`.
+- O job instala NDK `27.2.12479018`, compila o mesmo teste e o backend POSIX com o compilador `aarch64-linux-android24-clang++), e verifica que o ELF resultante é AArch64.
+- O binário é publicado como artefato `recvx-fiber-checkpoint-android-arm64`.
+- Essa etapa é apenas compilação cruzada: não executa o binário no runner Linux nem comprova execução no Motorola. O teste físico no Android continua obrigatório.
+- O job Linux permanece separado para preservar a prova executável de round-trip no host.
+- A execução deste novo job ainda precisa ser verificada; não presumir sucesso só porque o workflow foi atualizado.
+
+### Limite técnico mantido
+
+- O teste comprova retomada da mesma pilha C++ de fibra no mesmo processo. Não serializa contexto/pilha, não restaura após reinício e não integra XThread/PPCContext, dispatcher, áudio ou GPU.
+- Save/Load na launcher permanece sem backend funcional e deve continuar desabilitado/indisponível.
+- Nenhum XEX, conteúdo do jogo, código de runtime de produção ou APK foi incluído/alterado nesta etapa.
