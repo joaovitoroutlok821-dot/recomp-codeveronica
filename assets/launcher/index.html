@@ -141,7 +141,7 @@ function settings(){
   left=rows([['Volume geral',slider(100)],['Volume da música',slider(80)],['Volume dos efeitos (SFX)',slider(100)],['Volume das vozes',slider(100)],['Volume das cutscenes',slider(100)]]);
   right=rows([['Saída de áudio',select('Automático|Alto-falante|Fone de ouvido|Bluetooth')],['Qualidade de áudio',select('Alta (48 kHz)|Média (44.1 kHz)|Baixa (22 kHz)')],['Áudio surround (virtual)',toggle(true)],['Efeitos de reverb',toggle(true)],['Compressão dinâmica',toggle(false)]])+`<p class="hint">ⓘ Ajuste o volume, a qualidade e os efeitos de áudio do jogo.</p>`;
  }
- body.innerHTML=tabs()+`<div class="panes"><div class="pane"><h2>${leftTitle}</h2>${left}</div><div class="pane"><h2>${rightTitle}</h2>${right}</div></div><div class="actions"><button class="action" onclick="toast('Padrões visuais restaurados nesta prévia')">↶ &nbsp; Restaurar padrões</button><button class="action primary" onclick="applySettings()">✓ &nbsp; Aplicar</button></div>`;
+ body.innerHTML=tabs()+`<div class="panes"><div class="pane"><h2>${leftTitle}</h2>${left}</div><div class="pane"><h2>${rightTitle}</h2>${right}</div></div><div class="actions"><button class="action" onclick="restoreDefaults()">↶ &nbsp; Restaurar padrões</button><button class="action primary" onclick="applySettings()">✓ &nbsp; Aplicar</button></div>`;
  body.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;settings()});
  restoreSettings();
 }
@@ -164,7 +164,15 @@ function restoreSettings(){
 function chooseGameFolder(){if(window.GameBridge){GameBridge.chooseGameFolder()}else{toast('Disponível somente no aplicativo Android')}}
 function startGame(){if(window.GameBridge){GameBridge.startGame()}else{toast('Disponível somente no aplicativo Android')}}
 function exitApp(){if(window.GameBridge){GameBridge.exitApp()}else{toast('Saída disponível no aplicativo Android')}}
-function applySettings(){
+function restoreDefaults(){
+  if(!window.GameBridge){toast('Disponível somente no aplicativo Android');return}
+  try{
+   GameBridge.resetSettings();
+   restoreSettings();
+   toast('Configurações compatíveis restauradas para os padrões.');
+  }catch(e){toast('Não foi possível restaurar os padrões.')}
+ }
+ function applySettings(){
  const rows=[...document.querySelectorAll('#pagebody .setting')];
  const rowFor=(label)=>rows.find(e=>e.dataset.settingLabel===label);
  const nativeSettings={};
