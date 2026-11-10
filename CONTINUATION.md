@@ -801,3 +801,32 @@ Continuação da auditoria de Save/Load. Foram lidos no SDK upstream os caminhos
 - Antes de qualquer alteração no SDK, comparar estes trechos com o commit exato fixado no build privado. A leitura desta etapa confirma o desenho do backend POSIX disponível, mas não autoriza assumir que a branch atual do upstream e o commit fixado são idênticos.
 
 Nenhum código de runtime, jogo ou launcher foi alterado. Nenhum Save/Load foi ativado. Não houve compilação nem teste de APK nesta etapa.
+
+
+## Protótipo isolado de retomada cooperativa de fibra — 2026-11-10
+
+Foi criado um teste experimental, separado do runtime do jogo e da launcher:
+
+- Fonte: `tests/fiber-checkpoint/fiber_checkpoint_test.cpp`.
+- Workflow: `.github/workflows/fiber-checkpoint-prototype.yml`.
+- O workflow clona o SDK upstream no commit exato fixado `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb` e compila diretamente o backend real `src/core/fiber_posix.cpp` com o teste, usando `include/rex/thread/fiber.h` do mesmo commit.
+- O teste cria uma fibra e chama duas funções C++ aninhadas que simulam uma cadeia de chamadas recompiladas. A função interna faz `Fiber::SwitchTo(main_fiber)`; depois a thread principal volta à fibra e o teste verifica que as variáveis locais das duas pilhas continuam intactas e que a execução prossegue até o fim.
+- A verificação esperada é `FIBER_COOPERATIVE_RESUME=PASS`. O teste não serializa `ucontext_t`, não copia pilhas e não tenta restaurar após encerrar o processo.
+- O workflow executa em Linux x86-64 com o backend POSIX real. Isso valida a semântica de yield/retomada no host, mas ainda não comprova a execução no Android ARM64 nem a integração com XThread, PPCContext, dispatcher, GPU ou áudio.
+
+### Limite de interpretação
+
+Este protótipo é somente uma prova de que uma fibra POSIX pode suspender e retomar a mesma cadeia C++ no mesmo processo. Ele **não** é um Save State, não gera arquivo de save e não autoriza habilitar os botões Save/Load.
+
+### Próximos passos após o resultado do workflow
+
+1. Confirmar que o workflow realmente executou e ler o resultado/artefato.
+2. Se passar, compilar o mesmo teste para Android ARM64 com o NDK e depois executá-lo no aparelho; a compilação cruzada isolada não substitui o teste físico.
+3. Só então avaliar uma API de checkpoint cooperativo integrada ao estado PPC e às fibras do kernel. Será necessário coordenar todas as threads e subsistemas; uma única fibra de teste não resolve essa barreira global.
+4. Manter Save/Load indisponível até existir um round-trip real, validado e com recuperação de falhas.
+
+Commits desta etapa:
+- `7852ee7f1358dad52d3a9759c35b2471a8c287be` — adiciona o teste isolado.
+- `16dd10aa955197fd0e460b95db75370260fcae52` — adiciona o workflow.
+
+Nenhum arquivo de jogo, XEX, código de launcher ou runtime de produção foi alterado. O resultado do teste ainda está pendente; nenhum APK foi compilado nesta etapa.
