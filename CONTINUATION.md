@@ -959,3 +959,15 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Artefato APK: `13807912238`, nome `recvx-android-arm64-fiber-test-apk`, SHA-256 `5252a4c51e2d63e5e5bf55351a3f3b4683d417af62600225b9d54b11e937aa3b`.
 - Próxima etapa: criar teste explícito de preservação de valores nos registradores callee-saved x19-x30 e d8-d15, usando assembly de teste controlado e verificável. A aprovação atual não prova isoladamente cada registrador.
 - Ainda não há integração com o runtime de produção nem suporte Save/Load; não alterar esses estados até validar ABI, TLS, interação com dispatcher/threads e ciclo de vida.
+
+
+## Teste explícito de registradores ARM64 adicionado — 2026-11-10
+
+- Adicionada rotina assembly `rex_fiber_register_probe` em `tests/fiber-checkpoint/android/arm64_context.S`.
+- A rotina salva o estado original do chamador, carrega sentinelas distintas em x19-x29 e nos 64 bits inferiores de d8-d15, cede a execução para a fibra principal e verifica os valores ao retomar.
+- A rotina restaura os registradores originais e a pilha antes de retornar, respeitando a ABI da função de teste.
+- O worker executa essa prova uma vez em cada ciclo de vida, antes do teste de variáveis locais e das oito alternâncias.
+- O JNI informa que o resultado cobre x19-x29 e d8-d15.
+- Esta prova testa diretamente os registradores callee-saved especificados pela AAPCS64; x30 é o endereço de retorno da chamada e sua retomada é exercitada pelo fluxo de retorno, não como registrador callee-saved.
+- Alterações ainda são exclusivas do APK de diagnóstico; nenhuma integração no runtime de produção e nenhum Save/Load.
+- O workflow Android ARM64 precisa compilar e validar o novo APK antes de qualquer teste no aparelho.
