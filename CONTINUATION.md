@@ -986,3 +986,15 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Próximo passo obrigatório: instalar o APK do artefato #13 no Motorola Edge 30 Pro, abrir `Fiber Probe`, tocar em `EXECUTAR TESTE` e enviar o resultado mostrado. Sucesso esperado: `ANDROID_ARM64_FIBER_RESUME=PASS` com menção a x19-x29 e d8-d15.
 - Se falhar ou fechar, capturar logcat do pacote `org.rexglue.fiberprobe`; não integrar o backend ao ReXGlue de produção antes de resolver.
 - Save/Load continua desabilitado. Nenhum código do runtime de produção, launcher ou conteúdo do jogo foi alterado.
+
+
+## Teste físico explícito de registradores ARM64 aprovado — 2026-11-10
+
+- O usuário executou no Motorola Edge 30 Pro o APK de diagnóstico do workflow Android ARM64 #14 (commit `bcb2091`), pacote `org.rexglue.fiberprobe`.
+- Resultado mostrado na tela: `ANDROID_ARM64_FIBER_RESUME=PASS`.
+- Resultado detalhado: `32 ciclos concluídos; 256 alternâncias.`
+- A tela confirma: variáveis locais/endereço e registradores `x19-x29`, `d8-d15` preservados.
+- Esta evidência física conclui a validação isolada da troca/retomada cooperativa ARM64 e da preservação dos registradores callee-saved testados no Motorola real.
+- A validação **não** demonstra ainda integração com `Fiber`/TLS do SDK ReXGlue, XThread, PPCContext, dispatcher, áudio, GPU, unwinding/exceções, múltiplas threads ou Save State.
+- Próxima etapa: auditar novamente o contrato completo da classe `Fiber`, seleção de backend no CMake e uso de `Fiber::tls_current_`; então portar o backend assembly para a estrutura real do SDK em uma branch/commit isolado e criar testes de integração. Não substituir o backend de produção antes de compilar o SDK completo e passar os testes Android e host.
+- Save/Load permanece desabilitado. Nenhum código de jogo, launcher ou runtime de produção foi alterado nesta prova.
