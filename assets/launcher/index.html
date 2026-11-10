@@ -101,7 +101,11 @@ body{display:grid;place-items:center}.stage{position:relative;width:min(100vw,17
 <script>
 const body=document.getElementById('pagebody'),heading=document.getElementById('heading');let activeTab='graphics';
 const tabNames={graphics:'Gráficos',performance:'Desempenho',controls:'Controles',audio:'Áudio'};
-function field(label,control){return `<div class="setting"><span>${label}</span>${control}</div>`}
+function field(label,control){
+ const supported=['Resolução de saída','Contador de FPS','Controles na tela'].includes(label);
+ if(!supported) control=control.replace('<select','<select disabled title="Indisponível: o runtime Android ainda não oferece suporte confirmado.').replace('<input','<input disabled title="Indisponível: o runtime Android ainda não oferece suporte confirmado.').replace('<button class="toggle','<button disabled class="toggle');
+ return `<div class="setting" data-setting-label="${label}"><span>${label}</span>${control}</div>`;
+}
 function tabs(){return `<div class="tabs">${Object.entries(tabNames).map(([k,v])=>`<button class="tab ${activeTab===k?'active':''}" data-tab="${k}">${({graphics:'▣',performance:'◉',controls:'♧',audio:'◖'})[k]} &nbsp;${v}</button>`).join('')}</div>`}
 function settings(){
  const select=(items)=>`<select>${items.split('|').map(x=>`<option>${x}</option>`).join('')}</select>`;
@@ -112,7 +116,7 @@ function settings(){
  if(activeTab==='graphics'){
   leftTitle='Gráficos';rightTitle='Desempenho';
   left=rows([
-   ['Resolução de saída',select('1080p (1920×1080)|900p (1600×900)|720p (1280×720)|480p (854×480)')],
+   ['Resolução de saída',select('1080p (1920×1080)|720p (1280×720)')],
    ['Escala de renderização',select('100% (Nativa)|90%|80%|70%|50%')],
    ['Qualidade de imagem',select('Alta|Média|Baixa')],['Filtro de imagem',select('Bilinear|Trilinear|Nearest')],
    ['Filtro FSR',select('FSR (FidelityFX)|Desativado')],['Modo FSR',select('Quality (Melhor qualidade)|Balanced|Performance')],
@@ -145,10 +149,15 @@ function restoreSettings(){
  if(!window.GameBridge) return;
  try{
   const saved=JSON.parse(GameBridge.loadSettings());
-  const resolutionSelect=[...document.querySelectorAll('#pagebody .setting select')].find(s=>s.parentElement.previousElementSibling?.textContent?.includes('Resolução de saída'));
+  const rows=[...document.querySelectorAll('#pagebody .setting')];
+  const rowFor=(label)=>rows.find(e=>e.dataset.settingLabel===label);
+  const resolutionSelect=rowFor('Resolução de saída')?.querySelector('select');
   if(resolutionSelect) resolutionSelect.value=saved.resolution===1?'1080p (1920×1080)':'720p (1280×720)';
-  const touchToggle=[...document.querySelectorAll('#pagebody .setting')].find(e=>e.firstElementChild?.textContent?.includes('Controles na tela'))?.querySelector('.toggle');
-  if(touchToggle && saved.touch_mode===2){touchToggle.classList.remove('on');touchToggle.textContent='DESATIVADO'}
+  for(const label of ['Contador de FPS','Controles na tela']){
+   const button=rowFor(label)?.querySelector('.toggle');
+   const enabled=label==='Contador de FPS'?(saved.show_fps!==false):(saved.touch_mode!==2);
+   if(button){button.classList.toggle('on',enabled);button.textContent=enabled?'ATIVADO':'DESATIVADO'}
+  }
  }catch(e){}
 }
 
@@ -156,22 +165,19 @@ function chooseGameFolder(){if(window.GameBridge){GameBridge.chooseGameFolder()}
 function startGame(){if(window.GameBridge){GameBridge.startGame()}else{toast('Disponível somente no aplicativo Android')}}
 function exitApp(){if(window.GameBridge){GameBridge.exitApp()}else{toast('Saída disponível no aplicativo Android')}}
 function applySettings(){
- const selects=[...document.querySelectorAll('#pagebody .setting select')];
- const resolutionSelect=selects.find(s=>s.parentElement.previousElementSibling?.textContent?.includes('Resolução de saída'));
- const deviceSelect=selects.find(s=>s.parentElement.previousElementSibling?.textContent?.includes('Dispositivo de controle'));
- const touchToggle=[...document.querySelectorAll('#pagebody .setting')].find(e=>e.firstElementChild?.textContent?.includes('Controles na tela'))?.querySelector('.toggle');
+ const rows=[...document.querySelectorAll('#pagebody .setting')];
+ const rowFor=(label)=>rows.find(e=>e.dataset.settingLabel===label);
  const nativeSettings={};
- if(resolutionSelect){
-  const resolutionText=resolutionSelect.value;
-  nativeSettings.resolution=resolutionText.startsWith('1080p')?1:0;
-  try{localStorage.setItem('recvx_launcher_resolution',resolutionText)}catch(e){}
- }
- if(touchToggle){
-  nativeSettings.touch_mode=touchToggle.classList.contains('on')?0:2;
-  try{localStorage.setItem('recvx_launcher_touch',nativeSettings.touch_mode===2?'off':'auto')}catch(e){}
- }
- if(window.GameBridge){GameBridge.saveSettings(JSON.stringify(nativeSettings));toast('Configurações compatíveis salvas. Outras opções ainda aguardam suporte do runtime.')}
- else toast('Prévia: alterações salvas apenas nesta sessão')
+ const resolutionSelect=rowFor('Resolução de saída')?.querySelector('select');
+ const fpsToggle=rowFor('Contador de FPS')?.querySelector('.toggle');
+ const touchToggle=rowFor('Controles na tela')?.querySelector('.toggle');
+ if(resolutionSelect) nativeSettings.resolution=resolutionSelect.value.startsWith('1080p')?1:0;
+ if(fpsToggle) nativeSettings.show_fps=fpsToggle.classList.contains('on');
+ if(touchToggle) nativeSettings.touch_mode=touchToggle.classList.contains('on')?0:2;
+ if(window.GameBridge){
+  GameBridge.saveSettings(JSON.stringify(nativeSettings));
+  toast('Resolução, contador FPS e controles na tela salvos. Opções sem suporte estão desativadas.');
+ }else toast('Prévia: alterações salvas apenas nesta sessão')
 }
 function onNativeCopyProgress(percent,copied,total,message){
  const box=document.getElementById('copyProgressBox');
