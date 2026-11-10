@@ -855,3 +855,10 @@ Nenhum arquivo de jogo, XEX, código de launcher ou runtime de produção foi al
 - O teste comprova retomada da mesma pilha C++ de fibra no mesmo processo. Não serializa contexto/pilha, não restaura após reinício e não integra XThread/PPCContext, dispatcher, áudio ou GPU.
 - Save/Load na launcher permanece sem backend funcional e deve continuar desabilitado/indisponível.
 - Nenhum XEX, conteúdo do jogo, código de runtime de produção ou APK foi incluído/alterado nesta etapa.
+
+### Ajuste do runner Android — 2026-11-10
+
+- A primeira execução da nova etapa Android (#42907560724) falhou antes de compilar o teste: `android-actions/setup-android@v3` tentou instalar o pacote legado `tools`, que o repositório atual do SDK não disponibilizou (`Failed to find package 'tools'`).
+- O log não apresentou erro de compilação C++ nem erro de `ucontext`; o compilador NDK ainda não foi executado.
+- Commit `4b3ac3787cd4d0848fd0a70c74a5c10ce2b91969` removeu essa ação e passou a usar o Android SDK pré-instalado no runner em `/usr/local/lib/android/sdk`, instalando diretamente o NDK `27.2.12479018`.
+- A nova execução deve ser consultada antes de considerar o cross-compile concluído. O job Linux de round-trip permanece separado.
