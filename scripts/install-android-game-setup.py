@@ -19,6 +19,13 @@ if not manifest.is_file():
     raise SystemExit(f"SDL Android manifest not found: {manifest}")
 java.mkdir(parents=True, exist_ok=True)
 assets = Path(__file__).resolve().parents[1] / "assets"
+# Package the approved standalone launcher page inside the Android app.
+launcher_html = assets / "launcher" / "index.html"
+if not launcher_html.is_file():
+    raise SystemExit(f"Approved launcher HTML not found: {launcher_html}")
+android_assets = app / "src/main/assets/launcher"
+android_assets.mkdir(parents=True, exist_ok=True)
+(android_assets / "index.html").write_bytes(launcher_html.read_bytes())
 # Keep the clean launcher artwork separate from the game cover/logo asset.
 # The launcher artwork is shown in-app; the cover/logo image is used for the
 # Android app icon so text and settings are never baked into the launcher UI.
