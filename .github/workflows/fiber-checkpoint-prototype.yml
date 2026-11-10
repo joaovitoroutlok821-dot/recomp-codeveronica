@@ -55,3 +55,52 @@ jobs:
           path: fiber-checkpoint-result.txt
           if-no-files-found: warn
           retention-days: 14
+
+  android-arm64-cross-compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout project branch
+        uses: actions/checkout@v4
+        with:
+          ref: android-rebuild
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: |
+          set -euo pipefail
+          sdkmanager "ndk;27.2.12479018"
+          test -x "$ANDROID_SDK_ROOT/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
+
+      - name: Checkout exact ReXGlue SDK revision
+        run: |
+          set -euo pipefail
+          git clone https://github.com/rexglue/rexglue-sdk.git "$RUNNER_TEMP/rexglue-sdk"
+          git -C "$RUNNER_TEMP/rexglue-sdk" checkout --detach 398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb
+          test "$(git -C "$RUNNER_TEMP/rexglue-sdk" rev-parse HEAD)" = "398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb"
+
+      - name: Cross-compile fiber test for Android ARM64
+        run: |
+          set -euo pipefail
+          NDK_BIN="$ANDROID_SDK_ROOT/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          "$NDK_BIN/aarch64-linux-android24-clang++" -std=c++23 -O0 -g -Wall -Wextra \
+            -I "$RUNNER_TEMP/rexglue-sdk/include" \
+            tests/fiber-checkpoint/fiber_checkpoint_test.cpp \
+            "$RUNNER_TEMP/rexglue-sdk/src/core/fiber_posix.cpp" \
+            -pthread -o "$RUNNER_TEMP/fiber_checkpoint_android_arm64"
+          "$NDK_BIN/llvm-readelf" -h "$RUNNER_TEMP/fiber_checkpoint_android_arm64" | tee android-arm64-elf-header.txt
+          grep -q 'AArch64' android-arm64-elf-header.txt
+          cp "$RUNNER_TEMP/fiber_checkpoint_android_arm64" fiber_checkpoint_android_arm64
+
+      - name: Upload Android ARM64 test binary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recvx-fiber-checkpoint-android-arm64
+          path: |
+            fiber_checkpoint_android_arm64
+            android-arm64-elf-header.txt
+          if-no-files-found: warn
+          retention-days: 14
