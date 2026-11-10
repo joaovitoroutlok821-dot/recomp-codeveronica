@@ -54,10 +54,19 @@ extern "C" int rex_run_android_arm64_fiber_test() {
       rex_fiber_release_current_thread(main_fiber);
       return 2;
     }
+
+    // The register probe deliberately yields once before the nested-stack
+    // roundtrip starts. Account for that initial yield separately.
+    rex_fiber_switch(worker);
+    if (state.phase != 0 || state.switches != 0) state.failed = true;
+
     for (unsigned i = 0; i != 8; ++i) {
       rex_fiber_switch(worker);
       if (state.phase != 0 || state.switches != i + 1) state.failed = true;
     }
+
+    // Resume once more so the nested and outer frames finish and the fiber
+    // returns to the main context.
     rex_fiber_switch(worker);
     const bool passed = !state.failed && state.phase == 3 && state.switches == 8;
     rex_fiber_destroy(worker);
