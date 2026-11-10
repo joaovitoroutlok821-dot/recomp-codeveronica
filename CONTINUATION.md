@@ -581,3 +581,16 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Atualizado `LauncherBridge.loadSettings()` no gerador `scripts/install-android-game-setup.py` para retornar também `show_fps`. O código nativo já lê essa preferência em `TouchControlsView`, então o toggle FPS passa a controlar a preferência efetiva após reiniciar/abrir o jogo; a resolução continua sendo aplicada como largura/altura nos argumentos do ReXGlue e `touch_mode` controla a exibição do overlay.
 - Commits: HTML `fbecd5ab2aeaf56c1fe8a84181af905f7c0a4594`, correção dos atributos disabled `69d109aad3577cab07dc10cac128739ce8996689`, ponte Android `ad9a6e24fb7851172b113030f23a623d29fa4b3b`.
 - Ainda não há APK validado. A próxima etapa é executar verificações de build/smoke test, confirmar que as preferências sobrevivem ao reinício e verificar no aparelho que o contador FPS pode ser ligado/desligado. As opções desativadas só devem ser reabilitadas quando forem ligadas a hooks reais do runtime.
+
+
+
+## Validação das primeiras opções nativas da launcher — 2026-11-10 (continuação)
+
+- Auditoria posterior confirmou que os rótulos usados no HTML coincidem exatamente com as chaves consultadas por `restoreSettings()`: `Resolução de saída`, `Contador de FPS` e `Controles na tela`.
+- A função `rows()` passa todos os campos de configuração por `field()`; portanto, os campos sem suporte confirmado recebem `disabled` e a indicação de indisponibilidade. Os três campos liberados são os únicos com integração nesta etapa.
+- A ação Aplicar envia os três valores pela ponte Android. A restauração ocorre ao abrir cada aba; a preferência de FPS agora também é retornada por `LauncherBridge.loadSettings()`.
+- Smoke test Android #40 (run ID `42851819635`, commit `fbecd5ab2aeaf56c1fe8a84181af905f7c0a4594`), #41 (run ID `42851847630`, commit `69d109aad3577cab07dc10cac128739ce8996689`) e #42 (run ID `42851861396`, commit `ad9a6e24fb7851172b113030f23a623d29fa4b3b`) concluíram com sucesso. O run #42 compilou o APK debug, validou package/ABI/SDL-JNI/Activities/manifest/zipalign/assinatura e publicou o artefato `recvx-android-sdl-saf-test`, ID `13779909421` (aprox. 29,9 MB; expira em 2026-11-24).
+- A validação geral #152 (run ID `42851910334`, commit `0bad06596b537c087330fa6e28d627958a8cae4b`) também concluiu com sucesso.
+- Importante: esses workflows produzem um APK de smoke test SDL/JNI/SAF com launcher, não o APK privado completo com ReXGlue e a recompilação do jogo. O sucesso de compilação não confirma o funcionamento do FPS/resolução/overlay no jogo nem a inicialização do título.
+- O HTML mantém os toggles de interface simples; a confirmação final de persistência e comportamento precisa ser feita no APK instalado. A resolução altera os argumentos de largura/altura, FPS altera a preferência lida pelo overlay, e touch_mode controla a exibição do overlay.
+- Não foi encontrada uma ação disponível no conector GitHub para disparar manualmente um workflow novo; não declarar que o build privado foi iniciado. Próximo passo: continuar a auditoria do caminho de entrada Bluetooth e dos hooks de runtime, preservando as opções ainda desativadas, e depois gerar/validar o APK privado completo.
