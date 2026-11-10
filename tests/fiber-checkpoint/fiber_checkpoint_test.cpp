@@ -30,7 +30,8 @@ TEST_NOINLINE void RecompiledInner(TestState* state) {
 
   // This line must continue on the same native call stack after resumption.
   if (inner_local != 0x1122334455667788ull ||
-      state->inner_canary != 0x1122334455667788ull) {
+      state->inner_canary != 0x1122334455667788ull ||
+      reinterpret_cast<uintptr_t>(&inner_local) != state->inner_stack_address) {
     std::fprintf(stderr, "FAIL: inner frame was not preserved\n");
     std::abort();
   }
