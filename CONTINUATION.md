@@ -873,3 +873,28 @@ Nenhum arquivo de jogo, XEX, código de launcher ou runtime de produção foi al
 - A etapa falhou depois da extração porque o workflow usa `set -o pipefail`: o `sdkmanager` encerrou a leitura de stdin ao terminar e o processo `yes` recebeu SIGPIPE (exit 141, mensagem `yes: standard output: Broken pipe`). Isso foi um falso negativo do pipeline, não uma falha de download do NDK nem de compilação C++.
 - Ajustado o passo para desabilitar `pipefail` somente durante o pipeline `yes | sdkmanager`, mantendo `set -e` para que o status do próprio sdkmanager continue determinando o resultado; `pipefail` é reativado imediatamente depois.
 - O job Linux continuou passando. A etapa Android ainda não compilou o teste; aguardar a próxima execução para verificar instalação, compilação AArch64 e inspeção ELF.
+
+
+## Bloqueio do backend de fibras no Android NDK — 2026-11-10
+
+### Resultado da execução #10
+
+- Workflow [#42908337316](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/42908337316) terminou com o job Linux `linux-fiber-roundtrip` em `success` e o job Android `android-arm64-cross-compile` em `failure`.
+- A correção do pipeline do sdkmanager funcionou: NDK 27.2.12479018 foi instalado, o SDK ReXGlue no commit fixado foi clonado e verificado. Portanto, a falha anterior de instalação foi resolvida.
+- A compilação ARM64 parou no backend `src/core/fiber_posix.cpp`: o NDK/Bionic não declara `getcontext`, `makecontext` nem `swapcontext`; os quatro erros são símbolos não declarados, antes da linkedição. Não é erro do teste C++ nem de arquitetura AArch64.
+- A documentação do Bionic distingue `sys/ucontext.h`, que fornece tipos/contextos, das funções de troca de contexto; o backend POSIX do SDK depende das três funções que não estão disponíveis na API pública do NDK. Referência técnica consultada: https://android.googlesource.com/platform/bionic/+/c124baa/libc/include/sys/ucontext.h.
+
+### Decisão
+
+- Não tentar resolver isso apenas mudando API level ou adicionando macros: o problema observado é ausência das declarações/implementações públicas requeridas, não somente um protótipo oculto por feature macro.
+- Removida temporariamente a etapa de cross-compile Android deste workflow para não manter um job previsivelmente vermelho. O teste Linux continua como prova isolada da semântica do backend POSIX em host.
+- O Android precisa de um backend de fibra próprio (por exemplo, troca de contexto AArch64 implementada e revisada em assembly, ou outra biblioteca/abstração compatível e licenciada). Antes de escolher, auditar ABI AArch64, registradores callee-saved incluindo SIMD, alinhamento de stack, TLS de `Fiber::tls_current_`, retorno da trampoline, unwinding e integração com CMake.
+- Não copiar nem serializar `ucontext_t`/pilhas como solução de Save State. Um backend de troca de contexto Android funcional só permitirá yield/retomada cooperativa no mesmo processo; ainda não resolve checkpoint persistente, barreira global de threads nem subsistemas GPU/áudio.
+
+### Próximos passos
+
+1. Inspecionar o layout de `Fiber`, a seleção de backend no CMake e as convenções de chamada AArch64 usadas pelo NDK.
+2. Projetar backend Android isolado e teste ARM64 de round-trip com variáveis locais aninhadas, registradores preservados e várias trocas; validar execução no Motorola, não apenas cross-compile.
+3. Manter Save/Load indisponível até a integração completa provar um round-trip real e seguro.
+
+Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum APK foi produzido nesta etapa.
