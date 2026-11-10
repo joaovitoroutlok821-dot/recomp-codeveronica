@@ -290,8 +290,7 @@ extern "C" int SDL_main(int argc, char* argv[]) {
   if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) {
     SDL_Log("[RECVX-INPUT] SDL_INIT_GAMEPAD failed: %s", SDL_GetError());
   } else {
-    SDL_Log("[RECVX-INPUT] SDL gamepad subsystem ready; joysticks=%d",
-            SDL_GetJoysticks(nullptr) ? 0 : 0);
+    SDL_Log("[RECVX-INPUT] SDL gamepad subsystem ready");
   }
 
   SDL_Log("[RECVX-DIAG] initializing SDL window context");
