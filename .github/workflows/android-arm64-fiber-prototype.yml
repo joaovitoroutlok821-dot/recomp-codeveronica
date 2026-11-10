@@ -1,0 +1,45 @@
+name: Android ARM64 fiber prototype
+on:
+  workflow_dispatch:
+  push:
+    branches: [android-rebuild]
+    paths:
+      - '.github/workflows/android-arm64-fiber-prototype.yml'
+      - 'tests/fiber-checkpoint/android/**'
+      - 'CONTINUATION.md'
+permissions:
+  contents: read
+jobs:
+  cross-compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: android-rebuild
+      - uses: android-actions/setup-android@v4
+      - name: Install NDK
+        run: |
+          set -euo pipefail
+          sdkmanager "ndk;27.2.12479018"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/27.2.12479018" >> "$GITHUB_ENV"
+      - name: Cross-compile AArch64 test
+        run: |
+          set -euo pipefail
+          TOOLCHAIN="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          "$TOOLCHAIN/aarch64-linux-android24-clang++" --target=aarch64-linux-android24 -std=c++20 -O2 -Wall -Wextra -Werror -fno-exceptions -fno-rtti tests/fiber-checkpoint/android/fiber_android_arm64.cpp tests/fiber-checkpoint/android/arm64_context.S tests/fiber-checkpoint/android/fiber_android_arm64_test.cpp -Wl,-z,max-page-size=16384 -o "$RUNNER_TEMP/fiber_android_arm64_test"
+          "$TOOLCHAIN/llvm-readelf" -h "$RUNNER_TEMP/fiber_android_arm64_test" | tee android-arm64-elf.txt
+          grep -q 'Machine:.*AArch64' android-arm64-elf.txt
+          "$TOOLCHAIN/llvm-readelf" -s "$RUNNER_TEMP/fiber_android_arm64_test" > android-arm64-symbols.txt
+          grep -q 'rex_fiber_swap' android-arm64-symbols.txt
+          echo ANDROID_ARM64_FIBER_CROSS_COMPILE=PASS | tee android-arm64-result.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recvx-android-arm64-fiber-prototype
+          path: |
+            android-arm64-elf.txt
+            android-arm64-symbols.txt
+            android-arm64-result.txt
+          if-no-files-found: warn
+          retention-days: 14
