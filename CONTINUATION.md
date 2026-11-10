@@ -639,3 +639,26 @@ Auditoria adicional no SDK upstream `rexglue/rexglue-sdk`, commit fixado `398e2b
 - `IGraphicsSystem` também não expõe Pause/Resume/Save/Restore na interface pública revisada. O CommandProcessor exige pausa para Save/Restore, portanto a integração gráfica precisa de uma API explícita e sincronizada.
 - Decisão: não conectar os botões Save/Load ao serializador atual. O próximo trabalho necessário é no SDK: implementar captura/restauração de contexto de XThread (PC, registradores, estado PPC/fiber e stack), definir como restaurar threads guest ativas sem executar parcialmente, e fornecer barreiras/APIs de pausa e retomada para GPU e áudio. Só depois integrar snapshots de memória + kernel + GPU + áudio em uma operação transacional com validação de versão e recuperação em falha.
 - Este achado é um bloqueador técnico comprovado no código upstream fixado, não apenas ausência de uma função global. Nenhum APK ou teste de save-state foi produzido nesta etapa.
+
+
+## Auditoria aprofundada de XThread Save/Restore — 2026-11-10
+
+Continuação da leitura do SDK upstream `rexglue/rexglue-sdk`, commit `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`, agora incluindo o caminho de restauração:
+
+- `XThread::Save()` rejeita qualquer thread guest com `running_ == true` antes de gravar o objeto. O trecho que chama `SaveContext()` fica depois desse retorno e, portanto, não captura o contexto de uma thread ativa.
+- Mesmo nesse trecho atualmente inalcançável para threads ativas, o PC local é inicializado como zero e gravado como `state.context.pc = pc`; não existe captura demonstrada do PC real da execução guest nesse caminho.
+- `SaveContext()` e `LoadContext()` copiam vários registradores PPC (GPR/FPR/vetores/CR/FPSCR/XER/VSCR), mas isso não basta para retomar uma thread: é necessário um ponto de parada seguro e uma forma real de retomar a execução guest a partir do PC salvo.
+- `XThread::Restore()` também não implementa a retomada: quando `state.is_running` é verdadeiro, cria uma thread host suspensa, carrega os registradores e prepara o objeto, mas a rotina da thread apenas emite `Thread restore not implemented`; não há salto/dispatch para o contexto guest restaurado nem continuação do fluxo original.
+- O comentário dentro de Restore confirma que as threads precisariam de uma abordagem diferente. Assim, mesmo que fosse possível produzir um arquivo de snapshot contendo os dados de uma thread ativa, o SDK fixado não sabe retomá-la.
+- A inicialização normal de uma XThread cria uma thread host e executa `Execute()`; a restauração não pode simplesmente chamar esse caminho normal, pois isso iniciaria novamente a rotina guest desde o início, em vez de continuar do ponto salvo.
+- `ThreadState` mantém um `PPCContext` por thread, mas o código revisado não fornece uma API de checkpoint cooperativo que capture o contexto no limite correto da execução recompilada. Não foi encontrada evidência de que `Suspend()` do host thread capture um estado PPC reiniciável pelo ReXGlue.
+- Portanto, há dois bloqueios independentes: (1) captura consistente do contexto/PC de todas as threads guest ativas e (2) restauração/retomada efetiva dessas threads. Resolver apenas o primeiro ainda produziria saves que não podem ser carregados.
+
+### Próxima investigação técnica
+
+1. Mapear o executor/dispatch das funções recompiladas e os pontos em que uma thread guest troca de função, espera ou retorna ao kernel; verificar se existe um ponto seguro para checkpoint sem interromper código nativo no meio de uma operação.
+2. Rastrear fibras guest: como `X_FIBER_CONTEXT` armazena SP e área de registradores não voláteis, como as fibras se relacionam com o contexto PPC da thread e como o dispatcher alterna entre elas. Não confundir contexto de fiber com o contexto completo da thread host.
+3. Inspecionar o mecanismo de execução de uma função recompilada para determinar se há um dispatcher capaz de reentrar por PC/endereço guest e restaurar registradores sem reiniciar a função.
+4. Só depois propor uma mudança no SDK com formato de estado versionado, captura cooperativa, recriação de threads e retomada testável. Fazer teste unitário de round-trip em thread controlada antes de expor Save/Load na launcher.
+
+Nenhum arquivo de runtime/SDK foi modificado nesta etapa; foi uma auditoria de leitura. Os botões Save/Load continuam sem backend e devem permanecer indisponíveis/demonstrativos até que captura e retomada reais sejam implementadas.
