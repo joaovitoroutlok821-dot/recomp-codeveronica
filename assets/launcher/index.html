@@ -139,6 +139,17 @@ function settings(){
  }
  body.innerHTML=tabs()+`<div class="panes"><div class="pane"><h2>${leftTitle}</h2>${left}</div><div class="pane"><h2>${rightTitle}</h2>${right}</div></div><div class="actions"><button class="action" onclick="toast('Padrões visuais restaurados nesta prévia')">↶ &nbsp; Restaurar padrões</button><button class="action primary" onclick="applySettings()">✓ &nbsp; Aplicar</button></div>`;
  body.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{activeTab=b.dataset.tab;settings()});
+ restoreSettings();
+}
+function restoreSettings(){
+ if(!window.GameBridge) return;
+ try{
+  const saved=JSON.parse(GameBridge.loadSettings());
+  const resolutionSelect=[...document.querySelectorAll('#pagebody .setting select')].find(s=>s.parentElement.previousElementSibling?.textContent?.includes('Resolução de saída'));
+  if(resolutionSelect) resolutionSelect.value=saved.resolution===1?'1080p (1920×1080)':'720p (1280×720)';
+  const touchToggle=[...document.querySelectorAll('#pagebody .setting')].find(e=>e.firstElementChild?.textContent?.includes('Controles na tela'))?.querySelector('.toggle');
+  if(touchToggle && saved.touch_mode===2){touchToggle.classList.remove('on');touchToggle.textContent='DESATIVADO'}
+ }catch(e){}
 }
 
 function chooseGameFolder(){if(window.GameBridge){GameBridge.chooseGameFolder()}else{toast('Disponível somente no aplicativo Android')}}
