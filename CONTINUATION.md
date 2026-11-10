@@ -998,3 +998,17 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - A validação **não** demonstra ainda integração com `Fiber`/TLS do SDK ReXGlue, XThread, PPCContext, dispatcher, áudio, GPU, unwinding/exceções, múltiplas threads ou Save State.
 - Próxima etapa: auditar novamente o contrato completo da classe `Fiber`, seleção de backend no CMake e uso de `Fiber::tls_current_`; então portar o backend assembly para a estrutura real do SDK em uma branch/commit isolado e criar testes de integração. Não substituir o backend de produção antes de compilar o SDK completo e passar os testes Android e host.
 - Save/Load permanece desabilitado. Nenhum código de jogo, launcher ou runtime de produção foi alterado nesta prova.
+
+
+## Auditoria do contrato Fiber do SDK para Android — 2026-11-10
+
+- Inspecionada a implementação pública atual do SDK `rexglue/rexglue-sdk`: `include/rex/thread/fiber.h`, `src/core/fiber_posix.cpp`, `src/core/CMakeLists.txt`, `include/rex/platform.h` e o CMake raiz.
+- A API pública de `Fiber` é pequena e estável: `ConvertCurrentThread()`, `Create(stack_size, entry, arg)`, `SwitchTo(target)`, `Destroy()` e `Current()`; `tls_current_` é um membro estático `thread_local`.
+- O backend POSIX atual guarda `ucontext_t`, stack vector, entry/arg e flag de thread-fiber; `ConvertCurrentThread` captura contexto, `Create` configura stack e `makecontext`, `SwitchTo` atualiza TLS antes de `swapcontext`, e `Destroy` limpa TLS apenas para a fibra da thread.
+- `REX_PLATFORM_ANDROID` também define `REX_PLATFORM_LINUX`. No CMake atual, `elseif(UNIX)` seleciona `fiber_posix.cpp`; no header, `#if REX_PLATFORM_LINUX || REX_PLATFORM_MAC` inclui `ucontext.h`. Isso explica por que Android cai no caminho POSIX incompatível com Bionic.
+- A integração correta requer três mudanças coordenadas: (1) condicionar a inclusão/armazenamento de `ucontext_t` a Linux não-Android/macOS; (2) adicionar um backend Android AArch64 próprio e selecioná-lo antes do bloco POSIX no `src/core/CMakeLists.txt`; (3) manter exatamente a semântica de TLS/ownership da API pública, incluindo retorno da trampoline e destruição apenas fora da fibra ativa.
+- O protótipo aprovado no telefone usa uma estrutura/contexto e um TLS próprios, não a classe `rex::thread::Fiber`. Portanto, seu PASS valida a rotina assembly isolada, mas não prova ainda a semântica completa da API do SDK.
+- O CMake raiz atual classifica Android como UNIX/Linux e define `REX_PLATFORM_LINUX`; a plataforma Android já é identificada no `platform.h`. Evitar redefinir essa detecção global sem revisar todas as dependências POSIX.
+- **Cuidado de versão:** os arquivos acima foram lidos da branch `main` do repositório upstream. O build do projeto fixa o SDK no commit `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`; antes de portar qualquer patch, confirmar esses mesmos arquivos no commit fixado e basear o patch exatamente nele. Não aplicar alteração de produção ainda.
+- Próxima etapa: criar patch experimental no workflow do projeto contra o commit fixado, compilar primeiro `rexcore`/teste de contrato Fiber para Android e Linux, e executar round-trip real da API `rex::thread::Fiber` no Motorola. Só então considerar integração ao APK do jogo.
+- Save/Load continua desabilitado; nenhum arquivo de runtime de produção foi alterado nesta auditoria.
