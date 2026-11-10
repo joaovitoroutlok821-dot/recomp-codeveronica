@@ -768,3 +768,36 @@ Leitura do SDK fixado `rexglue/rexglue-sdk@398e2ba7802d0c4ca1f68d7ad4fa2cd73e812
 4. Manter Save/Load sem backend funcional até round-trip de teste passar.
 
 Nenhum código de runtime, jogo ou launcher foi alterado; esta etapa foi somente leitura e documentação. Não houve build nem teste de APK.
+
+
+
+## Investigação da janela pré-lançamento e fibras Android — 2026-11-10
+
+Continuação da auditoria de Save/Load. Foram lidos no SDK upstream os caminhos de preparação do módulo, lançamento da aplicação, thread principal e backend POSIX de fibras. A leitura de código disponível nesta etapa confirma:
+
+### Janela antes do início do jogo
+
+- `Runtime::PrepareModuleLaunch()` obtém o módulo executável e delega a `KernelState::PrepareModuleLaunch()`.
+- `KernelState::PrepareModuleLaunch()` cria a thread principal com `X_CREATE_SUSPENDED`, chama `Create()` e a retorna ainda suspensa.
+- `ReXApp::LaunchModule()` chama `OnPreLaunchModule()`, prepara a thread, executa `OnPostLaunchModule(main_thread.get())` e somente depois chama `main_thread->Resume()`.
+- Portanto, a janela pré-`Resume()` permite anexar instrumentação e registrar estado inicial antes do primeiro código guest. Ela não contém progresso do jogo e não é um ponto de Save State durante gameplay.
+- Em `XThread::Execute()`, a função inicial é resolvida uma vez pelo endereço de entrada e chamada diretamente como função C++ recompilada. Quando retorna, o método trata o retorno como término da thread; não há ali um scheduler PPC central para reentrar arbitrariamente por PC salvo.
+
+### Backend de fibras no Android
+
+- `include/rex/platform.h` define `REX_PLATFORM_ANDROID` e também `REX_PLATFORM_LINUX` quando `__ANDROID__` está definido.
+- O cabeçalho `include/rex/thread/fiber.h` seleciona o membro `ucontext_t context_`, pilha própria `std::vector<uint8_t> stack_`, entry/arg e estado de thread-fiber para `REX_PLATFORM_LINUX || REX_PLATFORM_MAC`. Android entra nesse caminho por também definir Linux.
+- O backend `src/core/fiber_posix.cpp` usa `getcontext()` para capturar contexto inicial, `makecontext()` para montar fibras novas e `swapcontext()` para alternar entre contextos. Cada fibra criada possui uma pilha host alocada em seu próprio vetor.
+- A troca normal preserva a continuação da pilha C++ host. O objeto Fiber, seu vetor de pilha, o `ucontext_t` e o TLS `tls_current_` são estado host separado da estrutura guest `X_FIBER_CONTEXT`.
+- Consequentemente, salvar somente memória guest, registradores PPC e `X_FIBER_CONTEXT` não restaura uma fibra ativa. Seria necessário preservar de modo seguro o contexto host, a pilha host, a identidade/associação da fibra e as referências internas, ou introduzir pontos cooperativos que retornem a um estado reconstruível.
+- `ucontext_t` não deve ser tratado como formato de arquivo portátil nem como estado seguro para transferir entre processos, versões do Android, versões de libc ou execuções diferentes. A auditoria não encontrou garantia no SDK de que um contexto capturado possa ser serializado e restaurado após reiniciar o app.
+
+### Decisão e próximo experimento
+
+- A janela pré-`Resume()` é útil apenas para instrumentação/diagnóstico inicial.
+- O backend Android usa contexto e pilha host POSIX para preservar a continuação de fibras; isso reforça o bloqueio de Save/Load em execução.
+- Não implementar snapshot copiando bytes de pilha host nem persistindo `ucontext_t` sem contrato explícito e testes de ABI/versão.
+- Próxima etapa: projetar um teste isolado, com função recompilada controlada e uma fibra, que faça yield cooperativo em fronteira explícita, registre estado lógico e retome a execução sem reiniciar a função. O teste deve validar round-trip no mesmo processo primeiro; persistência após reinício só pode ser considerada se houver uma estratégia independente de reconstrução.
+- Antes de qualquer alteração no SDK, comparar estes trechos com o commit exato fixado no build privado. A leitura desta etapa confirma o desenho do backend POSIX disponível, mas não autoriza assumir que a branch atual do upstream e o commit fixado são idênticos.
+
+Nenhum código de runtime, jogo ou launcher foi alterado. Nenhum Save/Load foi ativado. Não houve compilação nem teste de APK nesta etapa.
