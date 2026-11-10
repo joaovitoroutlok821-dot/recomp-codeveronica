@@ -946,3 +946,16 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - A nova execução do workflow Android precisa ser verificada. A aprovação da compilação não substitui a execução no Motorola.
 - Limite: esta ampliação não constitui ainda um teste explícito de valores artificiais em cada registrador x19–x30/d8–d15, nem valida TLS multi-thread, unwinding, exceções ou integração com XThread/dispatcher. Esses pontos permanecem pendentes antes da integração de produção.
 - Save/Load permanece indisponível.
+
+
+## Teste de estresse Android ARM64 confirmado no Motorola — 2026-11-10
+
+- O usuário executou no Motorola o APK do workflow Android ARM64 #6.
+- Resultado visual confirmado: `ANDROID_ARM64_FIBER_RESUME=PASS`.
+- Saída exibida: `32 ciclos concluídos; 256 alternâncias.`
+- Saída adicional: `Variáveis locais e endereços preservados.`
+- Isso confirma o teste de ciclos repetidos de criação, alternância cooperativa, retorno e destruição de workers no dispositivo ARM64 real.
+- Workflow #6: `42912702596`, conclusão `success`.
+- Artefato APK: `13807912238`, nome `recvx-android-arm64-fiber-test-apk`, SHA-256 `5252a4c51e2d63e5e5bf55351a3f3b4683d417af62600225b9d54b11e937aa3b`.
+- Próxima etapa: criar teste explícito de preservação de valores nos registradores callee-saved x19-x30 e d8-d15, usando assembly de teste controlado e verificável. A aprovação atual não prova isoladamente cada registrador.
+- Ainda não há integração com o runtime de produção nem suporte Save/Load; não alterar esses estados até validar ABI, TLS, interação com dispatcher/threads e ciclo de vida.
