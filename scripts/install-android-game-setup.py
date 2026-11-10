@@ -90,6 +90,8 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -137,182 +139,107 @@ public final class GameSetupActivity extends Activity {
         }
     }
 
+    private WebView launcher;
+
     private void buildUi() {
-        int pad = (int)(18 * getResources().getDisplayMetrics().density);
-        FrameLayout frame = new FrameLayout(this);
-        frame.setBackgroundColor(Color.rgb(3, 7, 13));
-        int coverId = getResources().getIdentifier("recvx_cover", "drawable", getPackageName());
-        if (coverId != 0) {
-            ImageView cover = new ImageView(this);
-            cover.setImageResource(coverId);
-            cover.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            frame.addView(cover, new FrameLayout.LayoutParams(-1, -1));
-        }
-        View shade = new View(this);
-        shade.setBackgroundColor(0x77020710);
-        frame.addView(shade, new FrameLayout.LayoutParams(-1, -1));
-
-        LinearLayout root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.HORIZONTAL);
-        root.setPadding(pad, pad, pad, pad);
-        LinearLayout menu = new LinearLayout(this);
-        menu.setOrientation(LinearLayout.VERTICAL);
-        menu.setPadding(pad / 2, pad, pad / 2, pad);
-        menu.setGravity(Gravity.CENTER_VERTICAL);
-        GradientDrawable menuBg = new GradientDrawable();
-        menuBg.setColor(0xDD080B11);
-        menuBg.setCornerRadius(dp(18));
-        menuBg.setStroke(dp(1), Color.rgb(190, 20, 32));
-        menu.setBackground(menuBg);
-
-        TextView brand = new TextView(this);
-        brand.setText("RESIDENT EVIL\nCODE: VERONICA X HD");
-        brand.setTextColor(Color.WHITE);
-        brand.setTextSize(18);
-        brand.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        brand.setGravity(Gravity.CENTER);
-        brand.setPadding(pad / 2, pad, pad / 2, pad * 2);
-        menu.addView(brand, new LinearLayout.LayoutParams(-1, -2));
-
-        start = new Button(this);
-        start.setText("▶  INICIAR JOGO");
-        start.setTextSize(17);
-        start.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        start.setElevation(dp(8));
-        start.setAllCaps(false);
-        start.setTextColor(Color.WHITE);
-        start.setBackground(roundButton(0xFFE00018));
-        start.setOnClickListener(v -> {
-            if (findEntryPoint(gameDir) == null) chooseFolder();
-            else launchGame();
-        });
-        LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(-1, dp(54));
-        bp.bottomMargin = pad / 2;
-        menu.addView(start, bp);
-
-        Button settings = new Button(this);
-        settings.setText("⚙  CONFIGURAÇÕES");
-        settings.setTextSize(15);
-        settings.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        settings.setElevation(dp(4));
-        settings.setAllCaps(false);
-        settings.setTextColor(Color.WHITE);
-        settings.setBackground(roundButton(0xCC1A1D24));
-        settings.setOnClickListener(v -> startActivity(new Intent(this, GameSettingsActivity.class)));
-        menu.addView(settings, new LinearLayout.LayoutParams(-1, dp(50)));
-
-        // Keep SAF folder selection permanently accessible from the launcher.
-        // Users must not need to press Start just to choose or change the game directory.
-        Button chooseGameFolder = new Button(this);
-        chooseGameFolder.setText("▣  SELECIONAR PASTA DO JOGO");
-        chooseGameFolder.setTextSize(13);
-        chooseGameFolder.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        chooseGameFolder.setElevation(dp(4));
-        chooseGameFolder.setAllCaps(false);
-        chooseGameFolder.setTextColor(Color.WHITE);
-        chooseGameFolder.setBackground(roundButton(0xCC101820));
-        chooseGameFolder.setOnClickListener(v -> chooseFolder());
-        LinearLayout.LayoutParams chooseParams = new LinearLayout.LayoutParams(-1, dp(48));
-        chooseParams.topMargin = dp(8);
-        menu.addView(chooseGameFolder, chooseParams);
-
-        TextView edition = new TextView(this);
-        edition.setText("EDIÇÃO DUBLADA • ANDROID");
-        edition.setTextColor(Color.rgb(190, 205, 220));
-        edition.setTextSize(11);
-        edition.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(-1, -2);
-        ep.topMargin = pad;
-        menu.addView(edition, ep);
-        // The menu is attached once, later inside screenBody. Do not attach it
-        // to root here or Android will reject adding the same View twice.
-        LinearLayout right = new LinearLayout(this);
-        right.setOrientation(LinearLayout.VERTICAL);
-        right.setGravity(Gravity.CENTER_VERTICAL);
-        right.setPadding(pad, pad, pad, pad);
-        LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(0, -1, 1);
-        rp.leftMargin = pad;
-        // right is attached once, below, inside screenBody.
-
-        // Não exibir miniatura/capa no centro da tela inicial.
-        // A arte de fundo já identifica o jogo; manter somente o título e o texto.
-        TextView heading = new TextView(this);
-        heading.setText("RESIDENT EVIL CODE: VERONICA X HD");
-        heading.setTextColor(Color.WHITE);
-        heading.setTextSize(24);
-        heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-        right.addView(heading, new LinearLayout.LayoutParams(-1, -2));
-
-        TextView subtitle = new TextView(this);
-        subtitle.setText("EDIÇÃO DUBLADA  •  VERSÃO ANDROID");
-        subtitle.setTextColor(Color.rgb(200, 210, 225));
-        subtitle.setTextSize(14);
-        LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(-1, -2);
-        sp.topMargin = dp(5);
-        right.addView(subtitle, sp);
-
         status = new TextView(this);
-        status.setTextColor(Color.WHITE);
-        status.setTextSize(15);
-        status.setGravity(Gravity.CENTER_VERTICAL);
-        status.setPadding(dp(12), dp(10), dp(12), dp(10));
-        status.setBackground(roundPanel());
-        LinearLayout.LayoutParams stp = new LinearLayout.LayoutParams(-1, -2);
-        stp.topMargin = pad;
-        right.addView(status, stp);
-
-        progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        progress.setIndeterminate(true);
-        progress.setVisibility(View.GONE);
-        LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(-1, -2);
-        pp.topMargin = pad / 2;
-        right.addView(progress, pp);
-
-        TextView footer = new TextView(this);
-        footer.setText("Selecione a pasta do jogo uma única vez. Os arquivos serão preparados no armazenamento privado do aplicativo.");
-        footer.setTextColor(Color.rgb(190, 198, 210));
-        footer.setTextSize(12);
-        LinearLayout.LayoutParams ftp = new LinearLayout.LayoutParams(-1, -2);
-        ftp.topMargin = pad;
-        right.addView(footer, ftp);
-
-        // Persistent bottom status bar: the directory item is also the folder picker.
-        LinearLayout bottomBar = new LinearLayout(this);
-        bottomBar.setOrientation(LinearLayout.HORIZONTAL);
-        bottomBar.setGravity(Gravity.CENTER_VERTICAL);
-        bottomBar.setPadding(dp(10), dp(5), dp(10), dp(5));
-        bottomBar.setBackground(roundPanel());
         directoryStatus = new TextView(this);
-        directoryStatus.setTextColor(Color.rgb(255, 220, 45));
-        directoryStatus.setTextSize(12);
-        directoryStatus.setText("▱  Diretório do jogo: Não selecionado");
-        directoryStatus.setOnClickListener(v -> chooseFolder());
-        bottomBar.addView(directoryStatus, new LinearLayout.LayoutParams(0, dp(34), 1));
-        TextView controllerStatus = new TextView(this);
-        controllerStatus.setTextColor(Color.rgb(210, 215, 225));
-        controllerStatus.setTextSize(12);
-        controllerStatus.setText("♧  Controle: verificar ao iniciar");
-        bottomBar.addView(controllerStatus, new LinearLayout.LayoutParams(-2, dp(34)));
-        TextView touchStatus = new TextView(this);
-        touchStatus.setTextColor(Color.rgb(100, 230, 120));
-        touchStatus.setTextSize(12);
-        touchStatus.setPadding(dp(12), 0, dp(4), 0);
-        touchStatus.setText("  Controles na tela: Ativado");
-        bottomBar.addView(touchStatus, new LinearLayout.LayoutParams(-2, dp(34)));
-        LinearLayout.LayoutParams bottomParams = new LinearLayout.LayoutParams(-1, -2);
-        bottomParams.topMargin = dp(6);
-        root.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout screenBody = new LinearLayout(this);
-        screenBody.setOrientation(LinearLayout.HORIZONTAL);
-        screenBody.addView(menu, new LinearLayout.LayoutParams(dp(250), -1));
-        screenBody.addView(right, rp);
-        root.removeAllViews();
-        root.addView(screenBody, new LinearLayout.LayoutParams(-1, 0, 1));
-        root.addView(bottomBar, bottomParams);
+        start = new Button(this);
+        choose = new Button(this);
+        progress = new ProgressBar(this);
+        progress.setVisibility(View.GONE);
 
-        frame.addView(root, new FrameLayout.LayoutParams(-1, -1));
-        setContentView(frame);
-        refreshDirectoryStatus();
+        launcher = new WebView(this);
+        launcher.setBackgroundColor(Color.BLACK);
+        launcher.getSettings().setJavaScriptEnabled(true);
+        launcher.getSettings().setDomStorageEnabled(true);
+        launcher.getSettings().setAllowFileAccess(true);
+        launcher.setWebViewClient(new WebViewClient());
+        launcher.addJavascriptInterface(new LauncherBridge(), "GameBridge");
+        setContentView(launcher);
+        launcher.loadUrl("file:///android_asset/launcher/index.html");
+    }
+
+    private final class LauncherBridge {
+        @android.webkit.JavascriptInterface
+        public void chooseGameFolder() {
+            runOnUiThread(() -> chooseFolder());
+        }
+
+        @android.webkit.JavascriptInterface
+        public void startGame() {
+            runOnUiThread(() -> {
+                if (findEntryPoint(gameDir) == null) chooseFolder();
+                else launchGame();
+            });
+        }
+
+        @android.webkit.JavascriptInterface
+        public boolean isGameReady() {
+            return findEntryPoint(gameDir) != null;
+        }
+
+        @android.webkit.JavascriptInterface
+        public String getDirectoryStatus() {
+            return findEntryPoint(gameDir) != null
+                ? "Diretório do jogo: Selecionado"
+                : "Diretório do jogo: Não selecionado";
+        }
+
+        @android.webkit.JavascriptInterface
+        public void saveSettings(String json) {
+            try {
+                org.json.JSONObject values = new org.json.JSONObject(json);
+                SharedPreferences.Editor editor =
+                    getSharedPreferences("recvx_settings", MODE_PRIVATE).edit();
+                java.util.Iterator<String> keys = values.keys();
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    if (!key.matches("[a-zA-Z0-9_]{1,48}")) continue;
+                    Object value = values.opt(key);
+                    if (value instanceof Boolean) editor.putBoolean(key, (Boolean)value);
+                    else if (value instanceof Integer) editor.putInt(key, (Integer)value);
+                    else if (value instanceof Number) editor.putFloat(key, ((Number)value).floatValue());
+                    else if (value instanceof String) editor.putString(key, (String)value);
+                }
+                editor.apply();
+            } catch (Exception ignored) {
+                runOnUiThread(() -> Toast.makeText(GameSetupActivity.this,
+                    "Não foi possível salvar as configurações.", Toast.LENGTH_SHORT).show());
+            }
+        }
+
+        @android.webkit.JavascriptInterface
+        public String loadSettings() {
+            SharedPreferences prefs = getSharedPreferences("recvx_settings", MODE_PRIVATE);
+            org.json.JSONObject values = new org.json.JSONObject();
+            try {
+                values.put("resolution", prefs.getInt("resolution", 1));
+                values.put("touch_mode", prefs.getInt("touch_mode", 0));
+            } catch (org.json.JSONException ignored) {}
+            return values.toString();
+        }
+
+        @android.webkit.JavascriptInterface
+        public void openTouchLayoutEditor() {
+            runOnUiThread(() -> startActivity(
+                new Intent(GameSetupActivity.this, TouchLayoutEditorActivity.class)));
+        }
+
+        @android.webkit.JavascriptInterface
+        public void exitApp() {
+            runOnUiThread(() -> finish());
+        }
+    }
+
+    private void publishDirectoryStatus() {
+        if (launcher == null) return;
+        boolean ready = findEntryPoint(gameDir) != null;
+        String message = ready ? "Diretório do jogo: Selecionado" :
+                                 "Diretório do jogo: Não selecionado";
+        String js = "window.onNativeDirectoryStatus && window.onNativeDirectoryStatus(" +
+            org.json.JSONObject.quote(message) + "," + (ready ? "true" : "false") + ")";
+        launcher.post(() -> launcher.evaluateJavascript(js, null));
     }
 
     private void refreshDirectoryStatus() {
@@ -321,6 +248,7 @@ public final class GameSetupActivity extends Activity {
         directoryStatus.setText(ready
             ? "▱  Diretório do jogo: Selecionado  •  Toque para alterar"
             : "▱  Diretório do jogo: Não selecionado  •  Toque para escolher");
+        publishDirectoryStatus();
     }
 
     private int dp(float value) {
@@ -367,6 +295,7 @@ public final class GameSetupActivity extends Activity {
             // The immediate copy can still proceed when a provider does not support persisted grants.
         }
         prepareGame(tree);
+        publishDirectoryStatus();
     }
 
     private void prepareGame(Uri tree) {
@@ -415,6 +344,7 @@ public final class GameSetupActivity extends Activity {
                     getPreferences(MODE_PRIVATE).edit().putString(PREF_URI, tree.toString()).apply();
                     status.setText("Arquivos preparados. Toque em INICIAR JOGO para continuar.");
                     Toast.makeText(this, "Pasta do jogo preparada.", Toast.LENGTH_LONG).show();
+                    publishDirectoryStatus();
                 });
             } catch (Exception e) {
                 deleteRecursively(new File(getFilesDir(), "game.new"));
@@ -424,6 +354,7 @@ public final class GameSetupActivity extends Activity {
                     start.setEnabled(false);
                     status.setText("Falha ao preparar os arquivos: " + e.getMessage());
                     refreshDirectoryStatus();
+                    publishDirectoryStatus();
                 });
             }
         });
