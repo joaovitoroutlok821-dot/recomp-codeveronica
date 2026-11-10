@@ -898,3 +898,14 @@ Nenhum arquivo de jogo, XEX, código de launcher ou runtime de produção foi al
 3. Manter Save/Load indisponível até a integração completa provar um round-trip real e seguro.
 
 Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum APK foi produzido nesta etapa.
+
+
+## Protótipo independente de fibras Android ARM64 — 2026-11-10
+
+- Criada a pasta `tests/fiber-checkpoint/android/` com uma implementação experimental isolada: `fiber_android_arm64.cpp`, `arm64_context.S` e `fiber_android_arm64_test.cpp`.
+- O assembly salva/restaura x19–x30, SP e os 64 bits inferiores de v8–v15, conforme a convenção AAPCS64. A pilha inicial é alinhada a 16 bytes e a entrada ocorre por trampoline C++.
+- O teste exercita chamadas aninhadas, preservação de variável local/endereço de stack e oito alternâncias cooperativas antes do retorno da fibra.
+- Adicionado `.github/workflows/android-arm64-fiber-prototype.yml` para cross-compilar com NDK 27.2.12479018 e verificar ELF AArch64.
+- **Limites:** este código ainda não está integrado ao SDK ReXGlue; não foi executado em aparelho Android; não comprova estabilidade de unwinding/exceções, TLS multi-thread, integração CMake nem persistência/checkpoint. Não é Save State.
+- A próxima etapa é executar o workflow, corrigir erros de compilação/ABI e, se passar, preparar um APK mínimo de teste para validação física. Só depois considerar integração ao SDK.
+- Save/Load da launcher continua desabilitado; nenhuma alteração na interface foi feita.
