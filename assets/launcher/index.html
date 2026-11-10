@@ -103,7 +103,7 @@ const body=document.getElementById('pagebody'),heading=document.getElementById('
 const tabNames={graphics:'Gráficos',performance:'Desempenho',controls:'Controles',audio:'Áudio'};
 function field(label,control){
  const supported=['Resolução de saída','Contador de FPS','Controles na tela'].includes(label);
- if(!supported) control=control.replace('<select','<select disabled title="Indisponível: o runtime Android ainda não oferece suporte confirmado.').replace('<input','<input disabled title="Indisponível: o runtime Android ainda não oferece suporte confirmado.').replace('<button class="toggle','<button disabled class="toggle');
+ if(!supported) control=control.replace('<select','<select disabled title="Indisponível: sem suporte confirmado"').replace('<input','<input disabled title="Indisponível: sem suporte confirmado"').replace('<button class="toggle','<button disabled class="toggle');
  return `<div class="setting" data-setting-label="${label}"><span>${label}</span>${control}</div>`;
 }
 function tabs(){return `<div class="tabs">${Object.entries(tabNames).map(([k,v])=>`<button class="tab ${activeTab===k?'active':''}" data-tab="${k}">${({graphics:'▣',performance:'◉',controls:'♧',audio:'◖'})[k]} &nbsp;${v}</button>`).join('')}</div>`}
