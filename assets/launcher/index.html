@@ -149,11 +149,17 @@ function applySettings(){
  const resolutionSelect=selects.find(s=>s.parentElement.previousElementSibling?.textContent?.includes('Resolução de saída'));
  const deviceSelect=selects.find(s=>s.parentElement.previousElementSibling?.textContent?.includes('Dispositivo de controle'));
  const touchToggle=[...document.querySelectorAll('#pagebody .setting')].find(e=>e.firstElementChild?.textContent?.includes('Controles na tela'))?.querySelector('.toggle');
- const resolutionText=resolutionSelect?.value||'1080p';
- const supportedResolution=resolutionText.startsWith('1080p')?1:0;
- const touchMode=(touchToggle&&!touchToggle.classList.contains('on'))?2:0;
- try{localStorage.setItem('recvx_launcher_resolution',resolutionText);localStorage.setItem('recvx_launcher_touch',touchMode===2?'off':'auto')}catch(e){}
- if(window.GameBridge){GameBridge.saveSettings(JSON.stringify({resolution:supportedResolution,touch_mode:touchMode}));toast('Configurações compatíveis salvas. Algumas opções visuais ainda aguardam suporte do runtime.')}
+ const nativeSettings={};
+ if(resolutionSelect){
+  const resolutionText=resolutionSelect.value;
+  nativeSettings.resolution=resolutionText.startsWith('1080p')?1:0;
+  try{localStorage.setItem('recvx_launcher_resolution',resolutionText)}catch(e){}
+ }
+ if(touchToggle){
+  nativeSettings.touch_mode=touchToggle.classList.contains('on')?0:2;
+  try{localStorage.setItem('recvx_launcher_touch',nativeSettings.touch_mode===2?'off':'auto')}catch(e){}
+ }
+ if(window.GameBridge){GameBridge.saveSettings(JSON.stringify(nativeSettings));toast('Configurações compatíveis salvas. Outras opções ainda aguardam suporte do runtime.')}
  else toast('Prévia: alterações salvas apenas nesta sessão')
 }
 function onNativeDirectoryStatus(message,ready){
