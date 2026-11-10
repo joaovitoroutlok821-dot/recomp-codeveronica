@@ -151,7 +151,7 @@ function applySettings(){
  const touchToggle=[...document.querySelectorAll('#pagebody .setting')].find(e=>e.firstElementChild?.textContent?.includes('Controles na tela'))?.querySelector('.toggle');
  const resolutionText=resolutionSelect?.value||'1080p';
  const supportedResolution=resolutionText.startsWith('1080p')?1:0;
- const touchMode=(deviceSelect?.value==='Controle Bluetooth'||(touchToggle&&!touchToggle.classList.contains('on')))?2:0;
+ const touchMode=(touchToggle&&!touchToggle.classList.contains('on'))?2:0;
  try{localStorage.setItem('recvx_launcher_resolution',resolutionText);localStorage.setItem('recvx_launcher_touch',touchMode===2?'off':'auto')}catch(e){}
  if(window.GameBridge){GameBridge.saveSettings(JSON.stringify({resolution:supportedResolution,touch_mode:touchMode}));toast('Configurações compatíveis salvas. Algumas opções visuais ainda aguardam suporte do runtime.')}
  else toast('Prévia: alterações salvas apenas nesta sessão')
