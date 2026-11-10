@@ -549,3 +549,12 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Objetivo: compilar o app ReXGlue ARM64 completo com a launcher WebView recém-validada, SDL 3.5.0, runtime e plugin Xenos, mantendo a configuração Release, controles táteis e diagnóstico FPS.
 - Estado no momento do registro: aguardando execução; ainda não há APK #37 privado nem resultado de compilação confirmado.
 - Próxima etapa: acompanhar codegen, compilação Android, validação de bibliotecas, alinhamento/assinatura e artefatos. Mesmo que o build passe, testar no aparelho a seleção/cópia da pasta e o início real do jogo antes de declarar sucesso.
+
+## Correções após teste físico do APK #37 — 2026-11-10
+
+- Usuário confirmou que o APK #37 abre e mostra as opções da launcher. Reportou dois problemas no aparelho: indicador de progresso/tamanho desapareceu durante a cópia SAF; controle Bluetooth é detectado e faz os botões táteis sumirem, mas os comandos não funcionam no jogo.
+- Causa do progresso: `GameSetupActivity` já calculava bytes e porcentagem, mas a interface de progresso era uma View nativa escondida atrás do WebView (`setContentView`). Correção: `scripts/install-android-game-setup.py` agora envia callbacks `onNativeCopyProgress` para a WebView; `assets/launcher/index.html` exibe barra, percentual e tamanho copiado/total na tela inicial.
+- Causa provável do fallback de controles: `GameSDLActivity` escondia o overlay após qualquer tecla/movimento Android, sem confirmar que SDL/ReXGlue consumiu o comando. Removida essa ocultação automática; os controles táteis permanecem visíveis como fallback. `src/android_main.cpp` inicializa explicitamente `SDL_INIT_GAMEPAD` antes do contexto ReXGlue.
+- Commits das correções: script `3057cedda5893f60caea2ee2086559117e1b559b`; HTML `4b76e110831ea5ef19498b3c389c808967e7ba63`; C++ `36a9590704a957448593bf252d4ef7cf2b414e12` e ajuste de log subsequente.
+- Ainda não declarar controle Bluetooth funcional: precisa compilar e testar no aparelho; conferir `RECVX-INPUT` e SDL gamepad logs, incluindo botões, D-pad e eixos analógicos. Se SDL detectar o controle mas o jogo não receber, investigar o mapeamento SDL/ReXGlue/guest input.
+- Próximo build privado deve incluir essas alterações e preservar o XEX exclusivamente no workspace privado efêmero. Validar também barra de progresso, porcentagem e bytes no fluxo SAF.
