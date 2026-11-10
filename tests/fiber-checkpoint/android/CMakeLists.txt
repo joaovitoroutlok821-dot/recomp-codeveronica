@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(rex_fiber_probe LANGUAGES C CXX ASM)
+add_library(fiber_test SHARED fiber_android_arm64.cpp arm64_context.S fiber_android_arm64_test.cpp fiber_android_arm64_jni.cpp)
+target_compile_features(fiber_test PRIVATE cxx_std_20)
+target_compile_options(fiber_test PRIVATE -O2 -Wall -Wextra -Werror -fno-exceptions -fno-rtti)
+target_link_options(fiber_test PRIVATE -Wl,-z,max-page-size=16384)
