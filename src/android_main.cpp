@@ -286,6 +286,14 @@ extern "C" int SDL_main(int argc, char* argv[]) {
 
   int result = EXIT_FAILURE;
   rex::ui::SDLWindowedAppContext context;
+  SDL_Log("[RECVX-INPUT] initializing SDL gamepad subsystem");
+  if (!SDL_InitSubSystem(SDL_INIT_GAMEPAD)) {
+    SDL_Log("[RECVX-INPUT] SDL_INIT_GAMEPAD failed: %s", SDL_GetError());
+  } else {
+    SDL_Log("[RECVX-INPUT] SDL gamepad subsystem ready; joysticks=%d",
+            SDL_GetJoysticks(nullptr) ? 0 : 0);
+  }
+
   SDL_Log("[RECVX-DIAG] initializing SDL window context");
   if (!context.Initialize()) {
     REXLOG_ERROR("[Android] SDLWindowedAppContext initialization failed");
