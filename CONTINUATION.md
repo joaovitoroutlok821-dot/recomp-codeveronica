@@ -603,3 +603,14 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Esta alteração não habilita opções ainda sem suporte e não altera a arte/layout da launcher.
 - Ainda não houve compilação nem teste no Motorola após estes commits. É necessário reconstruir o APK para validar a ponte JavaScript/Android.
 - **Salvar estado / Carregar estado** continuam sendo demonstrações sem backend de save-state. Não foi adicionada uma falsa implementação: é necessário localizar uma API real de snapshot/restore no runtime antes de ligar esses botões.
+
+
+## Auditoria adicional — Salvar/Carregar (2026-11-10)
+
+- Revisados `assets/launcher/index.html`, `scripts/install-android-game-setup.py`, `src/android_main.cpp`, `src/recvx_app.h` e `LAUNCHER_SETTINGS_PLAN.md`.
+- Os botões **Salvar estado** e **Carregar estado** continuam sendo apenas demonstrações: o HTML chama mensagens de toast, sem ponte nativa.
+- A ponte Android atual possui seleção de pasta, início do jogo, status do diretório, persistência/restauração de preferências, editor de controles e saída. Não possui métodos de save-state/load-state.
+- `src/android_main.cpp` cria um diretório XDG `state` dentro do armazenamento privado, mas isso é apenas um diretório de dados; não comprova suporte a captura/restauração de memória, CPU, GPU, áudio e estado do runtime.
+- As buscas no código versionado por `SaveState`, `save_state`, `snapshot`, `serialize` e `checkpoint` não localizaram uma API de save-state utilizável. Portanto, não conectei os botões a arquivos comuns nem simulei salvamento: isso poderia gerar arquivos inválidos e perda de progresso.
+- Próximo passo técnico: identificar a versão/commit exatos do ReXGlue/ReXRuntime usados no build privado e verificar se a API de snapshot está disponível nessa dependência. Se não existir, será necessário desenvolver suporte coordenado no runtime; não é uma função que possa ser implementada corretamente apenas no HTML/Java.
+- A ação **Sair** já chama `GameBridge.exitApp()` e finaliza a Activity da launcher. A página **Informações** é informativa/estática, o que é apropriado para essa seção.
