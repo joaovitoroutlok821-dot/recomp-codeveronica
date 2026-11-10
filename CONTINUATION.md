@@ -614,3 +614,15 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - As buscas no código versionado por `SaveState`, `save_state`, `snapshot`, `serialize` e `checkpoint` não localizaram uma API de save-state utilizável. Portanto, não conectei os botões a arquivos comuns nem simulei salvamento: isso poderia gerar arquivos inválidos e perda de progresso.
 - Próximo passo técnico: identificar a versão/commit exatos do ReXGlue/ReXRuntime usados no build privado e verificar se a API de snapshot está disponível nessa dependência. Se não existir, será necessário desenvolver suporte coordenado no runtime; não é uma função que possa ser implementada corretamente apenas no HTML/Java.
 - A ação **Sair** já chama `GameBridge.exitApp()` e finaliza a Activity da launcher. A página **Informações** é informativa/estática, o que é apropriado para essa seção.
+
+
+## Auditoria de sincronização para Save/Load — 2026-11-10
+
+- Revisado o código Android atual em `src/android_main.cpp`: o SDL main thread inicializa `SDLWindowedAppContext`, chama `RecvXApp::OnInitialize()` e permanece em `RunMainMessageLoop()`, que processa eventos SDL. Esse loop não é o loop de execução do jogo.
+- Revisado `src/recvx_app.h`: `OnPostLaunchModule(XThread*)` é chamado após a criação da thread principal do guest ainda suspensa; o projeto inicia ali uma thread auxiliar para capturar o primeiro frame. `OnShutdown()` interrompe e aguarda essa thread auxiliar.
+- Revisado `include/rex/runtime.h` do SDK fixado: Runtime expõe Memory, KernelState, GraphicsSystem, AudioSystem e InputSystem, mas não oferece uma operação pública única de pausa global ou SaveState/RestoreState.
+- Revisado `include/rex/ui/windowed_app_context_sdl.h` e `src/ui/windowed_app_context_sdl.cpp`: o loop SDL espera e despacha eventos/paint; não constitui uma barreira que pare threads guest, áudio ou GPU.
+- O contrato de Presenter documenta que a atualização da imagem guest tem regras de concorrência próprias; não se deve tratar captura de imagem como sincronização de todo o runtime.
+- Conclusão: ainda não há uma barreira global demonstrada para congelar consistentemente guest threads/fibers, callbacks de kernel, áudio e CommandProcessor. Não implementar os botões Save/Load chamando isoladamente `Memory::Save`, `KernelState::Save`, `AudioSystem::Save` e `GraphicsSystem::Save` enquanto o jogo continua executando.
+- Próxima etapa técnica: auditar o ponto de lançamento e a coordenação de threads/fibers no SDK (incluindo todos os threads do title process e execução assíncrona do GPU/audio); definir uma barreira cooperativa com timeout e rollback antes de qualquer serialização. Validar primeiro round-trip no mesmo processo e só então persistência após reiniciar o app.
+- Nenhum código de jogo, launcher, APK ou runtime foi alterado nesta auditoria; nenhum Save/Load foi declarado funcional.
