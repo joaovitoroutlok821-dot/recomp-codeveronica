@@ -898,3 +898,12 @@ Nenhum arquivo de jogo, XEX, código de launcher ou runtime de produção foi al
 3. Manter Save/Load indisponível até a integração completa provar um round-trip real e seguro.
 
 Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum APK foi produzido nesta etapa.
+
+
+## Protótipo independente de fibras Android ARM64 — 2026-11-10
+
+- Adicionados `tests/fiber-checkpoint/android/fiber_android_arm64.cpp`, `arm64_context.S` e `fiber_android_arm64_test.cpp` como protótipo isolado, sem integração ao SDK.
+- O assembly preserva x19–x30, SP e os 64 bits inferiores de v8–v15; a pilha inicial é alinhada a 16 bytes e a fibra inicia por trampoline C++.
+- O teste cobre chamadas aninhadas, endereço de variável local e oito alternâncias cooperativas antes do retorno.
+- O protótipo ainda não foi compilado pelo NDK nem executado no Android. Não comprova integração CMake, estabilidade de unwinding/exceções, TLS multi-thread ou persistência/checkpoint.
+- Próximo passo: configurar e executar cross-compilação NDK; depois corrigir ABI e preparar teste físico. Save/Load continua desabilitado e a launcher não foi alterada.
