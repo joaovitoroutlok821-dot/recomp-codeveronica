@@ -6,6 +6,7 @@ extern "C" Fiber* rex_fiber_create(size_t, void (*)(void*), void*, Fiber*);
 extern "C" void rex_fiber_switch(Fiber*);
 extern "C" void rex_fiber_destroy(Fiber*);
 extern "C" void rex_fiber_release_current_thread(Fiber*);
+extern "C" int rex_fiber_register_probe(Fiber*);
 struct State {
   Fiber* main = nullptr;
   uintptr_t inner_address = 0;
@@ -33,7 +34,11 @@ __attribute__((noinline)) static void Outer(State* s) {
   if (local != s->outer_value) s->failed = true;
   s->phase = 3;
 }
-static void Entry(void* p) { Outer(static_cast<State*>(p)); }
+static void Entry(void* p) {
+  State* state = static_cast<State*>(p);
+  if (rex_fiber_register_probe(state->main) != 0) state->failed = true;
+  Outer(state);
+}
 extern "C" int rex_run_android_arm64_fiber_test() {
 #if !defined(__aarch64__)
   return 77;
