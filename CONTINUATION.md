@@ -731,3 +731,40 @@ Leitura adicional do SDK upstream `rexglue/rexglue-sdk@398e2ba7802d0c4ca1f68d7ad
 4. Manter a interface Save/Load desabilitada ou claramente indisponível enquanto não houver backend de captura e restauração comprovado.
 
 Nenhum código do runtime, do jogo ou da launcher foi alterado nesta etapa. Foi uma auditoria de leitura e atualização deste documento; não houve compilação nem teste de APK.
+
+
+## Auditoria de waits e janela de lançamento — 2026-11-10
+
+Leitura do SDK fixado `rexglue/rexglue-sdk@398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`: `XObject::Wait/WaitMultiple/SignalAndWait`, imports `KeWaitForSingleObject`, `NtWaitForSingleObjectEx`, `KeWaitForMultipleObjects`, `KeDelayExecutionThread`, objetos Event/Semaphore/Mutant e `ReXApp::LaunchModule`.
+
+### O que ocorre quando uma thread guest espera
+
+- `KeWaitForSingleObject_entry` resolve o objeto guest para um `XObject` e chama `XObject::Wait()`. O método obtém o wait handle nativo e bloqueia a própria thread host chamando `rex::thread::Wait()`; após a espera, retorna pela mesma cadeia C++ que chamou o import.
+- `WaitMultiple` usa `WaitAny` ou `WaitAll`; `SignalAndWait` também executa uma espera nativa. Nos três casos, a espera não despacha a thread para um loop central de PPC nem grava um contexto de continuação serializável.
+- Antes e depois da espera simples/múltipla, o código chama `XThread::CheckTitleTermination()`. Isso é uma verificação de encerramento do título, não um checkpoint. Em timeout, chama `MaybeYield()`; yield apenas cede tempo de CPU e não captura pilha/contexto.
+- `KeDelayExecutionThread` chama `XThread::Delay()`, que usa sleep/alertable sleep do host. `NtYieldExecution` chama `MaybeYield()`. Nenhum dos caminhos registra PC PPC, pilha C++ ou contexto ucontext para Save/Load.
+- Espera alertable pode entregar APCs depois do retorno do wait. `DeliverAPCs()` executa callbacks guest através de `FunctionDispatcher::ExecuteTrap()` na própria thread/contexto; assim, até a fase de entrega de APC pode acrescentar chamadas recompiladas à cadeia nativa antes de voltar ao chamador.
+- Eventos e semáforos usam primitivas nativas de sincronização. `XEvent::WaitCallback()` não fornece contexto de thread; o evento mantém sinalização. `XSemaphore::Save()` consulta o contador consumindo temporariamente tokens via waits de timeout zero e depois os libera novamente. Isso serializa o contador, não os waiters bloqueados nem a pilha das threads.
+- Mutants registram a thread proprietária em `WaitCallback()`; seu estado de propriedade não equivale à continuação da thread proprietária. O código de restore tenta associar a propriedade a um objeto XThread, mas não restaura uma pilha guest/host em execução.
+
+### Janela de lançamento encontrada
+
+- `ReXApp::LaunchModule()` agenda a preparação na UI thread, chama `Runtime::PrepareModuleLaunch()` para criar a thread principal guest, executa `OnPostLaunchModule(main_thread.get())` enquanto ela ainda está suspensa e só então chama `main_thread->Resume()`.
+- O contrato de `OnPostLaunchModule` confirma que a thread principal foi criada mas ainda não começou a executar. Este é um ponto consistente para anexar monitores ou registrar metadados pré-execução.
+- Essa janela não é um save de gameplay: o código guest ainda não executou, e as threads/fibras/subsistemas criados depois não foram capturados. Também não resolve como retomar uma sessão no meio de uma função recompilada.
+- O worker `module_thread_` aguarda a conclusão da thread principal e chama `OnGuestThreadExit()`; ele não atua como scheduler de execução PPC nem oferece pausa global.
+
+### Decisão técnica
+
+- A auditoria confirma que waits e sleeps bloqueiam a pilha nativa atual e retomam a mesma cadeia de chamadas. Portanto, uma thread em espera continua exigindo a pilha/contexto host preservados; o estado de espera não é um checkpoint automaticamente serializável.
+- A única janela segura adicional identificada é anterior ao primeiro `Resume()` da thread principal. Ela pode servir para diagnóstico/instrumentação ou captura de estado inicial, mas não permite salvar progresso de gameplay.
+- Não há base para ativar Save/Load em execução. O próximo protótipo deve ser um teste isolado de checkpoint cooperativo explícito, com thread e fibra controladas, demonstrando parada em fronteira definida, captura e retomada da continuação. Se a arquitetura atual não permitir isso, será necessário limitar formalmente o escopo ou redesenhar a execução no SDK.
+
+### Próximas ações
+
+1. Inspecionar `Runtime::PrepareModuleLaunch()` e o ciclo de criação/registro de threads para confirmar se a janela pré-`Resume()` permite uma captura inicial apenas para diagnóstico.
+2. Examinar backend POSIX de wait/fiber e requisitos de Android para saber quais contextos host podem ser pausados/retomados sem corrupção; não presumir que `ucontext_t` é portável entre versões/arquiteturas.
+3. Desenhar um protótipo de teste isolado, sem integrar ao jogo nem à launcher, que valide a retomada de uma função recompilada após yield cooperativo.
+4. Manter Save/Load sem backend funcional até round-trip de teste passar.
+
+Nenhum código de runtime, jogo ou launcher foi alterado; esta etapa foi somente leitura e documentação. Não houve build nem teste de APK.
