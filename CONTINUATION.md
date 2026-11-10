@@ -931,3 +931,18 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - O APK é um app de diagnóstico independente, sem SDL, sem jogo e sem integração ao runtime de produção. A aprovação do pipeline confirma empacotamento/assinatura, **não** execução bem-sucedida no Motorola.
 - Próximo passo: instalar no Motorola Edge 30 Pro, abrir o app e tocar em EXECUTAR TESTE. Registrar exatamente o resultado apresentado ou eventual fechamento. Só considerar o backend validado no dispositivo após observar `ANDROID_ARM64_FIBER_RESUME=PASS`.
 - Save/Load permanece desabilitado; launcher e arquivos do jogo não foram alterados.
+
+
+## Ampliação do teste de fibras Android ARM64 — 2026-11-10
+
+- O teste Android foi ampliado para executar 32 ciclos independentes de criação, alternância e destruição da fibra worker.
+- Cada ciclo realiza oito yields para a fibra principal e uma retomada final até o retorno da função: 256 alternâncias cooperativas no total.
+- As verificações continuam cobrindo variáveis locais em funções C++ aninhadas, valor preservado, endereço da variável local, sequência de fases e retorno da fibra concluída.
+- A fibra principal é convertida uma única vez e liberada ao final; cada worker é destruído somente depois de concluir e devolver o controle.
+- O texto de resultado do APK foi atualizado para informar os 32 ciclos e 256 alternâncias.
+- Alterações feitas apenas nos arquivos de teste/JNI; não houve integração no runtime, mudança na launcher ou ativação de Save/Load.
+- Commit do teste: `c3ac82611bdc9865c2faa60ec1bcdd9e97e0167c`.
+- Commit da mensagem JNI: `1376405df5981fa3bb4c2ebc71fb19c6aafa1e68`.
+- A nova execução do workflow Android precisa ser verificada. A aprovação da compilação não substitui a execução no Motorola.
+- Limite: esta ampliação não constitui ainda um teste explícito de valores artificiais em cada registrador x19–x30/d8–d15, nem valida TLS multi-thread, unwinding, exceções ou integração com XThread/dispatcher. Esses pontos permanecem pendentes antes da integração de produção.
+- Save/Load permanece indisponível.
