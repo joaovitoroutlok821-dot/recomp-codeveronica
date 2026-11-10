@@ -524,3 +524,5 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - O workflow `android-smoke-test.yml` agora é acionado também por alterações em `assets/launcher/**`.
 - Commits desta etapa na branch `android-rebuild`: `151cc6ba7b49273faa257e76a1e0e7b9e83bd09c` (WebView e ponte), `1782799660c493b3a1eb24f36f8f6e10c568d4e5` (ações HTML), `f0e2530a4eb9126fed15f2597be551f000e56e9c` (controles independentes de Bluetooth), `78454bf241cfcc6fba6c210af5e5596c4328695b` (preservar preferências fora da aba ativa).
 - Ainda falta executar e validar o workflow. Esse teste cobre a integração SDL/JNI/SAF e o empacotamento; não prova que a recompilação do jogo inicia ou que todos os ajustes alteram o runtime.
+
+- A interface também restaura ao abrir Configurações as preferências já salvas de resolução (1080p/720p) e controles na tela; opções sem suporte nativo continuam sem efeito declarado. Commit: `395dbb44ced60047b1c879d8fd8ae406209f1275`.
