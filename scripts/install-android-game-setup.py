@@ -216,6 +216,7 @@ public final class GameSetupActivity extends Activity {
             try {
                 values.put("resolution", prefs.getInt("resolution", 1));
                 values.put("touch_mode", prefs.getInt("touch_mode", 0));
+                values.put("show_fps", prefs.getBoolean("show_fps", true));
             } catch (org.json.JSONException ignored) {}
             return values.toString();
         }
