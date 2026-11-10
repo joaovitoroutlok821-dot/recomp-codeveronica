@@ -907,3 +907,14 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - O teste cobre chamadas aninhadas, endereço de variável local e oito alternâncias cooperativas antes do retorno.
 - O protótipo ainda não foi compilado pelo NDK nem executado no Android. Não comprova integração CMake, estabilidade de unwinding/exceções, TLS multi-thread ou persistência/checkpoint.
 - Próximo passo: configurar e executar cross-compilação NDK; depois corrigir ABI e preparar teste físico. Save/Load continua desabilitado e a launcher não foi alterada.
+
+
+## Resultado da primeira cross-compilação Android ARM64 — 2026-11-10
+
+- Workflow: https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/42910240006
+- Commit testado: `1c56bef4c9b156e0e8129e8f97f611bd5431dba9`.
+- Job `cross-compile`: **success**. NDK `27.2.12479018` compilou os três arquivos do protótipo sem erros com `-Wall -Wextra -Werror`.
+- Verificação ELF confirmou `ELF64`, `Machine: AArch64`; o símbolo `rex_fiber_swap` foi encontrado.
+- Log confirmou `ANDROID_ARM64_FIBER_CROSS_COMPILE=PASS`.
+- Artefato de evidência: `recvx-android-arm64-fiber-prototype`, ID `13807685583`, 2.094 bytes; contém relatório ELF, símbolos e resultado. Não é APK e não foi executado no dispositivo.
+- Próxima etapa: construir um APK de teste mínimo que empacote o binário nativo e execute o teste em Android ARM64 real; validar alternâncias repetidas e retorno antes de qualquer integração ao SDK. A cross-compilação sozinha não prova a troca em runtime.
