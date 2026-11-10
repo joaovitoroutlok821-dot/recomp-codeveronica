@@ -232,6 +232,14 @@ public final class GameSetupActivity extends Activity {
         }
     }
 
+    private void publishCopyProgress(int percent, long copied, long total, String message) {
+        if (launcher == null) return;
+        String js = "window.onNativeCopyProgress && window.onNativeCopyProgress(" +
+            Math.max(0, Math.min(100, percent)) + "," + Math.max(0, copied) + "," +
+            Math.max(0, total) + "," + org.json.JSONObject.quote(message) + ")";
+        launcher.post(() -> launcher.evaluateJavascript(js, null));
+    }
+
     private void publishDirectoryStatus() {
         if (launcher == null) return;
         boolean ready = findEntryPoint(gameDir) != null;
@@ -325,6 +333,7 @@ public final class GameSetupActivity extends Activity {
                     status.setText(totalBytes > 0
                         ? "Copiando arquivos: 0% (" + formatBytes(totalBytes) + ")"
                         : "Copiando arquivos. O provedor não informou o tamanho total.");
+                    publishCopyProgress(0, 0, totalBytes, "Preparando cópia dos arquivos...");
                 });
                 copyDirectory(rootUri, staging);
                 File entry = findEntryPoint(staging);
@@ -343,6 +352,7 @@ public final class GameSetupActivity extends Activity {
                     start.setEnabled(true);
                     getPreferences(MODE_PRIVATE).edit().putString(PREF_URI, tree.toString()).apply();
                     status.setText("Arquivos preparados. Toque em INICIAR JOGO para continuar.");
+                    publishCopyProgress(100, totalBytes, totalBytes, "Cópia concluída. Arquivos preparados.");
                     Toast.makeText(this, "Pasta do jogo preparada.", Toast.LENGTH_LONG).show();
                     publishDirectoryStatus();
                 });
@@ -451,6 +461,8 @@ public final class GameSetupActivity extends Activity {
                         progress.setProgress(percent);
                         status.setText("Copiando arquivos: " + (percent / 10) + "% (" +
                             formatBytes(copied) + " de " + formatBytes(totalBytes) + ")");
+                        publishCopyProgress(percent / 10, copied, totalBytes,
+                            "Copiando arquivos: " + (percent / 10) + "%");
                     });
                 }
             }
@@ -668,7 +680,8 @@ public final class GameSDLActivity extends SDLActivity
                 " keyCode=" + event.getKeyCode() + " device=" + event.getDeviceId() +
                 " source=0x" + Integer.toHexString(event.getSource()));
         }
-        if (isControllerSource(event.getSource()) && event.getAction() == KeyEvent.ACTION_DOWN) confirmPhysicalInput();
+        // Do not hide touch controls merely because Android reports a controller key.
+        // Keep the fallback visible until SDL has a confirmed, working physical mapping.
         return super.dispatchKeyEvent(event);
     }
 
@@ -688,7 +701,7 @@ public final class GameSDLActivity extends SDLActivity
                     " hatY=" + event.getAxisValue(MotionEvent.AXIS_HAT_Y));
             }
         }
-        if (isControllerSource(event.getSource()) && event.getActionMasked() == MotionEvent.ACTION_MOVE) confirmPhysicalInput();
+        // A motion event alone does not prove that the game consumed the controller input.
         return super.dispatchGenericMotionEvent(event);
     }
 }
