@@ -918,3 +918,16 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Log confirmou `ANDROID_ARM64_FIBER_CROSS_COMPILE=PASS`.
 - Artefato de evidência: `recvx-android-arm64-fiber-prototype`, ID `13807685583`, 2.094 bytes; contém relatório ELF, símbolos e resultado. Não é APK e não foi executado no dispositivo.
 - Próxima etapa: construir um APK de teste mínimo que empacote o binário nativo e execute o teste em Android ARM64 real; validar alternâncias repetidas e retorno antes de qualquer integração ao SDK. A cross-compilação sozinha não prova a troca em runtime.
+
+
+## APK de teste de fibras ARM64 compilado e verificado — 2026-11-10
+
+- Commit do harness: `098cd308953437aae5bf2a3e0c20606dd79443f7`.
+- Workflow Android: [execução #42911406508](https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/42911406508), job `build-apk`: **success**.
+- Gradle montou o APK debug; a etapa de verificação também passou.
+- Verificações concluídas: APK existe e não está vazio; pacote `org.rexglue.fiberprobe`; biblioteca nativa `lib/arm64-v8a/libfiber_test.so` presente; zipalign e apksigner aprovados.
+- Artefato: `recvx-android-arm64-fiber-test-apk`, ID `13807526778`, 130.660 bytes, expira em 2026-11-24.
+- Link de acesso ao artefato: https://github.com/joaovitoroutlok821-dot/recomp-codeveronica/actions/runs/42911406508
+- O APK é um app de diagnóstico independente, sem SDL, sem jogo e sem integração ao runtime de produção. A aprovação do pipeline confirma empacotamento/assinatura, **não** execução bem-sucedida no Motorola.
+- Próximo passo: instalar no Motorola Edge 30 Pro, abrir o app e tocar em EXECUTAR TESTE. Registrar exatamente o resultado apresentado ou eventual fechamento. Só considerar o backend validado no dispositivo após observar `ANDROID_ARM64_FIBER_RESUME=PASS`.
+- Save/Load permanece desabilitado; launcher e arquivos do jogo não foram alterados.
