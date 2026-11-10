@@ -65,13 +65,14 @@ jobs:
         with:
           ref: android-rebuild
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
       - name: Install Android NDK
         run: |
           set -euo pipefail
-          sdkmanager "ndk;27.2.12479018"
+          export ANDROID_SDK_ROOT="/usr/local/lib/android/sdk"
+          export ANDROID_HOME="$ANDROID_SDK_ROOT"
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/16.0/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$ANDROID_SDK_ROOT" "ndk;27.2.12479018"
           test -x "$ANDROID_SDK_ROOT/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang++"
 
       - name: Checkout exact ReXGlue SDK revision
@@ -84,7 +85,7 @@ jobs:
       - name: Cross-compile fiber test for Android ARM64
         run: |
           set -euo pipefail
-          NDK_BIN="$ANDROID_SDK_ROOT/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          NDK_BIN="/usr/local/lib/android/sdk/ndk/27.2.12479018/toolchains/llvm/prebuilt/linux-x86_64/bin"
           "$NDK_BIN/aarch64-linux-android24-clang++" -std=c++23 -O0 -g -Wall -Wextra \
             -I "$RUNNER_TEMP/rexglue-sdk/include" \
             tests/fiber-checkpoint/fiber_checkpoint_test.cpp \
