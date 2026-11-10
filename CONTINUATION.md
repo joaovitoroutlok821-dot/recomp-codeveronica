@@ -538,3 +538,14 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Escopo ainda não confirmado pelo teste relatado: seleção de pasta via SAF, cópia/validação do `Default.xex`, persistência de preferências e inicialização do runtime do jogo. Não assumir que essas etapas foram testadas só porque os menus apareceram.
 - Este APK continua sendo smoke test SDL/JNI/SAF com launcher HTML; não contém a recompilação real do Resident Evil nem demonstra inicialização do jogo.
 - Próxima etapa técnica: usar o sucesso do WebView como base e avançar na integração do entrypoint Android com ReXGlue/runtime e no caminho de dados SAF, mantendo a interface visual. Depois gerar um APK de jogo separado e validar seleção de pasta, inicialização e logs.
+
+
+## Build privado #37 iniciado após validação física da launcher — 2026-11-10
+
+- Depois que o usuário confirmou que o APK SDL/SAF #37 abriu no Motorola Edge 30 Pro e exibiu os menus, foi solicitado um novo build privado do aplicativo completo usando a branch `android-rebuild`.
+- Pedido criado no repositório privado `recvx-private-build`: `.github/build-requests/recvx-launcher-runtime-20261110.txt`, commit `bd465a2d3b050be0cc534161f72ca7a66f4baead`.
+- GitHub Actions confirmou a execução privada #37, run ID `42743201092`, estado inicial `queued`: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/42743201092
+- O build usa o XEX exclusivamente do repositório privado e o mantém apenas no workspace efêmero do runner; fontes geradas e SDK também são removidos na limpeza. Nenhum dado do jogo foi adicionado ao repositório público.
+- Objetivo: compilar o app ReXGlue ARM64 completo com a launcher WebView recém-validada, SDL 3.5.0, runtime e plugin Xenos, mantendo a configuração Release, controles táteis e diagnóstico FPS.
+- Estado no momento do registro: aguardando execução; ainda não há APK #37 privado nem resultado de compilação confirmado.
+- Próxima etapa: acompanhar codegen, compilação Android, validação de bibliotecas, alinhamento/assinatura e artefatos. Mesmo que o build passe, testar no aparelho a seleção/cópia da pasta e o início real do jogo antes de declarar sucesso.
