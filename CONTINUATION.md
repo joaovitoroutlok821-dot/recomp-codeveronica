@@ -511,3 +511,16 @@ O APK Black é referência arquitetural, não prova de compatibilidade binária 
 - Commits: `3fc21c7a` (persistência no overlay e manifesto), `de0c056f` (editor visual), `705640d2` (correção de seleção no editor), `89d4e23a` (integração na aba Controles).
 - Validação automatizada do repositório: workflow #113, run ID `42499960948`, conclusão success. Isso valida o repositório, mas não substitui compilação Android nem teste no Motorola.
 - Ainda não foi gerado APK privado com essa mudança. Não declarar o editor validado no aparelho até testar arraste, salvamento, restauração e posicionamento no jogo.
+
+
+## Atualização — launcher HTML conectado ao Android (2026-11-10)
+
+- A prévia aprovada foi mantida em `assets/launcher/index.html` e agora é copiada pelo instalador para `app/src/main/assets/launcher/index.html`.
+- `GameSetupActivity` passou a carregar a página em um WebView em tela cheia, com JavaScript e armazenamento DOM habilitados.
+- Foi adicionada a ponte JavaScript `GameBridge` com comandos para abrir o seletor Android de pasta, iniciar o jogo, consultar o estado do diretório, salvar preferências compatíveis, abrir o editor de controles e sair.
+- Os botões da página Iniciar Jogo e Sair foram ligados aos comandos nativos. O rodapé e a página inicial recebem o estado real da pasta selecionada.
+- O mecanismo SAF existente foi preservado: valida `Default.xex` como XEX2 e copia os arquivos para o armazenamento privado antes da inicialização.
+- As opções de resolução e exibição de controles na tela são as únicas preferências dessa interface atualmente conectadas a chaves que o `GameSDLActivity` já lê. As demais opções continuam visuais/preferências da interface e não devem ser apresentadas como implementadas no runtime.
+- O workflow `android-smoke-test.yml` agora é acionado também por alterações em `assets/launcher/**`.
+- Commits desta etapa na branch `android-rebuild`: `151cc6ba7b49273faa257e76a1e0e7b9e83bd09c` (WebView e ponte), `1782799660c493b3a1eb24f36f8f6e10c568d4e5` (ações HTML), `f0e2530a4eb9126fed15f2597be551f000e56e9c` (controles independentes de Bluetooth), `78454bf241cfcc6fba6c210af5e5596c4328695b` (preservar preferências fora da aba ativa).
+- Ainda falta executar e validar o workflow. Esse teste cobre a integração SDL/JNI/SAF e o empacotamento; não prova que a recompilação do jogo inicia ou que todos os ajustes alteram o runtime.
