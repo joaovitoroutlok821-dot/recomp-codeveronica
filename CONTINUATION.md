@@ -1012,3 +1012,12 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - **Cuidado de versão:** os arquivos acima foram lidos da branch `main` do repositório upstream. O build do projeto fixa o SDK no commit `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`; antes de portar qualquer patch, confirmar esses mesmos arquivos no commit fixado e basear o patch exatamente nele. Não aplicar alteração de produção ainda.
 - Próxima etapa: criar patch experimental no workflow do projeto contra o commit fixado, compilar primeiro `rexcore`/teste de contrato Fiber para Android e Linux, e executar round-trip real da API `rex::thread::Fiber` no Motorola. Só então considerar integração ao APK do jogo.
 - Save/Load continua desabilitado; nenhum arquivo de runtime de produção foi alterado nesta auditoria.
+
+
+### Refinamento do fluxo de término da fibra — 2026-11-10
+
+- A leitura de `src/kernel/crt/threading.cpp` no commit fixado confirmou que a função real `FiberEntryPoint` já trata o retorno da função guest: ela chama `Fiber::SwitchTo(thread->main_fiber())`; se não houver fibra principal, chama `std::terminate()`.
+- Portanto, o campo `return_to` do protótipo Android não deve ser copiado automaticamente para a classe de produção. A volta normal do fiber guest já é responsabilidade do `FiberEntryPoint`/kernel.
+- O backend Android precisa manter a mesma semântica do backend POSIX/Win32: `SwitchTo` suspende e retoma; `Destroy` só é permitido fora da fibra ativa; a fibra principal convertida é destruída no encerramento da thread.
+- O protótipo isolado tem um trampoline que volta ao contexto de origem ao terminar; isso é um detalhe do harness de teste e não constitui, por si só, requisito para adicionar `return_to` à API pública.
+- Antes do patch de produção, adicionar testes de contrato cobrindo: retorno explícito via `SwitchTo(main)`, duas ou mais retomadas, término de `FiberEntryPoint` com retorno à principal, atualização de `tls_current_` antes/depois de cada troca, destruição de fibra suspensa e limpeza da fibra principal na thread proprietária.
