@@ -697,3 +697,37 @@ Leitura do SDK fixado `rexglue/rexglue-sdk@398e2ba7802d0c4ca1f68d7ad4fa2cd73e812
 4. Definir se o escopo viável é snapshot de sessão em execução, ou apenas save em pontos específicos/retomada após reinício. Não prometer compatibilidade universal antes dos testes.
 
 Nenhum código do SDK ou do jogo foi alterado; esta etapa foi somente leitura e atualização documental. Save/Load continua sem backend funcional.
+
+
+## Rastreamento de chamadas recompiladas e pontos de espera — 2026-11-10
+
+Leitura adicional do SDK upstream `rexglue/rexglue-sdk@398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`, incluindo `XThread::Execute()`, `FunctionDispatcher::Execute()`, callbacks de áudio/kernel e `KeWaitForSingleObject_entry()`:
+
+### Fronteiras reais de execução identificadas
+
+- A thread guest principal não entra inicialmente por `FunctionDispatcher::Execute()`: `XThread::Execute()` resolve `creation_params_.start_address` para `PPCFunc*` e chama diretamente `func(*ctx, base)`. A chamada só retorna quando a função inicial termina ou o fluxo de fibra retorna à thread principal.
+- O caminho de `FunctionDispatcher::Execute()` é usado para chamadas guest adicionais, incluindo callbacks de cliente de áudio (`AudioSystem`), callbacks de entrada/saída de DLL em `KernelState` e callbacks de interrupção via `ExecuteInterrupt()`.
+- `ExecuteInterrupt()` mantém uma região crítica global durante o callback, mas a região protege somente esse dispatch; não suspende todas as demais threads, fibras, áudio ou GPU e não pode ser tratada como barreira de snapshot.
+- `XThread::Execute()` chama a função inicial uma vez e, quando ela retorna, trata o retorno como término implícito da thread (ou chama `Exit()`). Não existe nesse método um loop central que receba um PC guest, faça dispatch repetido e permita retomar arbitrariamente uma função interrompida.
+
+### Espera e bloqueio não equivalem a checkpoint
+
+- O caminho de espera do kernel (`KeWaitForSingleObject_entry`) delega a espera ao objeto/primitive de sincronização correspondente. Uma thread bloqueada pode estar parada dentro de uma cadeia de chamadas C++ nativas que entrou no kernel a partir de uma função recompilada.
+- O retorno de uma espera pode continuar a mesma cadeia de chamadas nativas. Portanto, observar uma thread em estado de espera não prova que ela esteja fora de uma função recompilada, nem que sua pilha host possa ser descartada e reconstruída somente com `PPCContext`.
+- O caminho de suspensão de thread altera o estado/contagem de suspensão e usa os mecanismos de thread host; não foi encontrada uma conversão geral desse evento em contexto PPC de retomada. Suspensão de host não cria, por si só, um ponto de checkpoint serializável.
+- O caminho de fibra salva/restaura SP guest e registradores não voláteis no `X_FIBER_CONTEXT`, mas a continuação host fica preservada pelo mecanismo de fibra (`ucontext_t`/pilha host no backend POSIX). A troca de fibra é uma suspensão cooperativa da pilha nativa, não uma serialização dessa pilha.
+
+### Conclusão desta etapa
+
+- Foram identificados chamadores concretos do dispatcher, mas eles não formam um scheduler central capaz de reconstruir a execução guest a partir de um endereço salvo.
+- Esperas, callbacks e trocas de fibra podem produzir pontos em que uma thread deixa de executar temporariamente, mas não comprovam um estado global consistente e restaurável para todas as threads/fibras.
+- Não há evidência suficiente para afirmar que o jogo oferece fronteiras seguras universais para snapshots em execução. Um checkpoint só poderá ser considerado se for desenhado cooperativamente e validar explicitamente o estado de todas as threads, fibras, pilhas guest/host e subsistemas.
+
+### Próxima etapa recomendada
+
+1. Inspecionar o restante de `KeWaitForSingleObject_entry()` e as primitivas de wait usadas por eventos, semáforos e timers para mapear exatamente onde o fluxo guest bloqueia e retoma.
+2. Rastrear `OnPostLaunchModule`, criação/suspensão/liberação da thread principal e criação de threads secundárias do título para saber se existe uma janela de inicialização anterior ao início do código recompilado que permita apenas um snapshot inicial (não um save de gameplay).
+3. Projetar um teste isolado de checkpoint cooperativo com uma thread/fibra controlada e medir se a continuação pode ser retomada sem reiniciar a função; não ativar Save/Load na launcher até o teste passar.
+4. Manter a interface Save/Load desabilitada ou claramente indisponível enquanto não houver backend de captura e restauração comprovado.
+
+Nenhum código do runtime, do jogo ou da launcher foi alterado nesta etapa. Foi uma auditoria de leitura e atualização deste documento; não houve compilação nem teste de APK.
