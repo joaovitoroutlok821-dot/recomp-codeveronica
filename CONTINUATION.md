@@ -1211,3 +1211,12 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Limitação deliberada: este primeiro protótipo apenas valida a estrutura e as transições dos frames em memória. Ele ainda não serializa PPCContext, não executa funções recompiladas por trampoline, não reconstrói chamadas reais, não faz save/load entre processos e não está ligado a XThread/Runtime.
 - O workflow de lint do repositório está configurado para push; a verificação de build Android existente só dispara na branch android-arm64-fiber-experiment, portanto esta branch experimental ainda precisa de uma execução de CI de compilação/testes antes de considerar o protótipo validado.
 - Próximo passo: criar/ajustar um workflow de CI para compilar e executar os testes unitários desta branch; corrigir eventuais falhas; depois evoluir o protótipo para armazenar o PPCContext completo em formato versionado e testar execução caller/callee com trampoline. Nenhuma alteração no APK de produção.
+
+### Continuação do protótipo isolado de Save State — 2026-11-11
+
+- No SDK, branch `save-state-frame-prototype`, o workflow `.github/workflows/guest-frame-prototype-tests.yml` foi atualizado no commit `21786c8097ae3a4e62024572f51052c5ee08f600`.
+- Antes da configuração CMake, o workflow agora compila e executa um programa mínimo que inclui `<expected>` e instancia `std::expected<int, int>` usando Clang 18, C++23 e libc++. Isso separa uma falha de toolchain de uma falha real no SDK/testes.
+- O workflow também mantém o build dos testes Catch2 e a execução filtrada de `guest_call_stack`.
+- O status combinado consultado para o commit não retornou verificações; o conector disponível não expõe a listagem de execuções acionadas por push/dispatch. Portanto, a nova verificação ainda não está confirmada como executada ou aprovada.
+- O protótipo continua deliberadamente isolado: a pilha de frames guarda metadados de função/PC/retorno, mas ainda não contém PPCContext, não executa o dispatcher/trampoline e não está conectado ao XThread ou Runtime.
+- Próxima etapa técnica após CI: expandir os testes para um frame com estado PPC serializável e um dispatcher sintético caller/callee que retome após checkpoint; só depois avaliar integração com o codegen real. Não alterar o APK funcional nem declarar Save State pronto.
