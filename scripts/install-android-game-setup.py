@@ -579,6 +579,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import java.util.ArrayList;
 
 public final class GameSDLActivity extends SDLActivity
         implements InputManager.InputDeviceListener {
