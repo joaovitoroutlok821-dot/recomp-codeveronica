@@ -123,12 +123,12 @@ function settings(){
    ['Nitidez (CAS)',slider(70)],['Anti-aliasing (AA)',select('Ativado|Desativado')],
    ['Efeitos de partículas',select('Alto|Médio|Baixo')],['Proporção da tela',select('Automática (16:9)|16:9|4:3')]
   ]);
-  right=rows([['Limite de FPS',select('60 FPS|30 FPS|45 FPS|90 FPS|120 FPS|Ilimitado')],['Sincronização vertical (V-Sync)',toggle(true)],['Contador de FPS',toggle(true)],['Cache de shaders',toggle(true)],['Reduzir efeitos pesados',toggle(false)]])+`<p class="hint">ⓘ Melhora a qualidade da imagem com upscaling e nitidez (FSR/CAS), com bom equilíbrio entre qualidade e desempenho.</p>`;
+  right=rows([['Limite de FPS',select('60 FPS|30 FPS|45 FPS|90 FPS|120 FPS|Ilimitado')],,['Contador de FPS',toggle(true)],['Cache de shaders',toggle(true)],['Reduzir efeitos pesados',toggle(false)]])+`<p class="hint">ⓘ Melhora a qualidade da imagem com upscaling e nitidez (FSR/CAS), com bom equilíbrio entre qualidade e desempenho.</p>`;
   info='';
  }
  if(activeTab==='performance'){
   leftTitle='Desempenho';rightTitle='Ajustes de Desempenho';
-  left=rows([['Modo de execução',select('Nativo (Recomp)')],['Backend de renderização',select('Vulkan|OpenGL')],['Limite de FPS',select('60 FPS|30 FPS|45 FPS|90 FPS|Ilimitado')],['Sincronização vertical (V-Sync)',toggle(true)],['Contador de FPS',toggle(true)],['Cache de shaders',toggle(true)],['Pré-compilar shaders',toggle(false)],['Compilação assíncrona de shaders',toggle(true)],['Compressão de texturas',select('BC7 (Alta qualidade)|ASTC|ETC2')],['Multithreading (CPU)',select('Automático (8 Threads)|4 Threads|6 Threads|8 Threads')],['Afinidade de núcleos',select('Automática|Desempenho|Eficiência')]]);
+  left=rows([['Modo de execução',select('Nativo (Recomp)')],['Backend de renderização',select('Vulkan|OpenGL')],['Limite de FPS',select('60 FPS|30 FPS|45 FPS|90 FPS|Ilimitado')],['Modo de apresentação (V-Sync)',`<select><option value="0">Immediate — sem espera pelo V-Sync</option><option value="1">Mailbox — permite descartar quadros</option><option value="2">FIFO Relaxed</option><option value="3">FIFO — sincronização tradicional</option></select>`],['Contador de FPS',toggle(true)],['Cache de shaders',toggle(true)],['Pré-compilar shaders',toggle(false)],['Compilação assíncrona de shaders',toggle(true)],['Compressão de texturas',select('BC7 (Alta qualidade)|ASTC|ETC2')],['Multithreading (CPU)',select('Automático (8 Threads)|4 Threads|6 Threads|8 Threads')],['Afinidade de núcleos',select('Automática|Desempenho|Eficiência')]]);
   right=rows([['Escala de CPU (Emulação)',slider(100)],['Escala de GPU (Render)',slider(100)],['Fila de quadros (Buffer)',select('Duplo (2)|Triplo (3)')],['Prioridade do processo',select('Alta|Normal|Baixa')],['Reduzir efeitos pesados',toggle(false)]])+`<p class="hint">ⓘ Ajustes de desempenho para equilibrar velocidade, estabilidade e qualidade da recompilação no Android.</p>`;
  }
  if(activeTab==='controls'){
@@ -153,6 +153,8 @@ function restoreSettings(){
   const rowFor=(label)=>rows.find(e=>e.dataset.settingLabel===label);
   const resolutionSelect=rowFor('Resolução de saída')?.querySelector('select');
   if(resolutionSelect) resolutionSelect.value=String(Number.isInteger(saved.resolution)?saved.resolution:1);
+  const presentMode=rowFor('Modo de apresentação (V-Sync)')?.querySelector('select');
+  if(presentMode) presentMode.value=String(Number.isInteger(saved.present_mode)?saved.present_mode:3);
   const toggleValues={
    'Contador de FPS':saved.show_fps!==false,
    'Controles na tela':saved.touch_mode!==2,
@@ -187,9 +189,9 @@ function restoreDefaults(){
  if(resolutionSelect) nativeSettings.resolution=Number.parseInt(resolutionSelect.value,10);
  if(fpsToggle) nativeSettings.show_fps=fpsToggle.classList.contains('on');
  if(touchToggle) nativeSettings.touch_mode=touchToggle.classList.contains('on')?0:2;
- const vsyncToggle=rowFor('Sincronização vertical (V-Sync)')?.querySelector('.toggle');
+ const presentMode=rowFor('Modo de apresentação (V-Sync)')?.querySelector('select');
  const asyncToggle=rowFor('Compilação assíncrona de shaders')?.querySelector('.toggle');
- if(vsyncToggle) nativeSettings.vsync=vsyncToggle.classList.contains('on');
+ if(presentMode) nativeSettings.present_mode=Number.parseInt(presentMode.value,10);
  if(asyncToggle) nativeSettings.async_shader_compilation=asyncToggle.classList.contains('on');
  if(window.GameBridge){
   GameBridge.saveSettings(JSON.stringify(nativeSettings));
