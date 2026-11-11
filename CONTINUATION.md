@@ -1261,3 +1261,13 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - O defeito observado está associado ao estado V-Sync OFF. Não descrever como problema geral de áudio.
 - Hipóteses a investigar: pacing/clock de apresentação, limitação de quadros e relação entre o loop de renderização e o clock/buffer de áudio. A percepção de aceleração não comprova ainda que o clock da lógica de jogo foi alterado.
 - Manter V-Sync ON como recomendação temporária. Ao investigar, comparar a mesma cena com os dois estados, registrando FPS e, se possível, timestamps/logs do loop e do áudio. Não alterar o clock da emulação ou o áudio sem diagnóstico.
+
+
+### Seleção explícita do modo de apresentação Vulkan na launcher — 2026-11-11
+
+- A aba **Desempenho** substitui o interruptor binário de V-Sync por um seletor com quatro modos: Immediate (sem espera pelo V-Sync), Mailbox (permite descartar quadros), FIFO Relaxed e FIFO (sincronização tradicional).
+- A seleção é persistida em `SharedPreferences` como `present_mode` (0 a 3), restaurada ao reabrir a launcher e salva ao tocar em Aplicar. O padrão é FIFO (3), priorizando sincronização audiovisual.
+- `scripts/install-android-game-setup.py` agora injeta os cvars Vulkan no arranque do jogo: `vulkan_allow_present_mode_immediate`, `vulkan_allow_present_mode_mailbox` e `vulkan_allow_present_mode_fifo_relaxed`. A combinação desativa os modos de maior prioridade para que o presenter escolha exatamente o modo selecionado; FIFO é obtido desativando os três.
+- Alterações de código nesta etapa: `assets/launcher/index.html` e `scripts/install-android-game-setup.py` na branch `android-rebuild`.
+- Commits: `1dd1adda322f353910577334cd6c87676f48b8ca` (launcher), `d7c9683dc66af85acc6c09b4da1964d23d9cdb9d` (argumentos Android), `3d7cf7f0a37cd4e2ef19a3024b7fa2bdd0677c01` (seletor habilitado e restauração do valor).
+- Importante: a alteração de UI e o caminho de configuração foram implementados, mas ainda precisam passar pelo build privado e por teste no aparelho. A seleção ainda não deve ser considerada validada em runtime até confirmar nos logs o modo de swapchain criado para cada escolha.
