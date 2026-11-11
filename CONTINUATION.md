@@ -1160,3 +1160,14 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Direção técnica mais promissora: implementar safepoints cooperativos gerados em limites de blocos básicos/arestas de controle, com sincronização explícita de registradores vivos, PC de retomada e estado de CSR/FPU/VMX. Em seguida, validar o protocolo com funções PPC sintéticas contendo loops, branches, chamadas e registradores vivos através do checkpoint.
 - Ainda não foi alterado o gerador. Antes da implementação, falta localizar o laço central que percorre instruções e emite cada bloco, assim como o mecanismo de saída/entrada que permita retomar a função após restaurar o processo. O snapshot entre execuções ainda não está resolvido.
 - Nenhum APK foi modificado ou compilado nesta etapa. A versão funcional do jogo permanece preservada; Save State não está disponível ainda.
+
+
+### Localização do laço central de geração PPC e limite da retomada — 2026-11-11
+
+- Localizado o gerador efetivo em `src/codegen/function_graph.cpp`, método `FunctionNode::emitCpp()`.
+- O segundo passe percorre cada bloco e cada instrução (`while (blockBase < blockEnd)`), emite labels `loc_...` e despacha cada instrução por `DispatchInstruction()`. Este é o ponto concreto para estudar a emissão de checkpoints por instrução/bloco; não é necessário procurar um laço alternativo no runtime.
+- Confirmado em `src/codegen/builders/context.cpp` que GPR, FPR, VMX, CR, CTR e XER podem ser mantidos em variáveis locais C++ conforme as opções do recompiler. Portanto, um checkpoint precisa emitir spill explícito de todos os registradores PPC localizados para `PPCContext` e também restaurá-los ao retomar. Não basta copiar `ctx`.
+- O gerador já emite labels de destino para branches internos, o que pode ajudar a identificar endereços de retomada. Porém, os labels C++ só existem dentro da invocação atual da função: não podem ser usados como endereço persistente nem restaurar a pilha de chamadas C++ depois que o processo é encerrado.
+- Obstáculo arquitetural adicional: chamadas PPC entre funções são emitidas como chamadas C++ aninhadas (`targetFn(ctx, base)`) e retornos como `return`. Um save state persistente precisa reconstruir a cadeia de chamadas guest, não apenas o PC de uma função. Também precisa definir como retomar loops/branches e funções chamadas sem depender da pilha host antiga.
+- Conclusão: o laço de geração foi localizado e há base para prototipar spill de registradores e checkpoints cooperativos. Mas isso ainda não torna uma execução C++ suspensa serializável entre processos. A retomada persistente exige uma representação explícita de continuação/frames guest (ou uma transformação do código gerado para uma máquina de estados/trampoline), além do snapshot de kernel/fibras. Não implementar simplesmente um PC salvo ou um goto gravado.
+- Nenhum código de produção ou APK foi alterado nesta etapa; a versão funcional do jogo permanece preservada.
