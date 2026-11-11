@@ -102,7 +102,7 @@ body{display:grid;place-items:center}.stage{position:relative;width:min(100vw,17
 const body=document.getElementById('pagebody'),heading=document.getElementById('heading');let activeTab='graphics';
 const tabNames={graphics:'Gráficos',performance:'Desempenho',controls:'Controles',audio:'Áudio'};
 function field(label,control){
- const supported=['Resolução de saída','Contador de FPS','Controles na tela'].includes(label);
+ const supported=['Resolução de saída','Contador de FPS','Controles na tela','Sincronização vertical (V-Sync)','Compilação assíncrona de shaders'].includes(label);
  if(!supported) control=control.replace('<select','<select disabled title="Indisponível: sem suporte confirmado"').replace('<input','<input disabled title="Indisponível: sem suporte confirmado"').replace('<button class="toggle','<button disabled class="toggle');
  return `<div class="setting" data-setting-label="${label}"><span>${label}</span>${control}</div>`;
 }
@@ -128,7 +128,7 @@ function settings(){
  }
  if(activeTab==='performance'){
   leftTitle='Desempenho';rightTitle='Ajustes de Desempenho';
-  left=rows([['Modo de execução',select('Nativo (Recomp)')],['Backend de renderização',select('Vulkan|OpenGL')],['Limite de FPS',select('60 FPS|30 FPS|45 FPS|90 FPS|Ilimitado')],['Sincronização vertical (V-Sync)',toggle(true)],['Contador de FPS',toggle(true)],['Cache de shaders',toggle(true)],['Pré-compilar shaders',toggle(false)],['Compressão de texturas',select('BC7 (Alta qualidade)|ASTC|ETC2')],['Multithreading (CPU)',select('Automático (8 Threads)|4 Threads|6 Threads|8 Threads')],['Afinidade de núcleos',select('Automática|Desempenho|Eficiência')]]);
+  left=rows([['Modo de execução',select('Nativo (Recomp)')],['Backend de renderização',select('Vulkan|OpenGL')],['Limite de FPS',select('60 FPS|30 FPS|45 FPS|90 FPS|Ilimitado')],['Sincronização vertical (V-Sync)',toggle(true)],['Contador de FPS',toggle(true)],['Cache de shaders',toggle(true)],['Pré-compilar shaders',toggle(false)],['Compilação assíncrona de shaders',toggle(true)],['Compressão de texturas',select('BC7 (Alta qualidade)|ASTC|ETC2')],['Multithreading (CPU)',select('Automático (8 Threads)|4 Threads|6 Threads|8 Threads')],['Afinidade de núcleos',select('Automática|Desempenho|Eficiência')]]);
   right=rows([['Escala de CPU (Emulação)',slider(100)],['Escala de GPU (Render)',slider(100)],['Fila de quadros (Buffer)',select('Duplo (2)|Triplo (3)')],['Prioridade do processo',select('Alta|Normal|Baixa')],['Reduzir efeitos pesados',toggle(false)]])+`<p class="hint">ⓘ Ajustes de desempenho para equilibrar velocidade, estabilidade e qualidade da recompilação no Android.</p>`;
  }
  if(activeTab==='controls'){
@@ -153,9 +153,14 @@ function restoreSettings(){
   const rowFor=(label)=>rows.find(e=>e.dataset.settingLabel===label);
   const resolutionSelect=rowFor('Resolução de saída')?.querySelector('select');
   if(resolutionSelect) resolutionSelect.value=String(Number.isInteger(saved.resolution)?saved.resolution:1);
-  for(const label of ['Contador de FPS','Controles na tela']){
+  const toggleValues={
+   'Contador de FPS':saved.show_fps!==false,
+   'Controles na tela':saved.touch_mode!==2,
+   'Sincronização vertical (V-Sync)':saved.vsync!==false,
+   'Compilação assíncrona de shaders':saved.async_shader_compilation!==false
+  };
+  for(const [label,enabled] of Object.entries(toggleValues)){
    const button=rowFor(label)?.querySelector('.toggle');
-   const enabled=label==='Contador de FPS'?(saved.show_fps!==false):(saved.touch_mode!==2);
    if(button){button.classList.toggle('on',enabled);button.textContent=enabled?'ATIVADO':'DESATIVADO'}
   }
  }catch(e){}
@@ -182,9 +187,13 @@ function restoreDefaults(){
  if(resolutionSelect) nativeSettings.resolution=Number.parseInt(resolutionSelect.value,10);
  if(fpsToggle) nativeSettings.show_fps=fpsToggle.classList.contains('on');
  if(touchToggle) nativeSettings.touch_mode=touchToggle.classList.contains('on')?0:2;
+ const vsyncToggle=rowFor('Sincronização vertical (V-Sync)')?.querySelector('.toggle');
+ const asyncToggle=rowFor('Compilação assíncrona de shaders')?.querySelector('.toggle');
+ if(vsyncToggle) nativeSettings.vsync=vsyncToggle.classList.contains('on');
+ if(asyncToggle) nativeSettings.async_shader_compilation=asyncToggle.classList.contains('on');
  if(window.GameBridge){
   GameBridge.saveSettings(JSON.stringify(nativeSettings));
-  toast('Resolução, contador FPS e controles na tela salvos. Opções sem suporte estão desativadas.');
+  toast('Configurações compatíveis salvas. V-Sync e shaders serão aplicados ao iniciar o jogo.');
  }else toast('Prévia: alterações salvas apenas nesta sessão')
 }
 function onNativeCopyProgress(percent,copied,total,message){
