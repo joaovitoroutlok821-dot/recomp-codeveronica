@@ -1251,3 +1251,13 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Combinado ao relato anterior de que o jogo parece um pouco mais rápido com V-Sync desativado, isso indica um trade-off audiovisual que precisa ser investigado; não prova por si só que o relógio de emulação acelera.
 - Orientação de teste: manter V-Sync ativado como configuração recomendada enquanto não houver correção. Não alterar clock de áudio, velocidade da emulação nem introduzir limitador artificial sem diagnóstico.
 - Investigação futura deve separar pacing de apresentação (SDL/GPU), taxa de quadros e clock/buffer de áudio; comparar ambos os estados na mesma cena e com o contador FPS ativo.
+
+
+### Esclarecimento do teste A/B de V-Sync — 2026-11-11
+
+- Correção explícita do relato do usuário: a dessincronização de áudio e imagem ocorre **somente quando V-Sync está desativado**.
+- Com V-Sync ativado: áudio/imagem sincronizados; jogo parece um pouco mais lento.
+- Com V-Sync desativado: áudio/imagem perdem sincronismo; jogo parece um pouco acelerado.
+- O defeito observado está associado ao estado V-Sync OFF. Não descrever como problema geral de áudio.
+- Hipóteses a investigar: pacing/clock de apresentação, limitação de quadros e relação entre o loop de renderização e o clock/buffer de áudio. A percepção de aceleração não comprova ainda que o clock da lógica de jogo foi alterado.
+- Manter V-Sync ON como recomendação temporária. Ao investigar, comparar a mesma cena com os dois estados, registrando FPS e, se possível, timestamps/logs do loop e do áudio. Não alterar o clock da emulação ou o áudio sem diagnóstico.
