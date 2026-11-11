@@ -1200,3 +1200,14 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Correção aplicada no script gerador: adicionar `import java.util.ArrayList;` ao bloco de imports de GameSDLActivity.
 - Commit público: `5b7d3c07d1a7e39f43603b9ec1e0864669bf44c6`.
 - Próximo passo: validar a alteração e solicitar novo APK pelo workflow privado, apontando para esse commit. Não tratar como build/runtime validado até o workflow concluir e o APK existir.
+
+
+### Primeiro modelo experimental de pilha de frames guest — 2026-11-11
+
+- Criada no SDK uma branch isolada `save-state-frame-prototype`, derivada de `android-arm64-fiber-experiment`. A branch não altera o APK nem a branch principal do SDK.
+- Adicionado `include/rex/ppc/guest_call_stack.h`: modelo experimental de frame com endereço da função guest, PC guest de retomada e PC de retorno; suporta iniciar execução, registrar chamada, atualizar PC, retornar e tirar/restaurar snapshot da pilha de metadados.
+- Adicionado `tests/unit/ppc/guest_call_stack_test.cpp` com testes para chamada caller/callee, restauração de snapshot, retorno ao caller e rejeição de transições inválidas. Registrado em `tests/unit/CMakeLists.txt`.
+- Commits da branch: `09a848b` (header), `1277724` (testes), `66288d1` (CMake), `9e23899` (ajuste de portabilidade).
+- Limitação deliberada: este primeiro protótipo apenas valida a estrutura e as transições dos frames em memória. Ele ainda não serializa PPCContext, não executa funções recompiladas por trampoline, não reconstrói chamadas reais, não faz save/load entre processos e não está ligado a XThread/Runtime.
+- O workflow de lint do repositório está configurado para push; a verificação de build Android existente só dispara na branch android-arm64-fiber-experiment, portanto esta branch experimental ainda precisa de uma execução de CI de compilação/testes antes de considerar o protótipo validado.
+- Próximo passo: criar/ajustar um workflow de CI para compilar e executar os testes unitários desta branch; corrigir eventuais falhas; depois evoluir o protótipo para armazenar o PPCContext completo em formato versionado e testar execução caller/callee com trampoline. Nenhuma alteração no APK de produção.
