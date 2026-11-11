@@ -1079,3 +1079,20 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - A UI atual oferece escalas percentuais 50–100%; isso não corresponde diretamente à API inteira 1–8. Precisamos redefinir o significado da escala para opções compatíveis ou implementar uma escala de apresentação separada, se houver suporte.
 - Modos 480p/540p/720p/900p/1080p/1440p podem ser expressos como presets de modo de vídeo quando válidos nos limites do SDK, mas a superfície Android pode impor a dimensão física real; validar no dispositivo.
 - Nenhuma alteração de código nativo ou APK nesta investigação. Não habilitar opções apenas por terem cvar com nome parecido.
+
+
+
+### Investigação da escala interna e da API de configuração — 2026-11-11
+
+- Inspecionado o arquivo completo `src/graphics/pipeline/texture/cache.cpp` no ReXGlue SDK fixado em `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`.
+- A implementação de `TextureCache::GetConfigDrawResolutionScale()` confirma que `resolution_scale` é um atalho para X e Y, a menos que uma das cvars específicas `draw_resolution_scale_x/y` tenha valor não padrão.
+- As três cvars têm faixa mínima 1 e máxima 8, padrão 1, e lifecycle `kRequiresRestart`. Não existe escala inferior a 1 nesses parâmetros.
+- No backend Vulkan, as escalas são usadas para multiplicar dimensões de imagens/recursos de resolve marcados como `scaled_resolve`; isso é supersampling/resolução ampliada de recursos específicos, não redução geral da resolução interna. Não mapear 90%, 80%, 70% ou 50% a esses valores.
+- A busca no caminho Vulkan não identificou uma cvar de redução global de renderização. O SDK contém um pós-efeito FXAA selecionável por `swap_post_effect`, mas isso não equivale a FSR nem a render scale inferior a 100%.
+- API de Cvars confirmada em `include/rex/cvar.h`: `LoadConfig(path)`, `SetFlagByName(name,value)`, `GetFlagByName(name)`, `SaveConfig(path)`, além de lifecycle e validação. `SetFlagByName` registra fonte `kRuntime`; valores `kRequiresRestart` só passam a ter efeito após reinício.
+- `src/core/cvar.cpp` confirma que `LoadConfig` lê TOML. `src/ui/rex_app.cpp` carrega o TOML do aplicativo durante `OnInitialize`, depois da inicialização inicial das Cvars. O projeto Android pode fornecer configuração em arquivo no diretório privado antes desse ponto ou aplicar cvars apropriadas antes da criação da janela/runtime, mas a ordem e a precedência precisam ser preservadas.
+- `src/android_main.cpp` atual chama `cvar::Init` e `ApplyEnvironment`, mas não chama `LoadConfig` explicitamente e não consome SharedPreferences. A bridge Java salva valores em `recvx_settings`, porém a launcher só envia atualmente resolução, FPS e controles de toque, e `loadSettings()` só devolve esses três campos.
+- Próximo passo: definir uma ponte segura entre as preferências Android e o TOML/Cvar registry, com validação por nome/tipo/lifecycle e logs dos valores efetivamente aceitos. Não gravar chaves arbitrárias da UI diretamente como cvars.
+- Priorizar primeiro opções com suporte comprovado: `vsync`, `async_shader_compilation`, `store_shaders` e modo de vídeo. Verificar lifecycle e persistência de `store_shaders` no commit fixado antes de habilitar a opção.
+- Escala interna percentual permanece pendente: ou localizar/implementar um mecanismo real de redução no caminho de apresentação/renderização, ou ajustar a UI para não oferecer percentuais que o runtime não consegue cumprir. Não usar `draw_resolution_scale_x/y` para esse fim.
+- Nenhum código de produção foi alterado nesta investigação; nenhum APK foi compilado. O jogo, launcher e Save State permanecem intocados.
