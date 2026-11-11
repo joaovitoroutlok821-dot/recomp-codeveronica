@@ -1109,3 +1109,19 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - **Ainda não validado em APK/aparelho:** é necessário compilar o APK privado, verificar os logs do parser/runtime e testar V-Sync ligado/desligado e compilação assíncrona. Não afirmar que a opção está confirmada em execução até esse teste.
 - As opções de cache de shaders, FPS cap, FSR, escala de renderização, áudio e controles avançados continuam sem implementação real e permanecem desativadas.
 - Nenhum arquivo de jogo, XEX ou código gerado privado foi copiado para o repositório público. Save State continua fora deste trabalho.
+
+
+### Auditoria do suporte existente a Save State no ReXGlue — 2026-11-11
+
+- A compilação completa do fork ReXGlue SDK para Android ARM64 foi concluída com sucesso no workflow [#42954638794](https://github.com/joaovitoroutlok821-dot/rexglue-sdk/actions/runs/42954638794), branch `android-arm64-fiber-experiment`, commit `6d05ac09fcf1e5be378dcc8979014a1a9473a48f`.
+- O workflow concluiu configuração, compilação, instalação, empacotamento e publicação do artefato `rexglue-sdk-android-arm64`, ID `13826314819`. O ZIP foi baixado e sua integridade foi conferida. Isto valida o pacote SDK, não a integração com o APK de Resident Evil.
+- Auditoria do código do SDK no branch experimental encontrou infraestrutura de serialização já existente:
+  - `rex::system::memory::Memory::Save/Restore` serializa/restaura os heaps de memória do guest.
+  - `BaseHeap::Save/Restore` percorre a tabela de páginas e grava/restaura conteúdo das páginas comprometidas.
+  - `KernelState::Save/Restore` grava/restaura a tabela de objetos, threads guest e objetos serializáveis do kernel.
+  - `XThread::Save/Restore` contém estrutura de estado com metadados de thread e contexto PPC (GPR, FPR, VR, CR, FPSCR, XER etc.).
+- Bloqueio crítico confirmado: `XThread::Save` retorna false para thread guest em execução, com log explícito de serialização não implementada. O caminho `XThread::Restore` para thread marcada como running cria uma thread suspensa, mas o callback de execução ainda emite `Thread restore not implemented` e não retoma o contexto salvo. Portanto, o suporte existente não permite ainda um Save State completo e retomável de uma partida ativa.
+- A serialização do kernel percorre objetos e threads; ainda não foi demonstrado um ponto de pausa global/consistente que impeça CPU, threads, GPU e áudio de alterarem o estado durante a captura.
+- A fibra ARM64 já compila no SDK, mas o contexto host da fibra (SP, registradores callee-saved e stack) não é persistido por `XThread::Save`. O teste de retomada de fibra em processo não equivale a persistência de Save State entre execuções.
+- Plano técnico: (1) localizar o ciclo de vida do Runtime e mecanismo de serialização no SDK fixado; (2) definir barreira de pausa/snapshot consistente; (3) completar captura/restauração de contexto e stacks sem persistir ponteiros/handles host inválidos; (4) auditar objetos de kernel e dependências GPU/áudio/input para serialização ou recriação; (5) implementar arquivo versionado, validado e gravado atomicamente no armazenamento privado Android; (6) conectar os botões Save State/Load State e validar salvar, fechar, reabrir e restaurar.
+- Nenhum código de produção do jogo, launcher ou Save State foi alterado nesta auditoria. Os botões não devem ser anunciados como funcionais ainda. A versão do jogo que já funciona deve ser preservada.
