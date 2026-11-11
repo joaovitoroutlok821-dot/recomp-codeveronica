@@ -102,7 +102,7 @@ body{display:grid;place-items:center}.stage{position:relative;width:min(100vw,17
 const body=document.getElementById('pagebody'),heading=document.getElementById('heading');let activeTab='graphics';
 const tabNames={graphics:'Gráficos',performance:'Desempenho',controls:'Controles',audio:'Áudio'};
 function field(label,control){
- const supported=['Resolução de saída','Contador de FPS','Controles na tela','Sincronização vertical (V-Sync)','Compilação assíncrona de shaders'].includes(label);
+ const supported=['Resolução de saída','Contador de FPS','Controles na tela','Modo de apresentação (V-Sync)','Compilação assíncrona de shaders'].includes(label);
  if(!supported) control=control.replace('<select','<select disabled title="Indisponível: sem suporte confirmado"').replace('<input','<input disabled title="Indisponível: sem suporte confirmado"').replace('<button class="toggle','<button disabled class="toggle');
  return `<div class="setting" data-setting-label="${label}"><span>${label}</span>${control}</div>`;
 }
@@ -158,7 +158,6 @@ function restoreSettings(){
   const toggleValues={
    'Contador de FPS':saved.show_fps!==false,
    'Controles na tela':saved.touch_mode!==2,
-   'Sincronização vertical (V-Sync)':saved.vsync!==false,
    'Compilação assíncrona de shaders':saved.async_shader_compilation!==false
   };
   for(const [label,enabled] of Object.entries(toggleValues)){
