@@ -1044,3 +1044,13 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - O backend POSIX não implementa retorno automático da trampoline: o fluxo do guest deve voltar explicitamente à fibra principal via `FiberEntryPoint`. A trampoline ARM64 não deve inventar um `return_to` público; deve detectar retorno inesperado e terminar de forma definida, sem continuar em stack inválida.
 - Limitação de repositório: a conexão GitHub usada nesta tarefa tem permissão de leitura no upstream `rexglue/rexglue-sdk` e não existe um fork gravável identificado na conta conectada. Por isso, ainda não é possível commitar a alteração do SDK diretamente. A documentação e os testes auxiliares permanecem no repositório recomp-codeveronica; nenhum backend de produção foi alterado.
 - Antes do primeiro patch de código, é necessário disponibilizar um fork gravável do SDK ou incorporar o SDK como submódulo/cópia controlada no projeto privado. A partir daí, criar branch experimental, implementar backend e executar testes unitários host + Android no dispositivo.
+
+
+### Opções ampliadas de resolução na launcher — 2026-11-11
+
+- Atualizado `assets/launcher/index.html` na branch `android-rebuild`, commit `6f2e12bacb9c8a7ae64ae71cb61b8e8a96159a4d`.
+- O seletor de resolução agora oferece Automática, 480p (854×480), 540p (960×540), 720p (1280×720), 900p (1600×900), 1080p (1920×1080) e 1440p (2560×1440).
+- Os valores existentes foram preservados para compatibilidade com preferências antigas: 720p = 0 e 1080p = 1. Os novos modos usam códigos 2–6.
+- A restauração e gravação da escolha no SharedPreferences foram ajustadas para usar os códigos numéricos das opções.
+- IMPORTANTE: esta alteração amplia o seletor e persiste a escolha. Ainda não comprova que o ReXRuntime/SDL aplica todas essas resoluções à renderização. A integração efetiva de resolução de saída e resolução interna continua pendente de inspeção do caminho nativo e teste no APK. Não anunciar os modos novos como resoluções já aplicadas pelo jogo.
+- Nenhuma alteração foi feita no Save State nem nos arquivos privados do jogo.
