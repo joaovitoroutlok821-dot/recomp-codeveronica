@@ -1243,3 +1243,11 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Isso é evidência prática de que a opção provavelmente influencia a apresentação/sincronização dos quadros no aparelho. Ainda não determina se houve aumento da taxa de renderização, redução de espera ou aceleração da lógica/tempo de emulação.
 - Próxima validação recomendada: comparar a mesma cena e o mesmo trecho com V-Sync ligado/desligado, anotando FPS mostrado e sensação de velocidade; se possível, obter logcat/telemetria. Não concluir que a velocidade da emulação foi alterada apenas pela sensação subjetiva.
 - Estado: V-Sync passa de “apenas caminho de configuração presente” para “efeito observado pelo usuário, mecanismo exato ainda não isolado”.
+
+
+### Efeito colateral observado com V-Sync desativado — 2026-11-11
+
+- O usuário relata que, com V-Sync desativado, o áudio deixa de ficar sincronizado com a imagem.
+- Combinado ao relato anterior de que o jogo parece um pouco mais rápido com V-Sync desativado, isso indica um trade-off audiovisual que precisa ser investigado; não prova por si só que o relógio de emulação acelera.
+- Orientação de teste: manter V-Sync ativado como configuração recomendada enquanto não houver correção. Não alterar clock de áudio, velocidade da emulação nem introduzir limitador artificial sem diagnóstico.
+- Investigação futura deve separar pacing de apresentação (SDL/GPU), taxa de quadros e clock/buffer de áudio; comparar ambos os estados na mesma cena e com o contador FPS ativo.
