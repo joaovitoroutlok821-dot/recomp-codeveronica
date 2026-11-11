@@ -116,7 +116,7 @@ function settings(){
  if(activeTab==='graphics'){
   leftTitle='Gráficos';rightTitle='Desempenho';
   left=rows([
-   ['Resolução de saída',select('1080p (1920×1080)|720p (1280×720)')],
+   ['Resolução de saída',`<select><option value="6">Automática (adaptar à tela)</option><option value="2">480p (854×480)</option><option value="3">540p (960×540)</option><option value="0">720p (1280×720)</option><option value="4">900p (1600×900)</option><option value="1">1080p (1920×1080)</option><option value="5">1440p (2560×1440)</option></select>`],
    ['Escala de renderização',select('100% (Nativa)|90%|80%|70%|50%')],
    ['Qualidade de imagem',select('Alta|Média|Baixa')],['Filtro de imagem',select('Bilinear|Trilinear|Nearest')],
    ['Filtro FSR',select('FSR (FidelityFX)|Desativado')],['Modo FSR',select('Quality (Melhor qualidade)|Balanced|Performance')],
@@ -152,7 +152,7 @@ function restoreSettings(){
   const rows=[...document.querySelectorAll('#pagebody .setting')];
   const rowFor=(label)=>rows.find(e=>e.dataset.settingLabel===label);
   const resolutionSelect=rowFor('Resolução de saída')?.querySelector('select');
-  if(resolutionSelect) resolutionSelect.value=saved.resolution===1?'1080p (1920×1080)':'720p (1280×720)';
+  if(resolutionSelect) resolutionSelect.value=String(Number.isInteger(saved.resolution)?saved.resolution:1);
   for(const label of ['Contador de FPS','Controles na tela']){
    const button=rowFor(label)?.querySelector('.toggle');
    const enabled=label==='Contador de FPS'?(saved.show_fps!==false):(saved.touch_mode!==2);
@@ -179,7 +179,7 @@ function restoreDefaults(){
  const resolutionSelect=rowFor('Resolução de saída')?.querySelector('select');
  const fpsToggle=rowFor('Contador de FPS')?.querySelector('.toggle');
  const touchToggle=rowFor('Controles na tela')?.querySelector('.toggle');
- if(resolutionSelect) nativeSettings.resolution=resolutionSelect.value.startsWith('1080p')?1:0;
+ if(resolutionSelect) nativeSettings.resolution=Number.parseInt(resolutionSelect.value,10);
  if(fpsToggle) nativeSettings.show_fps=fpsToggle.classList.contains('on');
  if(touchToggle) nativeSettings.touch_mode=touchToggle.classList.contains('on')?0:2;
  if(window.GameBridge){
