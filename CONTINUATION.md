@@ -1054,3 +1054,14 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - A restauração e gravação da escolha no SharedPreferences foram ajustadas para usar os códigos numéricos das opções.
 - IMPORTANTE: esta alteração amplia o seletor e persiste a escolha. Ainda não comprova que o ReXRuntime/SDL aplica todas essas resoluções à renderização. A integração efetiva de resolução de saída e resolução interna continua pendente de inspeção do caminho nativo e teste no APK. Não anunciar os modos novos como resoluções já aplicadas pelo jogo.
 - Nenhuma alteração foi feita no Save State nem nos arquivos privados do jogo.
+
+
+### Inspeção do caminho de resolução SDL/ReXGlue — 2026-11-11
+
+- Inspecionado `src/android_main.cpp`: atualmente executa `rex::cvar::Init` e `rex::cvar::ApplyEnvironment` antes de criar `SDLWindowedAppContext`; ainda não lê SharedPreferences nem injeta resolução escolhida.
+- Inspecionado o SDK ReXGlue no commit fixado `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`.
+- `WindowSDL::OpenImpl()` cria a janela via `SDL_CreateWindow`; o tamanho inicial vem de `ResolveWindowWidth/Height`, que consulta cvars `window_width/window_height`, `video_mode_width/video_mode_height` e presets de modo de vídeo. Em Android o código do SDK entra no ramo não-Windows/macOS, usando tamanho físico e SDL.
+- `include/rex/graphics/flags.h` declara cvars reais `resolution_scale`, `draw_resolution_scale_x/y`, `vsync` e `async_shader_compilation`. `src/graphics/graphics_system.cpp` usa `REXCVAR_GET(vsync)` no worker de vblank e define `store_shaders=true` para persistência de shaders.
+- Isto confirma que existem controles internos reais para escala de resolução, V-Sync e armazenamento de shaders; ainda não confirma que todos aceitam alteração em runtime, nem que o seletor de resolução externa deve ser mapeado diretamente a `resolution_scale`.
+- Decisão técnica: separar resolução da janela/superfície Android (a tela física continua sob controle do Android/SDL) de escala interna de renderização do Xenos. Os modos 480p–1440p não devem ser descritos como saída física garantida em um telefone com tela própria.
+- Nenhuma alteração nativa foi feita nesta etapa. Próxima investigação: localizar declarações/definições e lifecycle das cvars de janela/GPU no commit fixado, determinar valores permitidos e quando podem ser aplicadas, e verificar como o Android SDL surface/presenter reage a mudanças. Só então conectar as preferências antes de `cvar::Init` ou via mecanismo suportado.
