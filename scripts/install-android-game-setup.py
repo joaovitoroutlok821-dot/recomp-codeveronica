@@ -216,7 +216,7 @@ public final class GameSetupActivity extends Activity {
                 .putInt("resolution", 1)
                 .putInt("touch_mode", 0)
                 .putBoolean("show_fps", true)
-                .putBoolean("vsync", true)
+                .putInt("present_mode", 3)
                 .putBoolean("async_shader_compilation", true)
                 .apply();
         }
@@ -229,7 +229,7 @@ public final class GameSetupActivity extends Activity {
                 values.put("resolution", prefs.getInt("resolution", 1));
                 values.put("touch_mode", prefs.getInt("touch_mode", 0));
                 values.put("show_fps", prefs.getBoolean("show_fps", true));
-                values.put("vsync", prefs.getBoolean("vsync", true));
+                values.put("present_mode", prefs.getInt("present_mode", 3));
                 values.put("async_shader_compilation",
                            prefs.getBoolean("async_shader_compilation", true));
             } catch (org.json.JSONException ignored) {}
@@ -606,7 +606,10 @@ public final class GameSDLActivity extends SDLActivity
         args.add("--window_height=" + height);
         args.add("--present_effect=bilinear");
         // Boolean cvar CLI syntax: --name (true) and --no-name (false).
-        args.add(prefs.getBoolean("vsync", true) ? "--vsync" : "--no-vsync");
+        int presentMode = prefs.getInt("present_mode", 3);
+        args.add(presentMode == 0 ? "--vulkan_allow_present_mode_immediate" : "--no-vulkan_allow_present_mode_immediate");
+        args.add(presentMode == 1 ? "--vulkan_allow_present_mode_mailbox" : "--no-vulkan_allow_present_mode_mailbox");
+        args.add(presentMode == 2 ? "--vulkan_allow_present_mode_fifo_relaxed" : "--no-vulkan_allow_present_mode_fifo_relaxed");
         args.add(prefs.getBoolean("async_shader_compilation", true)
             ? "--async_shader_compilation" : "--no-async_shader_compilation");
         return args.toArray(new String[0]);
