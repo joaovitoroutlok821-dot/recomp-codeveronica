@@ -1137,3 +1137,15 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - A implementação de `XThread::Save()` contém um ramo que tentaria salvar contexto quando running, mas esse ramo é atualmente inalcançável devido ao retorno antecipado. Além disso, define `pc = 0` e grava esse valor como PC; portanto, simplesmente remover o retorno antecipado seria incorreto e perderia o ponto real de execução.
 - Decisão: antes de alterar `XThread::Save/Restore`, projetar um protocolo de safepoint cooperativo para threads guest, que capture o contexto PPC em um ponto seguro e mantenha a thread parada até terminar o snapshot. Em seguida, definir tratamento para threads bloqueadas em waits/APCs, stacks guest, TLS, fibras e estado de scheduler. Suspensão forçada do host thread não será considerada suficiente sem captura/validação de contexto host e garantia de que não há locks host mantidos.
 - Ainda falta auditar as APIs de memória e os estados GPU/áudio/input no commit exato usado pelo projeto. Não foi feita alteração de código de produção nem APK nesta etapa; nenhuma promessa de Save State funcional.
+
+
+
+### Auditoria do caminho de execução PPC e dos pontos cooperativos — 2026-11-11
+
+- Inspecionado `src/system/xthread.cpp` no SDK, branch `android-arm64-fiber-experiment`.
+- `XThread::Execute()` resolve o endereço inicial com `FunctionDispatcher::GetFunction(address)` e chama a função recompilada diretamente uma única vez por `func(*ctx, base)`. Não existe, nesse caminho, um loop interpretador de instruções PPC no qual seja possível inserir um checkpoint genérico a cada instrução.
+- O TLS do thread guest é associado ao host thread antes de `Execute()`; o `PPCContext` pertence ao `ThreadState` desse thread. A conversão do host thread em fibra acontece antes da chamada da função recompilada.
+- O ponto `XThread::CheckTitleTermination()` já é um checkpoint cooperativo usado em algumas rotinas de kernel, por exemplo caminhos de delay. Porém, isso não demonstra cobertura de todos os caminhos de execução: uma função recompilada pode continuar executando entre chamadas de kernel e não há evidência de que cada bloco/função gerada consulte esse ponto.
+- Consequência: não é seguro implementar Save State apenas adicionando uma flag e esperando todos os threads pararem. É preciso localizar e instrumentar pontos seguros no código recompilado/ABI de chamadas de kernel, ou introduzir um mecanismo de checkpoint suportado pelo gerador, garantindo que o contexto PPC represente uma posição retomável. Também será necessário preservar o estado host da fibra ou reconstruir a execução por um mecanismo explícito, sem gravar ponteiros host.
+- A próxima etapa de investigação é rastrear o gerador/ABI das funções recompiladas e as rotinas de troca de fibra, identificando quais chamadas retornam ao runtime e quais preservam o contexto PPC. Só depois disso deve ser escolhido o protocolo de safepoint.
+- Nenhuma alteração de produção ou APK foi feita nesta etapa. Save State continua não funcional até a implementação e o teste de salvar, encerrar o app e restaurar uma partida real.
