@@ -216,6 +216,8 @@ public final class GameSetupActivity extends Activity {
                 .putInt("resolution", 1)
                 .putInt("touch_mode", 0)
                 .putBoolean("show_fps", true)
+                .putBoolean("vsync", true)
+                .putBoolean("async_shader_compilation", true)
                 .apply();
         }
 
@@ -227,6 +229,9 @@ public final class GameSetupActivity extends Activity {
                 values.put("resolution", prefs.getInt("resolution", 1));
                 values.put("touch_mode", prefs.getInt("touch_mode", 0));
                 values.put("show_fps", prefs.getBoolean("show_fps", true));
+                values.put("vsync", prefs.getBoolean("vsync", true));
+                values.put("async_shader_compilation",
+                           prefs.getBoolean("async_shader_compilation", true));
             } catch (org.json.JSONException ignored) {}
             return values.toString();
         }
@@ -594,12 +599,16 @@ public final class GameSDLActivity extends SDLActivity
         int resolution = prefs.getInt("resolution", 1);
         String width = resolution == 1 ? "1920" : "1280";
         String height = resolution == 1 ? "1080" : "720";
-        return new String[] {
-            "--game_data_root=" + root,
-            "--window_width=" + width,
-            "--window_height=" + height,
-            "--present_effect=bilinear"
-        };
+        ArrayList<String> args = new ArrayList<>();
+        args.add("--game_data_root=" + root);
+        args.add("--window_width=" + width);
+        args.add("--window_height=" + height);
+        args.add("--present_effect=bilinear");
+        // Boolean cvar CLI syntax: --name (true) and --no-name (false).
+        args.add(prefs.getBoolean("vsync", true) ? "--vsync" : "--no-vsync");
+        args.add(prefs.getBoolean("async_shader_compilation", true)
+            ? "--async_shader_compilation" : "--no-async_shader_compilation");
+        return args.toArray(new String[0]);
     }
 
     @Override protected void onCreate(Bundle state) {
