@@ -1220,3 +1220,18 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - O status combinado consultado para o commit não retornou verificações; o conector disponível não expõe a listagem de execuções acionadas por push/dispatch. Portanto, a nova verificação ainda não está confirmada como executada ou aprovada.
 - O protótipo continua deliberadamente isolado: a pilha de frames guarda metadados de função/PC/retorno, mas ainda não contém PPCContext, não executa o dispatcher/trampoline e não está conectado ao XThread ou Runtime.
 - Próxima etapa técnica após CI: expandir os testes para um frame com estado PPC serializável e um dispatcher sintético caller/callee que retome após checkpoint; só depois avaliar integração com o codegen real. Não alterar o APK funcional nem declarar Save State pronto.
+
+
+
+### APK privado #40 — launcher aberta e auditoria das opções — 2026-11-11
+
+- O usuário instalou o APK do Workflow privado #40 (run `43073354071`) e enviou captura de tela da launcher aberta na aba **Desempenho**. A tela apresenta limite de 60 FPS, V-Sync ativado, contador FPS ativado, cache de shaders ativado, pré-compilação desativada, compilação assíncrona ativada, escalas CPU/GPU em 100% e fila de quadros Duplo (2).
+- A captura confirma que o APK instala e abre a interface da launcher; não confirma que essas opções alteram o comportamento do jogo.
+- Auditoria do gerador `scripts/install-android-game-setup.py` na branch `android-rebuild` (HEAD consultado: `41d8a605b78b6b0858b2a5cd5d10b38bb4e49566`):
+  - `GameSDLActivity.getArguments()` injeta `--vsync`/`--no-vsync` e `--async_shader_compilation`/`--no-async_shader_compilation` a partir de SharedPreferences.
+  - `GameBridge.loadSettings()` lê essas duas preferências e `resetSettings()` as define como true.
+  - Portanto, V-Sync e compilação assíncrona têm caminho de configuração até os argumentos do runtime; ainda falta validar em execução no aparelho que o parser aceita os valores e que o runtime muda o comportamento conforme o esperado.
+  - Não foi encontrado no gerador argumento correspondente para limite de FPS, cache/armazenamento de shaders ou pré-compilação. A presença visual desses controles na captura não prova implementação; mantê-los como não validados e não prometer funcionalidade.
+  - O contador FPS usa caminho JNI próprio e deve ser verificado separadamente durante o jogo.
+- Próximo teste no aparelho: executar a mesma cena com V-Sync ligado e desligado (reiniciar o jogo entre as mudanças), mantendo compilação assíncrona ligada; registrar FPS/fluidez e logcat. Depois testar a compilação assíncrona desligada isoladamente. Não alterar vários parâmetros ao mesmo tempo.
+- Não houve alteração de código de produção nesta auditoria. A versão funcional do jogo permanece preservada.
