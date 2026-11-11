@@ -1235,3 +1235,11 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
   - O contador FPS usa caminho JNI próprio e deve ser verificado separadamente durante o jogo.
 - Próximo teste no aparelho: executar a mesma cena com V-Sync ligado e desligado (reiniciar o jogo entre as mudanças), mantendo compilação assíncrona ligada; registrar FPS/fluidez e logcat. Depois testar a compilação assíncrona desligada isoladamente. Não alterar vários parâmetros ao mesmo tempo.
 - Não houve alteração de código de produção nesta auditoria. A versão funcional do jogo permanece preservada.
+
+
+### Teste real de V-Sync no APK #40 — 2026-11-11
+
+- O usuário comparou o comportamento do jogo com V-Sync ativado e desativado e relatou que **o jogo fica um pouco mais rápido com V-Sync desativado**.
+- Isso é evidência prática de que a opção provavelmente influencia a apresentação/sincronização dos quadros no aparelho. Ainda não determina se houve aumento da taxa de renderização, redução de espera ou aceleração da lógica/tempo de emulação.
+- Próxima validação recomendada: comparar a mesma cena e o mesmo trecho com V-Sync ligado/desligado, anotando FPS mostrado e sensação de velocidade; se possível, obter logcat/telemetria. Não concluir que a velocidade da emulação foi alterada apenas pela sensação subjetiva.
+- Estado: V-Sync passa de “apenas caminho de configuração presente” para “efeito observado pelo usuário, mecanismo exato ainda não isolado”.
