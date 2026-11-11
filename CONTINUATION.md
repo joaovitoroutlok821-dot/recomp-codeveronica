@@ -1065,3 +1065,17 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Isto confirma que existem controles internos reais para escala de resolução, V-Sync e armazenamento de shaders; ainda não confirma que todos aceitam alteração em runtime, nem que o seletor de resolução externa deve ser mapeado diretamente a `resolution_scale`.
 - Decisão técnica: separar resolução da janela/superfície Android (a tela física continua sob controle do Android/SDL) de escala interna de renderização do Xenos. Os modos 480p–1440p não devem ser descritos como saída física garantida em um telefone com tela própria.
 - Nenhuma alteração nativa foi feita nesta etapa. Próxima investigação: localizar declarações/definições e lifecycle das cvars de janela/GPU no commit fixado, determinar valores permitidos e quando podem ser aplicadas, e verificar como o Android SDL surface/presenter reage a mudanças. Só então conectar as preferências antes de `cvar::Init` ou via mecanismo suportado.
+
+
+### Confirmação de limites e ciclo de vida das cvars ReXGlue — 2026-11-11
+
+- Inspecionadas definições no SDK fixado:
+  - `src/ui/window.cpp`: `video_mode_width` padrão 1280, faixa 640–4095; `video_mode_height` padrão 720, faixa 480–4095; ambas `kRequiresRestart`.
+  - A cvar string `resolution` aceita presets como `720p`, `1080p`, `1440p`, `4k` e dimensões explícitas; `kRequiresRestart`.
+  - `window_width/window_height` são dimensões lógicas de janela, faixa 0–8192, `kRequiresRestart`; no Android não assumir que equivalem à resolução física da tela.
+  - `src/graphics/pipeline/texture/cache.cpp`: `resolution_scale` e escalas X/Y aceitam inteiros 1–8, padrão 1, `kRequiresRestart`. Não mapear percentuais arbitrários da UI diretamente para essa cvar.
+  - `src/graphics/command_processor.cpp`: `vsync` padrão true e sem lifecycle explícito (hot reload por padrão); `async_shader_compilation` padrão true e `kHotReload`.
+  - `src/graphics/graphics_system.cpp`: `store_shaders` padrão true; ainda precisa confirmar lifecycle e comportamento de persistência antes de expor toggle.
+- A UI atual oferece escalas percentuais 50–100%; isso não corresponde diretamente à API inteira 1–8. Precisamos redefinir o significado da escala para opções compatíveis ou implementar uma escala de apresentação separada, se houver suporte.
+- Modos 480p/540p/720p/900p/1080p/1440p podem ser expressos como presets de modo de vídeo quando válidos nos limites do SDK, mas a superfície Android pode impor a dimensão física real; validar no dispositivo.
+- Nenhuma alteração de código nativo ou APK nesta investigação. Não habilitar opções apenas por terem cvar com nome parecido.
