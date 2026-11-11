@@ -1096,3 +1096,16 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Priorizar primeiro opções com suporte comprovado: `vsync`, `async_shader_compilation`, `store_shaders` e modo de vídeo. Verificar lifecycle e persistência de `store_shaders` no commit fixado antes de habilitar a opção.
 - Escala interna percentual permanece pendente: ou localizar/implementar um mecanismo real de redução no caminho de apresentação/renderização, ou ajustar a UI para não oferecer percentuais que o runtime não consegue cumprir. Não usar `draw_resolution_scale_x/y` para esse fim.
 - Nenhum código de produção foi alterado nesta investigação; nenhum APK foi compilado. O jogo, launcher e Save State permanecem intocados.
+
+
+### Primeira integração de opções GPU da launcher — 2026-11-11
+
+- A auditoria do SDK fixado \`398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb\` confirmou as cvars \`vsync\` e \`async_shader_compilation\` em \`src/graphics/command_processor.cpp\`.
+- \`vsync\` é declarado com padrão true; o código consulta essa cvar no worker de sincronização vertical. Não há lifecycle explícito, portanto o valor de inicialização é a via conservadora.
+- \`async_shader_compilation\` é declarado com padrão true e lifecycle \`kHotReload\`; controla a compilação assíncrona de shaders/pipelines.
+- O parser de Cvars do SDK aceita flags booleanas \`--nome\` e \`--no-nome\`. A Activity agora passa as preferências \`vsync\` e \`async_shader_compilation\` como argumentos nativos no início do jogo.
+- A bridge Java restaura também essas duas preferências, e o reset define ambas como true.
+- A launcher habilita os controles de V-Sync e compilação assíncrona, salva seus valores no SharedPreferences e restaura os valores ao abrir a aba correspondente. A gravação continua parcial por aba, mas o SharedPreferences preserva chaves não enviadas, evitando apagar escolhas de outras abas.
+- **Ainda não validado em APK/aparelho:** é necessário compilar o APK privado, verificar os logs do parser/runtime e testar V-Sync ligado/desligado e compilação assíncrona. Não afirmar que a opção está confirmada em execução até esse teste.
+- As opções de cache de shaders, FPS cap, FSR, escala de renderização, áudio e controles avançados continuam sem implementação real e permanecem desativadas.
+- Nenhum arquivo de jogo, XEX ou código gerado privado foi copiado para o repositório público. Save State continua fora deste trabalho.
