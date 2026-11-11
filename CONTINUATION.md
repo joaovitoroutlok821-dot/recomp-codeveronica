@@ -1191,3 +1191,12 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Isso abre uma estratégia de protótipo controlado: gerar código com todos esses registradores mantidos em PPCContext, para que o checkpoint não precise primeiro implementar spill/reload de variáveis locais. Essa configuração é útil para validar a arquitetura de frames, mas não prova desempenho nem compatibilidade com a configuração final do jogo.
 - A infraestrutura de teste atual permite adicionar um alvo isolado em tests/unit/codegen; antes de mexer no runtime, o primeiro teste deve validar um formato serializável de frame guest independente da pilha host: guest function address, guest resume PC, PPCContext completo e guest return address/continuação. Depois o dispatcher experimental deve executar frames e retornar ao caller sem chamadas C++ aninhadas.
 - Importante: ainda não foi alterado nenhum código de produção nem criada uma implementação de Save State. O próximo passo é especificar e testar o frame/trampoline isoladamente, incluindo chamadas e retornos, antes de ligar isso a XThread ou à interface do Resident Evil.
+
+
+## 2026-11-11 — Correção do workflow #39 (V-Sync / shaders)
+- Workflow privado #39 (run 43066667293) concluiu com falha na etapa `Configure and compile Android ARM64 native libraries`, especificamente em `:app:compileReleaseJavaWithJavac`.
+- Codegen privado, setup Android/NDK, patches SDK e preparação SDL concluíram com sucesso; não foi gerado APK.
+- Causa exata: `GameSDLActivity.java` gerado por `scripts/install-android-game-setup.py` usa `ArrayList<String>` em `getArguments()`, mas faltava `import java.util.ArrayList;`.
+- Correção aplicada no script gerador: adicionar `import java.util.ArrayList;` ao bloco de imports de GameSDLActivity.
+- Commit público: `5b7d3c07d1a7e39f43603b9ec1e0864669bf44c6`.
+- Próximo passo: validar a alteração e solicitar novo APK pelo workflow privado, apontando para esse commit. Não tratar como build/runtime validado até o workflow concluir e o APK existir.
