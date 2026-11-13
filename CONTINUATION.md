@@ -1412,3 +1412,44 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - **Conclusão corrigida:** a incerteza anterior sobre o helper de FPS está resolvida para o APK produzido pelo pipeline privado #43: o helper é chamado no workflow e os símbolos/strings correspondentes estão presentes no binário final. O overlay foi compilado com a medição da apresentação Vulkan (retornos `VK_SUCCESS` e `VK_SUBOPTIMAL_KHR` em janela aproximada de 2 s), não com o contador interno de eventos `XE_SWAP`.
 - Limite restante: a inspeção estática do APK comprova que a implementação foi incluída, mas não comprova que o contador esteja exibindo valores corretos em execução no aparelho; isso depende de teste real no dispositivo e, se necessário, do log `[RECVX-FPS]`.
 - Nenhum código de produção foi alterado nesta auditoria e nenhum novo workflow foi iniciado. O APK #43 foi apenas baixado para inspeção local; não foi instalado no aparelho pelo assistente.
+
+## Diretrizes consolidadas: desempenho, qualidade gráfica e launcher — 2026-11-12
+
+O usuário confirmou que as imagens de comparação e as medições apresentadas correspondem à APK #43. Usar a APK #43 como baseline visual e de desempenho até que outra versão seja testada e identificada.
+
+### Objetivo inegociável de qualidade
+
+- O jogo deve rodar bem sem desativar opções gráficas nem reduzir a qualidade visual para mascarar gargalos.
+- Não propor como solução reduzir resolução, qualidade de texturas, iluminação, sombras ou efeitos.
+- Priorizar otimizações na implementação e no caminho de execução: CPU/GPU, Vulkan, shaders, sincronização, gerenciamento de memória, apresentação de quadros e stutter.
+- Investigar e recuperar as sombras ausentes no Android, comparando o resultado com as referências do Xbox 360. Não presumir a causa antes de rastrear geração/uso de shadow maps, depth buffers, shaders e recursos Vulkan.
+
+### Desempenho observado na APK #43
+
+- Cutscenes de vídeo rodam fluidamente.
+- Cutscenes renderizadas em tempo real ficam aproximadamente em 20–25 FPS.
+- Gameplay varia, por vezes abaixo dessa faixa, com pequenas travadas.
+- As imagens Android exibiram medições variáveis de aproximadamente 18,4 a 46,5 FPS.
+- Tratar esses números como baseline observado no aparelho; não inferir que todas as cenas ou sessões terão a mesma taxa.
+- Meta inicial: buscar 30 FPS mais estáveis sem perda de qualidade; depois avaliar melhorias adicionais.
+
+### Launcher — funcionalidades pendentes continuam obrigatórias
+
+O trabalho não deve se limitar a desempenho e sombras. Continuar a implementação das opções de configurações da launcher que ainda estão desabilitadas ou sem efeito real.
+
+- Preservar o layout e o visual aprovados da launcher.
+- Opções comprovadamente funcionais ficam brancas e interativas.
+- Opções ainda não implementadas permanecem cinza escuro e não interativas; não simular funcionamento.
+- Cada opção só pode ser habilitada quando houver integração real ponta a ponta: interface, persistência, passagem/aplicação do valor no runtime ou renderer e validação prática.
+- Auditar e implementar, conforme suporte real do SDK/runtime: qualidade gráfica e escala de resolução; filtros e anisotropic filtering; FSR/CAS e antialiasing; partículas e efeitos; limite de FPS; cache e compilação de shaders; proporção da tela; áudio; e demais opções pendentes já descritas na especificação visual da launcher.
+- Não inventar cvars, argumentos ou suporte do runtime. Registrar o que está implementado, o que está parcialmente integrado e o que continua pendente.
+
+### Ordem de trabalho e proteção da versão funcional
+
+1. Preservar a APK #43 como referência; não presumir que ela seja a versão atualmente instalada sem confirmação.
+2. Auditar o pipeline privado que gera o APK e o código efetivamente incluído, antes de alterar produção.
+3. Investigar os gargalos de desempenho e as sombras sem degradar qualidade.
+4. Em paralelo, mapear as opções pendentes da launcher até os cvars/recursos reais do runtime e implementar uma por vez, com validação.
+5. Manter alterações de Save State isoladas das mudanças de renderização e launcher.
+6. Não iniciar compilação final nem substituir a versão funcional sem uma alteração concreta revisada; registrar workflow, commit, artefato e resultado do teste físico.
+
