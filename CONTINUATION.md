@@ -1295,3 +1295,27 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Os argumentos de present mode continuam ligados a `present_mode` (Immediate/Mailbox/FIFO Relaxed; FIFO por ausência das flags), conforme investigação anterior.
 - Não foi possível confirmar a implementação de sombras, iluminação ou formatos de textura apenas pelos scripts Android examinados. Esses aspectos exigem inspeção do código do renderer/guest GPU no SDK, não ajustes arbitrários no launcher.
 - Nenhuma alteração de código ou APK nesta etapa. Próxima tarefa: validar a ponte JNI de FPS e rastrear no SDK a geração/consumo de shadow maps e o filtro de apresentação antes de propor patch.
+
+
+
+## 2026-11-12 — Estado visual e interatividade das opções da launcher
+
+- O usuário confirmou o padrão visual desejado para as configurações:
+  - Opções realmente funcionais: texto branco, aparência ativa e interação habilitada.
+  - Opções ainda não implementadas ou sem integração comprovada com o runtime: texto cinza-escuro e interação desabilitada.
+  - Não basta apenas escurecer o texto: o toque nessas opções também deve ser ignorado, sem abrir seletores, alternar valores ou alterar preferências.
+- Regra de apresentação dos controles, definida pelo usuário:
+  - Usar interruptor somente para configurações verdadeiramente binárias.
+  - Quando o runtime oferecer vários modos discretos, usar seletor de opções (como o seletor de modo V-Sync).
+  - Para valores contínuos/rangeados, usar controle deslizante somente se o valor tiver efeito real no jogo.
+  - Não apresentar opções/modos como funcionais sem suporte efetivo no runtime.
+- Revisão de `scripts/android/GameSettingsActivity.java` na branch `android-rebuild` identificou inconsistências:
+  - `selectRow()`, `switchRow()` e `sliderRow()` desenham atualmente os rótulos em branco, sem distinguir visualmente opções indisponíveis.
+  - O tratamento de toque em `handle()` ainda abre seletores/altera SharedPreferences para diversas opções gráficas, de desempenho e áudio, mesmo quando não há integração demonstrada com o jogo.
+  - A aba Áudio informa na própria interface que os valores são armazenados, mas ainda não estão conectados ao mixer. Portanto, volume geral/música/efeitos não devem parecer controles funcionais até a integração.
+  - Opções como escala de renderização, qualidade de imagem, FSR, modo FSR, nitidez CAS, anti-aliasing, partículas e proporção da tela precisam ser verificadas individualmente contra cvars/implementação do runtime. A existência de uma preferência e de um controle na tela não prova que o renderer a consome.
+  - O código atual oferece Bilinear e Nearest na lista de filtro, mas a revisão anterior do gerador Android confirmou que o argumento passado ao runtime é fixado em `--present_effect=bilinear`. Não tratar Nearest como funcional até existir caminho real para selecionar e aplicar esse modo.
+  - O limite de FPS, cache de shaders e redução de efeitos também precisam de integração/runtime comprovados antes de serem habilitados visualmente. O contador FPS e os modos Vulkan/V-Sync têm caminhos técnicos específicos já registrados nas seções anteriores, mas permanecem sujeitos à validação de execução descrita nelas.
+- Diretriz para a próxima alteração: centralizar a definição de disponibilidade de cada opção e usá-la tanto no desenho (cor/estilo) quanto no tratamento de toque. Evitar que a interface mostre um estado habilitado enquanto o handler aceita uma ação sem efeito real.
+- Antes de habilitar cada opção, confirmar a cadeia completa: valor escolhido na UI -> preferência persistida -> argumento/cvar ou API nativa -> consumo pelo runtime/renderer -> efeito observável. Se algum elo estiver ausente, manter a opção cinza e não interativa.
+- Nenhuma alteração de código, launcher ou APK foi realizada nesta revisão. Este registro documenta a análise e o requisito visual/funcional confirmado pelo usuário; a versão funcional permanece preservada.
