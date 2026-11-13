@@ -1485,3 +1485,25 @@ O trabalho não deve se limitar a desempenho e sombras. Continuar a implementaç
 - O APK #43 permanece a referência funcional conhecida; não foi substituído nem alterado.
 - Esta etapa foi somente investigação e atualização documental. **Nenhum código-fonte foi alterado, nenhum workflow foi iniciado, nenhum APK foi compilado e nenhum artefato foi substituído.**
 - Próxima etapa técnica, após autorização específica para editar código: confirmar no pipeline privado como aplicar os dois patches de diagnóstico do SDK, implementar a saída de log externa com fallback e acrescentar os registros Vulkan sem alterar as escolhas gráficas. Depois revisar o diff antes de qualquer build de teste.
+
+
+## Implementação dos diagnósticos Vulkan — 2026-11-13
+
+### Alterações aplicadas
+
+- `src/android_main.cpp`: o argumento `--log_file` agora aponta para `recvx.log` dentro da raiz privada `Android/data/<pacote>/files/rexglue`. A mesma raiz é usada para HOME/XDG. Se `getExternalFilesDir(null)` não estiver disponível, a função mantém o fallback já existente para o diretório privado retornado por `SDL_GetPrefPath()`. Argumentos `--log_file` fornecidos explicitamente continuam sendo respeitados.
+- `scripts/ensure-rexglue-android-input-fps.py`: o helper de compatibilidade já executado no workflow privado agora também injeta, no SDK clonado temporariamente, um registro do caminho final FBO/FSI após todos os fallbacks e dos recursos relevantes: suporte FSI/interlock, formato D24/S8, formatos UINT de transferência, transferência bit-exact e suporte a MSAA 2x.
+- O registro é somente diagnóstico; não força backend, não muda formatos, não altera qualidade gráfica e não modifica a lógica de renderização.
+- A consulta de GPU/API Vulkan/driver já existe no SDK e não precisou ser duplicada.
+
+### Commits
+
+- RECVX Android log path: `dd4f53588bf44477fd40f59f74409f35c0a71815`
+- Helper com diagnóstico do caminho final Vulkan: `15905eb16f386fac23d6ccdea8b8d78ba05908d3`
+
+### Estado de validação
+
+- As alterações foram gravadas na branch `android-rebuild`.
+- O helper é chamado pelo workflow privado no passo `Apply Android ARM64 SDK compatibility patches`; portanto, a alteração do SDK ocorre somente no checkout temporário do runner.
+- **Ainda não foi executada compilação nem validação em dispositivo.** O APK #43 permanece intacto e é a referência de comparação.
+- Próximo passo: revisar os dois diffs e então executar uma compilação privada de teste, somente após autorização específica. Após instalar, coletar `Android/data/<pacote>/files/rexglue/recvx.log` para confirmar GPU/driver, backend final e recursos de profundidade/formatos.
