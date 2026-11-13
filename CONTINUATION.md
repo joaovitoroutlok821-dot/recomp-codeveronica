@@ -1342,3 +1342,18 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - O CMake raiz define Vulkan como ON por padrão em plataformas não-Windows; o caminho Vulkan do SDK contém o consumo de `anisotropic_override`. Isso não substitui a confirmação das opções reais usadas pelo workflow Android.
 - `REXGLUE_ENABLE_PERF_COUNTERS` é ON por padrão no CMake raiz, mas as definições e instrumentação estão condicionadas a configurações diferentes de Release; em Release, esses contadores são compilados fora. Não ativar um build de diagnóstico mais pesado sem antes decidir um perfil de medição controlado.
 - Nenhuma fonte de produção foi modificada e nenhum APK foi gerado nesta etapa. Próximo passo: inspecionar o ponto de entrada nativo Android e os argumentos recebidos pelo SDL para comprovar a aceitação dos cvars; verificar as opções CMake realmente passadas pelo workflow; só então integrar anisotropic filtering como seletor de 4x/8x/16x (e eventualmente “Padrão”) com persistência e aplicação real. Manter V-Sync FIFO como baseline estável nas comparações.
+
+
+
+## 2026-11-12 — Auditoria da ponte JNI do contador FPS
+
+- Revisados `src/android_main.cpp`, `CMakeLists.txt`, `scripts/install-android-game-setup.py` e `assets/launcher/index.html` na branch `android-rebuild`.
+- Correção da pendência registrada anteriormente: a ponte JNI do FPS **já está implementada** em `src/android_main.cpp`. O arquivo define `Java_org_libsdl_app_GameSDLActivity_nativeGetPresentedFps(JNIEnv*, jclass)` e encaminha a chamada para `ReXGlue_GetPresentedFPS()`.
+- A mesma fonte implementa `nativeSetTouchButton` e `nativeSetTouchAxis` para os controles virtuais SDL. Portanto, as três declarações nativas da `GameSDLActivity` têm implementações JNI explícitas no entrypoint Android.
+- `CMakeLists.txt` inclui `src/android_main.cpp` em `RECVX_SOURCES` e anexa essas fontes ao target `main` do projeto SDL Android. O caminho de compilação previsto inclui, portanto, os símbolos JNI no `libmain.so`.
+- A classe `TouchControlsView` consulta `nativeGetPresentedFps()` a cada 500 ms e desenha o texto somente quando `show_fps` estava ativado ao construir a view. A preferência é lida no construtor; uma alteração feita na launcher antes de iniciar o jogo é capturada na criação da Activity.
+- Limite ainda não resolvido: `ReXGlue_GetPresentedFPS()` é declarado como símbolo C externo, mas sua implementação no SDK fixado e a métrica exata retornada ainda precisam ser rastreadas. Não afirmar ainda que o número representa FPS da lógica do jogo; o nome e o overlay indicam FPS apresentado/medido pelo renderer.
+- Confirmado também que o launcher WebView (`assets/launcher/index.html`) é o caminho ativo. A lista central de opções habilitadas ainda contém cinco itens: resolução, contador FPS, controles na tela, modo de apresentação e compilação assíncrona. Os demais permanecem desabilitados pelo helper `field()`, com controles HTML `disabled` e classe visual `unavailable`.
+- `GameSDLActivity.getArguments()` envia `--present_effect=bilinear` fixo; os argumentos dos modos Vulkan e da compilação assíncrona são montados a partir das preferências. Não foi encontrado argumento para anisotropia no gerador Android.
+- Nenhuma fonte de produção foi alterada e nenhum APK/workflow foi iniciado nesta auditoria.
+- Próximo passo: localizar no SDK ReXGlue a implementação de `ReXGlue_GetPresentedFPS()` e confirmar a unidade/semântica da medição; depois auditar as opções reais do renderer e os parâmetros CMake do workflow antes de habilitar qualquer novo controle. Manter o jogo funcional e o trabalho isolado de Save State intactos.
