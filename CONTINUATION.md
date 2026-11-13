@@ -1507,3 +1507,17 @@ O trabalho não deve se limitar a desempenho e sombras. Continuar a implementaç
 - O helper é chamado pelo workflow privado no passo `Apply Android ARM64 SDK compatibility patches`; portanto, a alteração do SDK ocorre somente no checkout temporário do runner.
 - **Ainda não foi executada compilação nem validação em dispositivo.** O APK #43 permanece intacto e é a referência de comparação.
 - Próximo passo: revisar os dois diffs e então executar uma compilação privada de teste, somente após autorização específica. Após instalar, coletar `Android/data/<pacote>/files/rexglue/recvx.log` para confirmar GPU/driver, backend final e recursos de profundidade/formatos.
+
+
+## Resultado da compilação privada de diagnóstico #44 — 2026-11-13
+
+- Workflow [#44](https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/43470386175), run ID `43470386175`, concluído com `success`.
+- Commit disparador no repositório privado: `6c77cb5daeb2767e79636dee179574683d8ac62a`; branch `main`. O workflow fez checkout do código público na ref `android-rebuild`.
+- Todas as etapas do job `android-apk` terminaram com sucesso, incluindo aplicação dos patches SDK, compilação ARM64, validação do APK, coleta dos diagnósticos e upload dos artefatos.
+- Validação: `APK native library validation: PASS`. O APK passou por zipalign e verificação de assinatura; contém bibliotecas ARM64 `libSDL3.so`, `libmain.so`, `librexgpu-xenosrd.so` e `librexruntimerd.so`. O workflow também verificou que dados do jogo não foram embutidos no APK.
+- Artefato APK: `recvx-private-android-arm64`, ID `14064357500`, tamanho reportado 50.562.501 bytes (aprox. 50,6 MB).
+- Artefato de diagnóstico: `recvx-private-diagnostics`, ID `14063514664`, tamanho reportado 86.973 bytes.
+- A compilação de `render_target_cache.cpp` terminou com sucesso. Houve avisos de compilador preexistentes/relacionados a inicializadores e parâmetros, mas nenhum impediu o build.
+- Limite importante: o sucesso do build confirma que o código de diagnóstico foi compilado e que o APK foi empacotado; **não confirma ainda que o log externo foi criado em execução nem qual backend FBO/FSI o aparelho seleciona**. Esses dados só serão conhecidos após instalar e executar a APK #44 no Motorola e recolher `Android/data/<pacote>/files/rexglue/recvx.log`.
+- A APK #43 (run `43283470140`, artefato `13978515359`) permanece preservada como baseline. Não foi substituída.
+- Próxima etapa: o usuário instalar e testar a APK #44; depois enviar o `recvx.log` para análise de GPU/driver, backend final, suporte D24/S8 e recursos Vulkan. Não alterar qualidade gráfica nem forçar FBO/FSI com base em suposição.
