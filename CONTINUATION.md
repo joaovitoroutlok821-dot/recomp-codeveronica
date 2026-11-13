@@ -1462,3 +1462,26 @@ O trabalho não deve se limitar a desempenho e sombras. Continuar a implementaç
 - O projeto Resident Evil depende das capacidades do ReXGlue SDK; portanto, acompanhar a evolução dessa implementação e sua integração futura faz parte da continuidade do RECVX.
 - Manter o protótipo de Save State isolado das otimizações de desempenho, correções de sombras e alterações da launcher. Não misturar essas frentes nem substituir a APK funcional até que a implementação seja integrada, compilada e validada.
 - Ao retomar o Save State, consultar primeiro o `CONTINUATION.md` do repositório ReXGlue SDK na branch `save-state-frame-prototype` para continuar do estado real do protótipo, sem presumir que esteja concluído ou pronto para integração.
+
+
+## Diagnóstico Vulkan e coleta de logs externos — 2026-11-13
+
+### Estado da investigação
+
+- Revisado o entrypoint Android em `src/android_main.cpp`. A aplicação já prepara uma raiz de dados privada em `Android/data/<pacote>/files/rexglue`, obtida por `getExternalFilesDir(null)`, com fallback para `SDL_GetPrefPath()` quando o caminho externo não está disponível.
+- O argumento atual `--log_file` ainda aponta para o caminho retornado por `SDL_GetPrefPath("ReXGlue", "recvx")`, separado da raiz externa já criada. Esse caminho interno não é conveniente para coleta pelo usuário.
+- O sistema de logging do SDK aceita um caminho de arquivo por `log_file`, usa sink rotativo e, por padrão, limita cada arquivo a 5 MB e mantém até 20 arquivos. `FlushLogging()` é chamado no encerramento normal do app.
+- Direção técnica proposta: apontar o log principal para `recvx.log` dentro da raiz externa privada já existente, preservando o fallback interno se o Android não fornecer o diretório externo. Não requer permissões gerais de armazenamento nem botão adicional na launcher.
+
+### Diagnósticos Vulkan a acrescentar
+
+- Em `src/graphics/vulkan/render_target_cache.cpp`, registrar o caminho de renderização **final** escolhido pelo SDK (FBO/host render targets ou FSI/pixel shader interlock), depois de todas as verificações e fallbacks. Registrar também o suporte ao formato de profundidade D24/S8 e os recursos relevantes que justificaram a seleção/fallback.
+- Em `src/ui/vulkan/vulkan_device.cpp`, registrar a GPU selecionada, versão da API Vulkan e, quando os dados estendidos estiverem disponíveis para o dispositivo escolhido, nome/identificação e versão do driver. O SDK já consulta propriedades estendidas por `VkPhysicalDeviceDriverPropertiesKHR`; o ponto exato de emissão deve evitar mensagens repetidas para dispositivos candidatos rejeitados.
+- Esses registros serão observacionais: não devem forçar FBO/FSI, alterar formatos, reduzir qualidade gráfica ou modificar o comportamento do renderer. A causa das sombras ausentes permanece em aberto até haver evidência dos logs em execução.
+
+### Escopo e proteção da versão funcional
+
+- Arquivos previstos para uma implementação posterior: `src/android_main.cpp` no RECVX; `src/graphics/vulkan/render_target_cache.cpp` e `src/ui/vulkan/vulkan_device.cpp` no SDK ReXGlue fixado em `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`.
+- O APK #43 permanece a referência funcional conhecida; não foi substituído nem alterado.
+- Esta etapa foi somente investigação e atualização documental. **Nenhum código-fonte foi alterado, nenhum workflow foi iniciado, nenhum APK foi compilado e nenhum artefato foi substituído.**
+- Próxima etapa técnica, após autorização específica para editar código: confirmar no pipeline privado como aplicar os dois patches de diagnóstico do SDK, implementar a saída de log externa com fallback e acrescentar os registros Vulkan sem alterar as escolhas gráficas. Depois revisar o diff antes de qualquer build de teste.
