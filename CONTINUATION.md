@@ -1319,3 +1319,15 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Diretriz para a próxima alteração: centralizar a definição de disponibilidade de cada opção e usá-la tanto no desenho (cor/estilo) quanto no tratamento de toque. Evitar que a interface mostre um estado habilitado enquanto o handler aceita uma ação sem efeito real.
 - Antes de habilitar cada opção, confirmar a cadeia completa: valor escolhido na UI -> preferência persistida -> argumento/cvar ou API nativa -> consumo pelo runtime/renderer -> efeito observável. Se algum elo estiver ausente, manter a opção cinza e não interativa.
 - Nenhuma alteração de código, launcher ou APK foi realizada nesta revisão. Este registro documenta a análise e o requisito visual/funcional confirmado pelo usuário; a versão funcional permanece preservada.
+
+
+
+### Implementação visual de opções indisponíveis na launcher — 2026-11-12
+
+- Alterado `assets/launcher/index.html` na branch `android-rebuild`, commit `c088a593c131592400b899b0c8c37831620f43f5`.
+- A função `field()` agora marca cada linha sem suporte confirmado com a classe `unavailable` e `aria-disabled="true"`, mantendo o atributo `disabled` nos controles HTML (select, input e botão).
+- Adicionado estilo para deixar o texto/controle indisponível em cinza-escuro, reduzir a saturação e indicar visualmente que a linha não aceita interação. As opções reconhecidas como suportadas continuam brancas e habilitadas.
+- A lista de opções habilitadas continua restrita às cinco integrações já reconhecidas pelo código da launcher: resolução de saída, contador FPS, controles na tela, modo de apresentação (V-Sync) e compilação assíncrona de shaders. Isso registra disponibilidade de caminho de configuração, não certifica por si só o efeito de runtime em todas as condições.
+- A alteração cobre o HTML da launcher que usa `field()`. O arquivo Java `scripts/android/GameSettingsActivity.java` é uma implementação Canvas separada/legada e não foi alterado nesta etapa.
+- A revisão confirmou que os demais controles (escala/qualidade/filtros/FSR/CAS/AA/partículas/proporção/limite FPS/cache/redução de efeitos/volumes) permanecem indisponíveis até haver integração real demonstrada. Não foram inventados cvars ou efeitos.
+- Commit verificado por releitura do arquivo. Nenhum workflow foi iniciado e nenhum APK foi gerado/testado nesta etapa; a validação visual e de toque ainda depende de uma nova compilação e teste no aparelho.
