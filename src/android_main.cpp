@@ -31,6 +31,7 @@
 namespace {
 
 std::mutex g_touch_joystick_mutex;
+std::string g_runtime_root_path;
 SDL_Joystick* g_touch_joystick = nullptr;
 SDL_JoystickID g_touch_joystick_id = 0;
 bool g_touch_joystick_attempted = false;
@@ -150,6 +151,7 @@ bool ConfigureAndroidRuntimeDataDirectory() {
 
   const std::filesystem::path root_path =
       std::filesystem::path(base_path) / "rexglue";
+  g_runtime_root_path = root_path.string();
   const std::filesystem::path home_path = root_path / "home";
   const std::filesystem::path data_path = root_path / "data";
   const std::filesystem::path config_path = root_path / "config";
@@ -245,16 +247,17 @@ extern "C" int SDL_main(int argc, char* argv[]) {
   // cvar/runtime initialization so Xenos and the runtime use app storage.
   if (!ConfigureAndroidRuntimeDataDirectory()) return EXIT_FAILURE;
 
-  // ReXGlue's default log directory is based on the executable folder. On
-  // Android that can resolve to /system/bin, which is read-only. Give the
-  // logger an explicit file inside SDL's app-private writable preference dir.
-  char* pref_path = SDL_GetPrefPath("ReXGlue", "recvx");
-  if (!pref_path) {
-    SDL_Log("[RECVX-DIAG] SDL_GetPrefPath failed: %s", SDL_GetError());
+  // Keep the runtime log beside the app-private XDG directories so it can
+  // be collected from Android/data/<package>/files/rexglue/recvx.log.
+  // ConfigureAndroidRuntimeDataDirectory() already falls back to SDL's
+  // app-private preference directory if external app storage is unavailable.
+  if (g_runtime_root_path.empty()) {
+    SDL_Log("[RECVX-DIAG] Runtime log directory was not initialized");
     return EXIT_FAILURE;
   }
-  std::string log_file_arg = std::string("--log_file=") + pref_path + "recvx.log";
-  SDL_free(pref_path);
+  const std::string log_file_path =
+      (std::filesystem::path(g_runtime_root_path) / "recvx.log").string();
+  std::string log_file_arg = "--log_file=" + log_file_path;
 
   // Preserve an explicitly supplied log_file option; otherwise append the
   // Android-safe path before cvar initialization.
@@ -273,7 +276,7 @@ extern "C" int SDL_main(int argc, char* argv[]) {
   for (int i = 0; i < argc; ++i) cvar_argv.push_back(argv[i]);
   if (!has_log_file_arg) {
     cvar_argv.push_back(log_file_arg.data());
-    SDL_Log("[RECVX-DIAG] Android log file: %s", log_file_arg.c_str() + 11);
+    SDL_Log("[RECVX-DIAG] Android log file: %s", log_file_path.c_str());
   }
 
   // Match the SDK's desktop entry point: preserve positional arguments and
