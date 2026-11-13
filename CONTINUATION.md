@@ -1453,3 +1453,12 @@ O trabalho não deve se limitar a desempenho e sombras. Continuar a implementaç
 5. Manter alterações de Save State isoladas das mudanças de renderização e launcher.
 6. Não iniciar compilação final nem substituir a versão funcional sem uma alteração concreta revisada; registrar workflow, commit, artefato e resultado do teste físico.
 
+
+
+## Trabalho paralelo no ReXGlue SDK — Save State — 2026-11-12
+
+- O repositório do **ReXGlue SDK** também está em desenvolvimento ativo para implementar o recurso de **Save State**.
+- A linha de trabalho identificada é a branch `save-state-frame-prototype`. Esse trabalho pertence ao repositório do SDK, não ao repositório de recompilação do Resident Evil.
+- O projeto Resident Evil depende das capacidades do ReXGlue SDK; portanto, acompanhar a evolução dessa implementação e sua integração futura faz parte da continuidade do RECVX.
+- Manter o protótipo de Save State isolado das otimizações de desempenho, correções de sombras e alterações da launcher. Não misturar essas frentes nem substituir a APK funcional até que a implementação seja integrada, compilada e validada.
+- Ao retomar o Save State, consultar primeiro o `CONTINUATION.md` do repositório ReXGlue SDK na branch `save-state-frame-prototype` para continuar do estado real do protótipo, sem presumir que esteja concluído ou pronto para integração.
