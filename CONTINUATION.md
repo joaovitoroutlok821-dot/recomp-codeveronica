@@ -1283,3 +1283,15 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Investigar em paralelo iluminação, gamma/exposição, filtragem de texturas e resolução interna efetiva. Não alterar a resolução de saída já funcional, nem reduzir qualidade como atalho para FPS.
 - O desempenho deve ser medido separando tempo de CPU, GPU, apresentação e compilação de shaders; comparar cenas equivalentes com V-Sync mantido no modo estável enquanto o problema de sincronismo com V-Sync OFF não for resolvido.
 - Nenhuma alteração de código ou APK foi feita com base apenas nas imagens. Manter intacta a versão funcional; não tocar no trabalho isolado de Save State.
+
+
+## 2026-11-12 — Revisão adicional do caminho Android (launcher/FPS)
+
+- Revisado `scripts/install-android-game-setup.py` na branch `android-rebuild`.
+- `GameSDLActivity.getArguments()` fixa `--present_effect=bilinear`; portanto, o filtro de apresentação atualmente passado pelo launcher é bilinear. Isso é um ponto concreto para investigar a nitidez, mas não prova que seja a única causa da diferença visual.
+- A mesma função envia `--window_width/--window_height` com 1920x1080 para resolução selecionada 1 e 1280x720 para a outra opção. Não alterar essa lógica de resolução sem evidência, pois a resolução já foi implementada/testada.
+- A compilação assíncrona de shaders é controlada por `async_shader_compilation` e enviada como argumento CLI.
+- A classe Java declara `static native float nativeGetPresentedFps()` e o overlay consulta esse método a cada 500 ms. Ainda é necessário localizar/validar o registro JNI que conecta esse método ao símbolo C exportado `ReXGlue_GetPresentedFPS()`; a declaração Java sozinha não comprova que a ponte esteja funcionando.
+- Os argumentos de present mode continuam ligados a `present_mode` (Immediate/Mailbox/FIFO Relaxed; FIFO por ausência das flags), conforme investigação anterior.
+- Não foi possível confirmar a implementação de sombras, iluminação ou formatos de textura apenas pelos scripts Android examinados. Esses aspectos exigem inspeção do código do renderer/guest GPU no SDK, não ajustes arbitrários no launcher.
+- Nenhuma alteração de código ou APK nesta etapa. Próxima tarefa: validar a ponte JNI de FPS e rastrear no SDK a geração/consumo de shadow maps e o filtro de apresentação antes de propor patch.
