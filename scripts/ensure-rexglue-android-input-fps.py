@@ -9,7 +9,8 @@ if len(sys.argv) != 2:
 sdk = Path(sys.argv[1]).resolve()
 input_file = sdk / "src/input/sdl/sdl_input_driver.cpp"
 presenter_file = sdk / "src/ui/vulkan/vulkan_presenter.cpp"
-for path in (input_file, presenter_file):
+render_target_cache_file = sdk / "src/graphics/vulkan/render_target_cache.cpp"
+for path in (input_file, presenter_file, render_target_cache_file):
     if not path.is_file():
         raise SystemExit(f"Required ReXGlue source file not found: {path}")
 
@@ -93,5 +94,40 @@ if new_present not in presenter:
 if new_present not in presenter_file.read_text(encoding="utf-8"):
     raise SystemExit("Vulkan presented-FPS instrumentation verification failed")
 
+# Record the final render-target backend only after every capability check and
+# automatic fallback has completed. This is diagnostic-only and never changes
+# the renderer selection.
+render_cache = render_target_cache_file.read_text(encoding="utf-8")
+render_log = """  REXGPU_INFO(
+      "[RECVX-VK-DIAG] final render-target path: {}; FSI supported: {}; "
+      "sample interlock: {}; pixel interlock: {}; fragment stores/atomics: {}; "
+      "sample-rate shading: {}; standard sample locations: {}; "
+      "D24_UNORM_S8 sampled+depth attachment: {}; "
+      "16-bit UINT transfer formats: {}; 32-bit UINT transfer formats: {}; "
+      "bit-exact host color transfer: {}; 2x MSAA attachments: {}",
+      path_ == Path::kPixelShaderInterlock ? "FSI" : "FBO",
+      fsi_path_supported,
+      device_properties.fragmentShaderSampleInterlock,
+      device_properties.fragmentShaderPixelInterlock,
+      device_properties.fragmentStoresAndAtomics,
+      device_properties.sampleRateShading,
+      device_properties.standardSampleLocations,
+      depth_unorm24_vulkan_format_supported_,
+      color_16bit_transfer_uint_formats_supported_,
+      color_32bit_transfer_uint_formats_supported_,
+      bit_exact_host_color_transfer_supported,
+      msaa_2x_attachments_supported_);
+
+"""
+cache_anchor = "  // Descriptor set layouts.\n"
+if render_log not in render_cache:
+    if render_cache.count(cache_anchor) != 1:
+        raise SystemExit("Could not uniquely locate final Vulkan render-target path insertion point")
+    render_cache = render_cache.replace(cache_anchor, render_log + cache_anchor, 1)
+    render_target_cache_file.write_text(render_cache, encoding="utf-8")
+if render_log not in render_target_cache_file.read_text(encoding="utf-8"):
+    raise SystemExit("Vulkan final render-target diagnostics verification failed")
+
 print("[recvx-android-input-fps] touch gamepad is routed as a synthetic user-0 device")
 print("[recvx-android-input-fps] successful Vulkan presentations are sampled every 2 seconds and exported for the overlay")
+print("[recvx-android-input-fps] final Vulkan render-target path and depth/format capabilities are logged")
