@@ -1521,3 +1521,16 @@ O trabalho não deve se limitar a desempenho e sombras. Continuar a implementaç
 - Limite importante: o sucesso do build confirma que o código de diagnóstico foi compilado e que o APK foi empacotado; **não confirma ainda que o log externo foi criado em execução nem qual backend FBO/FSI o aparelho seleciona**. Esses dados só serão conhecidos após instalar e executar a APK #44 no Motorola e recolher `Android/data/<pacote>/files/rexglue/recvx.log`.
 - A APK #43 (run `43283470140`, artefato `13978515359`) permanece preservada como baseline. Não foi substituída.
 - Próxima etapa: o usuário instalar e testar a APK #44; depois enviar o `recvx.log` para análise de GPU/driver, backend final, suporte D24/S8 e recursos Vulkan. Não alterar qualidade gráfica nem forçar FBO/FSI com base em suposição.
+
+
+## Teste físico da APK privada #44 — 2026-11-13
+
+- O usuário instalou a APK do workflow privado #44 (run 43470386175) no Motorola Edge 30 Pro e confirmou que o jogo abriu e funcionou. Esta é a primeira validação funcional em dispositivo da compilação que contém os diagnósticos Vulkan adicionados.
+- O usuário localizou a pasta de logs em Android/data/<pacote>/files/rexglue/. O gerenciador exibe o pacote org.rexglue.recvx.privateapp.
+- Arquivo principal recebido: recvx.log, aproximadamente 607,29 KB. Arquivo rotacionado recebido: recvx.1.log, 5 MB.
+- Análise preliminar: o log principal registra cerca de 24 FPS apresentados na janela medida (~2,045 s; 49 apresentações). O arquivo rotacionado contém leituras variando aproximadamente de 21,5 a 63,6 FPS. São amostras de cenas/sessões, não uma taxa constante nem uma medida global do desempenho.
+- Os logs contêm grande volume de avisos repetidos do driver Vulkan identificados como VKDBGUTILWARN003, especialmente no arquivo rotacionado. A coleta atual ainda não revelou as linhas esperadas com o backend final FBO/FSI e os diagnósticos de formatos/recursos de profundidade.
+- A ausência dessas linhas nos dois arquivos examinados não permite concluir que o patch falhou: os registros podem estar em outro arquivo rotacionado, não ter sido emitidos no caminho executado ou estar ocultos pelo volume de avisos.
+- Próxima investigação: examinar recvx.7.log e, se necessário, o artefato recvx-private-diagnostics da execução #44; confirmar por que os diagnósticos Vulkan não aparecem nos logs coletados.
+- Estado de estabilidade: a APK #44 abriu e executou o jogo segundo o teste físico do usuário. Preservar #44 e #43 como referências; não alterar backend, resolução, sombras ou qualidade gráfica sem evidência.
+- Próximo retorno do usuário: informar se o jogo permaneceu funcional durante a sessão e enviar recvx.7.log para procurar mensagens de inicialização/seleção do dispositivo e renderer.
