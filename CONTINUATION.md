@@ -1271,3 +1271,15 @@ Nenhum runtime de produção, código do jogo ou launcher foi alterado. Nenhum A
 - Alterações de código nesta etapa: `assets/launcher/index.html` e `scripts/install-android-game-setup.py` na branch `android-rebuild`.
 - Commits: `1dd1adda322f353910577334cd6c87676f48b8ca` (launcher), `d7c9683dc66af85acc6c09b4da1964d23d9cdb9d` (argumentos Android), `3d7cf7f0a37cd4e2ef19a3024b7fa2bdd0677c01` (seletor habilitado e restauração do valor).
 - Importante: a alteração de UI e o caminho de configuração foram implementados, mas ainda precisam passar pelo build privado e por teste no aparelho. A seleção ainda não deve ser considerada validada em runtime até confirmar nos logs o modo de swapchain criado para cada escolha.
+
+
+## 2026-11-12 — Evidências visuais do usuário: qualidade gráfica e desempenho
+
+- O usuário enviou comparações de capturas do Xbox 360 e do APK Android em cenas correspondentes de Code Veronica X.
+- Na cena da escada/corredor, o usuário confirmou explicitamente que **não há sombras no celular**. A captura do Xbox 360 mostra sombra projetada na parede; tratar a ausência/redução de sombras no Android como defeito gráfico prioritário, ainda sem atribuir a causa a uma opção específica.
+- Nas cenas de close-up da personagem e do encontro junto às grades, as capturas sugerem diferenças de iluminação/contraste e possível diferença de definição/filtragem. As imagens, isoladamente, não identificam se a origem está no shader, nos dados do jogo, no formato de textura, no pós-processamento ou na configuração do presenter.
+- FPS visível nas capturas Android: 18,4; 29,9; 43,2; e 46,5. Isso demonstra variação substancial entre cenas, mas não fornece medição de CPU/GPU nem prova de thermal throttling.
+- Nova prioridade de diagnóstico gráfico: rastrear no caminho Xenos/Vulkan a implementação de shadow maps/sombras projetadas, shaders e estados de renderização usados pelo título; verificar se as passagens de sombra são geradas, submetidas e amostradas corretamente no Android. Não habilitar/desabilitar efeitos às cegas.
+- Investigar em paralelo iluminação, gamma/exposição, filtragem de texturas e resolução interna efetiva. Não alterar a resolução de saída já funcional, nem reduzir qualidade como atalho para FPS.
+- O desempenho deve ser medido separando tempo de CPU, GPU, apresentação e compilação de shaders; comparar cenas equivalentes com V-Sync mantido no modo estável enquanto o problema de sincronismo com V-Sync OFF não for resolvido.
+- Nenhuma alteração de código ou APK foi feita com base apenas nas imagens. Manter intacta a versão funcional; não tocar no trabalho isolado de Save State.
