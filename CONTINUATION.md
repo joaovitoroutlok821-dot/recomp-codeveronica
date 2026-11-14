@@ -1605,3 +1605,18 @@ O trabalho não deve se limitar a desempenho e sombras. Continuar a implementaç
 - A revisão exata também confirma que o backend host depth usa amostras/formatos distintos conforme suporte e conversão; não se deve trocar formato, forçar FSI ou alterar o modo FBO sem teste direcionado.
 - Ainda não foi localizada a origem de `VKDBGUTILWARN003`; continua sendo uma linha separada de investigação, sem relação causal demonstrada com sombras ou FPS.
 - Nenhum arquivo de renderização foi modificado e nenhum APK foi compilado nesta etapa. Manter #44 como baseline funcional e #46 como diagnóstico.
+
+
+## 2026-11-14 — Rastreamento do shader de transferência de profundidade (revisão SDK fixada)
+
+Foi aprofundado o exame de `src/graphics/vulkan/render_target_cache.cpp` na revisão exata `398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb`.
+
+- O shader de transferência lê profundidade da imagem de origem como float e, quando o modo é depth→depth e os formatos de origem/destino coincidem, grava diretamente em `gl_FragDepth` (trecho em torno das linhas 3707–3710).
+- Quando há diferença de formato, converte D24S8 por arredondamento para 24 bits ou D24FS8 por `PreClampedDepthTo20e4`; no caminho de profundidade combinada, mescla stencil separadamente (aprox. 3711–3734).
+- Há quatro modos de transferência que combinam profundidade do RT com host depth, usando textura ou cópia auxiliar do EDRAM. A seleção depende de `transfer.host_depth_source` e de ele apontar para o próprio destino (aprox. 4886–4918).
+- Antes da transferência, o código emite barreiras Vulkan para a imagem de origem e para a fonte auxiliar de profundidade, com caminhos distintos para textura e cópia no EDRAM (aprox. 4932–4961).
+- O shader usa coordenadas de fragmento para mapear os pixels do destino em tiles EDRAM; o dump para diagnóstico também aplica o rearranjo específico das colunas de 40 amostras para depth (aprox. 2613–2667 e 5573–5600).
+
+**Conclusão provisória:** a infraestrutura de transferência e conversão de depth está implementada. A leitura estática ainda não identifica um erro comprovado nem demonstra qual modo o Code Veronica aciona em runtime. Não alterar shader/formato/barreiras sem telemetria que identifique o modo, formatos, presença de host-depth source e dimensões/retângulos da transferência.
+
+**Próximo passo:** adicionar diagnóstico temporário e limitado no ponto de seleção de `new_transfer_shader_key.mode` (em torno de 4900) e no caminho de transferência, registrando modo, formatos de origem/destino, MSAA, se host depth vem de textura ou cópia, EDRAM base/pitch e retângulos. Limitar a quantidade de mensagens por processo e não alterar a lógica. Usar build de diagnóstico separada, mantendo o APK #44 como baseline funcional; depois correlacionar com cenas em que sombras deveriam aparecer. Não foi gerado APK nem alterado código de renderização nesta etapa.
