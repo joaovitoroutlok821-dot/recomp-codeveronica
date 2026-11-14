@@ -150,12 +150,13 @@ collision_replacement = """      if (edram_bases[rt_other_index] == edram_base) 
         }
         depth_and_color_rts_used_bits &= ~(uint32_t(1) << rt_other_index);
       }"""
-if collision_replacement not in render_cache:
-    if render_cache.count(collision_anchor) != 1:
-        raise SystemExit("Could not uniquely locate Xenos EDRAM duplicate-target elimination")
-    render_cache = render_cache.replace(collision_anchor, collision_replacement, 1)
-    render_target_cache_file.write_text(render_cache, encoding="utf-8")
-if collision_replacement not in render_target_cache_file.read_text(encoding="utf-8"):
+pipeline_render_cache = pipeline_render_target_cache_file.read_text(encoding="utf-8")
+if collision_replacement not in pipeline_render_cache:
+    if pipeline_render_cache.count(collision_anchor) != 1:
+        raise SystemExit("Could not uniquely locate Xenos EDRAM duplicate-target elimination in pipeline cache")
+    pipeline_render_cache = pipeline_render_cache.replace(collision_anchor, collision_replacement, 1)
+    pipeline_render_target_cache_file.write_text(pipeline_render_cache, encoding="utf-8")
+if collision_replacement not in pipeline_render_target_cache_file.read_text(encoding="utf-8"):
     raise SystemExit("Xenos EDRAM collision diagnostics verification failed")
 
 print("[recvx-android-input-fps] touch gamepad is routed as a synthetic user-0 device")
