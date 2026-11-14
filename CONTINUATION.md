@@ -1547,3 +1547,15 @@ O trabalho não deve se limitar a desempenho e sombras. Continuar a implementaç
 - Também aparecem mensagens de resolução de caminhos Xbox como \\Device\Image (0xc000000f); correlacionar com carregamento de recursos apenas se houver falha funcional associada. O usuário confirmou que a APK #44 abriu e funcionou.
 - Próxima investigação técnica: auditar no SDK e no código recompilado os caminhos FBO de render targets de profundidade, cópia/resolução de depth, shadow-map passes e shaders que consomem esses recursos; comparar formatos/flags reais usados pelo jogo com os requisitos Vulkan e com a implementação do backend Xenos. Não forçar FSI, não alterar resolução nem reduzir qualidade.
 - Preservar APK #44 como build funcional de diagnóstico e APK #43 como baseline anterior. Nenhuma nova compilação foi iniciada nesta etapa.
+
+
+## Instrumentação direcionada de colisões EDRAM — 2026-11-13
+
+- Confirmado no SDK efetivamente fixado pelo workflow privado (.deps/rexglue-sdk, commit 398e2ba7802d0c4ca1f68d7ad4fa2cd73e8123eb) que src/graphics/pipeline/render_target/cache.cpp contém a regra de eliminação de render targets com a mesma base EDRAM.
+- O comentário upstream documenta um caso de outro título (4D5307E6) em que remover RT0 em favor de RT1 durante a iluminação deixa o cenário e personagens excessivamente escuros, com aparência de sombra total. Isso é uma pista técnica relevante, mas não demonstra que Code Veronica acione a mesma condição.
+- Foi atualizado scripts/ensure-rexglue-android-input-fps.py, executado pelo workflow privado, para injetar no checkout temporário do SDK um log [RECVX-EDRAM-COLLISION] quando ocorrer a eliminação por bases EDRAM duplicadas.
+- O registro captura os índices mantido/removido, base EDRAM, formatos, indicação de 64 bpp e estado interlock_barrier_only. É limitado às primeiras 32 ocorrências por processo para evitar inundar os logs.
+- A instrumentação não altera a regra de seleção, os recursos gráficos, o backend FBO/FSI ou a qualidade visual; apenas registra quando a condição acontece.
+- Commit da instrumentação no repositório público: e25e32385723698daa91afee032a314a52555142, branch android-rebuild, arquivo scripts/ensure-rexglue-android-input-fps.py.
+- Ainda não foi executada compilação nem teste no aparelho com essa instrumentação. A APK #44 continua sendo a referência funcional e não foi substituída.
+- Próximo passo: revisar o diff do helper e, se estiver correto, executar um build privado de diagnóstico para verificar se o log [RECVX-EDRAM-COLLISION] aparece durante o jogo. Se não aparecer, seguir para rastreamento dos depth resolves e shaders que consomem mapas de sombra.
