@@ -128,6 +128,36 @@ if render_log not in render_cache:
 if render_log not in render_target_cache_file.read_text(encoding="utf-8"):
     raise SystemExit("Vulkan final render-target diagnostics verification failed")
 
+# Add bounded, diagnostic-only logging when multiple render targets use the
+# same Xenos EDRAM base. The original target-retention behavior is unchanged.
+collision_anchor = """      if (edram_bases[rt_other_index] == edram_base) {
+        depth_and_color_rts_used_bits &= ~(uint32_t(1) << rt_other_index);
+      }"""
+collision_replacement = """      if (edram_bases[rt_other_index] == edram_base) {
+        // Log only the first 32 collisions to keep device logs bounded.
+        static uint32_t recvx_edram_collision_log_count = 0;
+        if (recvx_edram_collision_log_count < 32) {
+          REXGPU_INFO(
+              "[RECVX-EDRAM-COLLISION] keep_rt={} drop_rt={} base={} "
+              "keep_format={} drop_format={} keep_64bpp={} drop_64bpp={} "
+              "interlock_barrier_only={}",
+              rt_index, rt_other_index, edram_base,
+              resource_formats[rt_index], resource_formats[rt_other_index],
+              (rts_are_64bpp & (uint32_t(1) << rt_index)) != 0,
+              (rts_are_64bpp & (uint32_t(1) << rt_other_index)) != 0,
+              interlock_barrier_only);
+          ++recvx_edram_collision_log_count;
+        }
+        depth_and_color_rts_used_bits &= ~(uint32_t(1) << rt_other_index);
+      }"""
+if collision_replacement not in render_cache:
+    if render_cache.count(collision_anchor) != 1:
+        raise SystemExit("Could not uniquely locate Xenos EDRAM duplicate-target elimination")
+    render_cache = render_cache.replace(collision_anchor, collision_replacement, 1)
+    render_target_cache_file.write_text(render_cache, encoding="utf-8")
+if collision_replacement not in render_target_cache_file.read_text(encoding="utf-8"):
+    raise SystemExit("Xenos EDRAM collision diagnostics verification failed")
+
 print("[recvx-android-input-fps] touch gamepad is routed as a synthetic user-0 device")
 print("[recvx-android-input-fps] successful Vulkan presentations are sampled every 2 seconds and exported for the overlay")
 print("[recvx-android-input-fps] final Vulkan render-target path and depth/format capabilities are logged")
