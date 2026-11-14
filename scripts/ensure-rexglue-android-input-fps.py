@@ -163,3 +163,44 @@ if collision_replacement not in pipeline_render_target_cache_file.read_text(enco
 print("[recvx-android-input-fps] touch gamepad is routed as a synthetic user-0 device")
 print("[recvx-android-input-fps] successful Vulkan presentations are sampled every 2 seconds and exported for the overlay")
 print("[recvx-android-input-fps] final Vulkan render-target path and depth/format capabilities are logged")
+
+# Trace the selected EDRAM depth-transfer mode at runtime. This is deliberately
+# bounded and diagnostic-only: no transfer mode, barrier, or draw behavior changes.
+vulkan_transfer_anchor = """          }
+          current_transfer_invocations_.emplace_back(transfer, new_transfer_shader_key);"""
+vulkan_transfer_replacement = """          }
+
+          // Bounded runtime trace of the actual EDRAM depth-transfer path.
+          // Observe the selected mode and key geometry without changing behavior.
+          static uint32_t recvx_depth_transfer_log_count = 0;
+          if (recvx_depth_transfer_log_count < 64) {
+            const RenderTargetKey* host_depth_key =
+                host_depth_source_vulkan_rt ? &host_depth_source_vulkan_rt->key() : nullptr;
+            REXGPU_INFO(
+                "[RECVX-DEPTH-TRANSFER] mode={} source_depth={} source_format={} "
+                "source_base={} source_msaa={} dest_depth={} dest_format={} "
+                "dest_base={} dest_pitch_tiles={} dest_msaa={} "
+                "host_depth={} host_is_copy={} host_base={} host_msaa={}",
+                uint32_t(new_transfer_shader_key.mode), source_rt_key.is_depth,
+                source_rt_key.resource_format, source_rt_key.base_tiles,
+                uint32_t(source_rt_key.msaa_samples), dest_rt_key.is_depth,
+                dest_rt_key.resource_format, dest_rt_key.base_tiles, dest_pitch_tiles,
+                uint32_t(dest_rt_key.msaa_samples), host_depth_key != nullptr,
+                host_depth_source_is_copy,
+                host_depth_key ? host_depth_key->base_tiles : 0,
+                host_depth_key ? uint32_t(host_depth_key->msaa_samples) : 0);
+            ++recvx_depth_transfer_log_count;
+          }
+
+          current_transfer_invocations_.emplace_back(transfer, new_transfer_shader_key);"""
+vulkan_transfer_cache = render_target_cache_file.read_text(encoding="utf-8")
+if vulkan_transfer_replacement not in vulkan_transfer_cache:
+    if vulkan_transfer_cache.count(vulkan_transfer_anchor) != 1:
+        raise SystemExit("Could not uniquely locate Vulkan EDRAM transfer mode selection")
+    vulkan_transfer_cache = vulkan_transfer_cache.replace(
+        vulkan_transfer_anchor, vulkan_transfer_replacement, 1)
+    render_target_cache_file.write_text(vulkan_transfer_cache, encoding="utf-8")
+if vulkan_transfer_replacement not in render_target_cache_file.read_text(encoding="utf-8"):
+    raise SystemExit("Vulkan EDRAM depth-transfer diagnostics verification failed")
+print("[recvx-android-input-fps] bounded EDRAM depth-transfer mode diagnostics are logged")
+
