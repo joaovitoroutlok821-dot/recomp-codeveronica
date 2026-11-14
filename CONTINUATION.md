@@ -1559,3 +1559,14 @@ O trabalho não deve se limitar a desempenho e sombras. Continuar a implementaç
 - Commit da instrumentação no repositório público: e25e32385723698daa91afee032a314a52555142, branch android-rebuild, arquivo scripts/ensure-rexglue-android-input-fps.py.
 - Ainda não foi executada compilação nem teste no aparelho com essa instrumentação. A APK #44 continua sendo a referência funcional e não foi substituída.
 - Próximo passo: revisar o diff do helper e, se estiver correto, executar um build privado de diagnóstico para verificar se o log [RECVX-EDRAM-COLLISION] aparece durante o jogo. Se não aparecer, seguir para rastreamento dos depth resolves e shaders que consomem mapas de sombra.
+
+
+## 2026-11-14 — Workflow #46: diagnóstico de colisões EDRAM compilado
+
+- Workflow privado #46 concluído com sucesso: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/43605547191
+- Run ID: 43605547191; commit do repositório privado: 681a414a4b918ae615a07a98112bd17a2ddfab2b.
+- Correção do helper no repositório público: commit 96fb4d21fb92a68c850455b0e2fd51e4cc987966. O helper agora declara e usa o arquivo correto `src/graphics/pipeline/render_target/cache.cpp` para instrumentar a eliminação de render targets com mesma base EDRAM.
+- A etapa “Apply Android ARM64 SDK compatibility patches” passou; compilação das bibliotecas nativas ARM64 e validação do APK passaram.
+- Artefatos: `recvx-private-android-arm64` (~50,6 MB; artifact ID 14118874418) e `recvx-private-diagnostics` (~86,8 KB; artifact ID 14119523073).
+- O diagnóstico é somente instrumentação: não altera a escolha dos render targets nem o comportamento de renderização. O APK ainda precisa ser instalado/testado no aparelho e os logs do jogo devem ser verificados para `[RECVX-EDRAM-COLLISION]`.
+- A versão funcional #44 permanece como baseline conhecida. Não considerar as sombras corrigidas até confirmação visual no aparelho.
