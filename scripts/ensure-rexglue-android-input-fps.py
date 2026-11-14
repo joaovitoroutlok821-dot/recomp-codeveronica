@@ -10,7 +10,8 @@ sdk = Path(sys.argv[1]).resolve()
 input_file = sdk / "src/input/sdl/sdl_input_driver.cpp"
 presenter_file = sdk / "src/ui/vulkan/vulkan_presenter.cpp"
 render_target_cache_file = sdk / "src/graphics/vulkan/render_target_cache.cpp"
-for path in (input_file, presenter_file, render_target_cache_file):
+pipeline_render_target_cache_file = sdk / "src/graphics/pipeline/render_target/cache.cpp"
+for path in (input_file, presenter_file, render_target_cache_file, pipeline_render_target_cache_file):
     if not path.is_file():
         raise SystemExit(f"Required ReXGlue source file not found: {path}")
 
