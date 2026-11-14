@@ -1620,3 +1620,17 @@ Foi aprofundado o exame de `src/graphics/vulkan/render_target_cache.cpp` na revi
 **Conclusão provisória:** a infraestrutura de transferência e conversão de depth está implementada. A leitura estática ainda não identifica um erro comprovado nem demonstra qual modo o Code Veronica aciona em runtime. Não alterar shader/formato/barreiras sem telemetria que identifique o modo, formatos, presença de host-depth source e dimensões/retângulos da transferência.
 
 **Próximo passo:** adicionar diagnóstico temporário e limitado no ponto de seleção de `new_transfer_shader_key.mode` (em torno de 4900) e no caminho de transferência, registrando modo, formatos de origem/destino, MSAA, se host depth vem de textura ou cópia, EDRAM base/pitch e retângulos. Limitar a quantidade de mensagens por processo e não alterar a lógica. Usar build de diagnóstico separada, mantendo o APK #44 como baseline funcional; depois correlacionar com cenas em que sombras deveriam aparecer. Não foi gerado APK nem alterado código de renderização nesta etapa.
+
+
+## 2026-11-14 — Instrumentação temporária do caminho real de transferência de profundidade
+
+Foi atualizado `scripts/ensure-rexglue-android-input-fps.py` para inserir, no checkout efêmero do SDK usado pelo build privado, um diagnóstico limitado no ponto em que `new_transfer_shader_key.mode` já foi selecionado em `src/graphics/vulkan/render_target_cache.cpp`.
+
+- Prefixo: `[RECVX-DEPTH-TRANSFER]`.
+- Limite: primeiras 64 transferências por processo.
+- Campos: modo selecionado, tipo/formato/base/MSAA da origem, tipo/formato/base/pitch/MSAA do destino e presença/tipo/base/MSAA da fonte auxiliar de profundidade.
+- A instrumentação é somente leitura: não altera seleção de modo, barreiras, shaders, retângulos ou comandos de desenho.
+- O workflow privado já executa esse helper no checkout temporário do SDK; portanto, não foi necessário alterar o workflow nem o SDK upstream.
+- Commit do helper: `5e56e2a59ae464437a0cddc210b20ec7670625d3`.
+
+**Estado:** patch de instrumentação preparado no branch `android-rebuild`; ainda não foi executado em Actions nem validado por compilação. Não há APK novo e não há correção visual/performance afirmada. Próxima etapa: disparar build diagnóstico privado, confirmar que o patch aplica sem erro e, após instalar, coletar logs contendo `[RECVX-DEPTH-TRANSFER]` em uma cena com sombras ausentes.
