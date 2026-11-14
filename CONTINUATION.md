@@ -1570,3 +1570,16 @@ O trabalho não deve se limitar a desempenho e sombras. Continuar a implementaç
 - Artefatos: `recvx-private-android-arm64` (~50,6 MB; artifact ID 14118874418) e `recvx-private-diagnostics` (~86,8 KB; artifact ID 14119523073).
 - O diagnóstico é somente instrumentação: não altera a escolha dos render targets nem o comportamento de renderização. O APK ainda precisa ser instalado/testado no aparelho e os logs do jogo devem ser verificados para `[RECVX-EDRAM-COLLISION]`.
 - A versão funcional #44 permanece como baseline conhecida. Não considerar as sombras corrigidas até confirmação visual no aparelho.
+
+
+
+## Teste físico da APK privada #46 — sombras ausentes e quedas de FPS — 2026-11-14
+
+- O usuário instalou e executou a APK do Workflow #46 no Motorola Edge 30 Pro. Confirmou que as sombras continuam ausentes e que a gameplay permanece com FPS baixo/instável. Portanto, #46 é uma compilação de diagnóstico, não uma correção visual ou de desempenho.
+- ZIP recebido com os logs do aparelho: `logs.zip`, contendo `recvx.log` e `recvx.1.log` até `recvx.10.log`.
+- Análise direta dos 11 logs: 103 linhas `[RECVX-FPS]`, com medições de aproximadamente 5,9 a 327,3 FPS. Os valores extremos e as amostras de menus/transições não representam desempenho sustentado; há diversas janelas em torno de 5,9–16 FPS e outras próximas de 50–64 FPS. A oscilação confirma que a gameplay precisa de investigação específica por cena.
+- Contagem de `VKDBGUTILWARN003`: 170.834 ocorrências nos arquivos enviados. É um aviso de desempenho/validação repetido pelo driver Qualcomm; ainda não há evidência suficiente para atribuí-lo diretamente às sombras ou às quedas de FPS. Investigar o comando Vulkan associado e evitar simplesmente silenciar os avisos.
+- **Correção da interpretação dos logs #46:** os arquivos examinados contêm `[RECVX-FPS]`, mas não contêm `[RECVX-EDRAM-COLLISION]` nem `[RECVX-VK-DIAG]`. Logo, a análise anterior que afirmou que esses dois marcadores foram encontrados nos logs #46 estava incorreta. O artefato de diagnóstico do workflow confirma compilação/empacotamento, não execução desses marcadores no aparelho.
+- A inspeção do código SDK `src/graphics/pipeline/render_target/cache.cpp` confirma que a regra instrumentada elimina RTs com a mesma base EDRAM. O comentário upstream descreve problema de iluminação de outro título (4D5307E6), não evidência específica de Code Veronica. A ausência do marcador no teste #46 não prova que essa hipótese está descartada; prova somente que não foi registrada colisão pela instrumentação nessa execução.
+- Próxima investigação: verificar por que o marcador EDRAM não aparece e instrumentar o caminho FBO usado pelo Adreno 730 para criação/uso de depth render targets, transferências/resolves de depth e recursos que alimentam shadow maps. Correlacionar cada amostra baixa de FPS com cena e operação GPU; examinar separadamente a origem de `VKDBGUTILWARN003`. Não forçar FSI, não reduzir resolução/qualidade e não alterar a seleção de render targets sem evidência.
+- Preservar #44 como baseline funcional conhecida e #46 como baseline de diagnóstico. Não afirmar que sombras ou desempenho foram corrigidos. Não iniciar outra compilação até definir uma alteração de instrumentação concreta e revisar o diff.
