@@ -1,5 +1,7 @@
 # CONTINUIDADE DO PROJETO — Resident Evil Code Veronica X
 
+**Localização canônica:** `joaovitoroutlok821-dot/recomp-codeveronica` · branch `android-rebuild` · arquivo `CONTINUATION.md`.
+
 Última atualização: 2026-11-04
 
 ## Estado da reconstrução nesta conta
@@ -1667,3 +1669,25 @@ Foi atualizado `scripts/ensure-rexglue-android-input-fps.py` para inserir, no ch
 - Limite: o sucesso confirma compilação e empacotamento, não confirma que `[RECVX-DEPTH-TRANSFER]` seja emitido durante a execução nem que as sombras/FPS tenham sido corrigidos. Nenhum teste físico da #48 foi registrado ainda.
 - Próximo passo: instalar/testar a APK #48 no Motorola Edge 30 Pro, reproduzir uma cena em que as sombras estão ausentes, encerrar o jogo normalmente e enviar todos os arquivos `recvx*.log` da pasta `Android/data/org.rexglue.recvx.privateapp/files/rexglue/`. Procurar especificamente `[RECVX-DEPTH-TRANSFER]` e correlacionar modo, formatos, MSAA e fonte auxiliar de profundidade. Não alterar shaders, formatos, barreiras, qualidade gráfica ou backend antes de analisar esses dados.
 - Preservar a APK #44 como baseline funcional conhecida e a #46 como referência de diagnóstico anterior. A #48 é a nova build diagnóstica compilada; ainda não é uma correção visual/performance validada.
+
+
+## 2026-11-15 — Escopo deste acompanhamento: otimização e renderização (sem Save State)
+
+**Localização canônica deste projeto**
+- Repositório de código-fonte: `joaovitoroutlok821-dot/recomp-codeveronica`
+- URL: https://github.com/joaovitoroutlok821-dot/recomp-codeveronica
+- Branch de trabalho: `android-rebuild`
+- Arquivo de continuidade: `CONTINUATION.md` neste mesmo repositório e branch.
+- Repositório privado que gera os APKs: `joaovitoroutlok821-dot/recvx-private-build` (branch `main`); workflow `.github/workflows/private-android-apk.yml`.
+
+**Escopo deste acompanhamento/conversa**
+- Este acompanhamento trata exclusivamente de otimização do jogo, renderização gráfica/Vulkan, sombras, profundidade, desempenho/FPS, controles e estabilidade do APK Android.
+- O projeto de Save State é acompanhado em outra conversa/projeto. Não iniciar, modificar, planejar nem misturar implementação de Save State neste acompanhamento. Referências históricas a protótipos/branches de Save State neste documento são apenas histórico e não alteram o escopo atual.
+- Seguir o estado técnico e o próximo passo registrado na seção mais recente deste arquivo; não reiniciar trabalho concluído nem presumir que uma hipótese seja defeito comprovado.
+- Ao atualizar este arquivo, sempre manter explícitos o nome completo do repositório, a URL, a branch e o caminho `CONTINUATION.md`. Registrar também separadamente o repositório/branch do pipeline privado quando houver build.
+
+**Estado de renderização mais recente**
+- APK #44 continua sendo a referência funcional conhecida.
+- APK #46 foi uma referência diagnóstica anterior.
+- APK #48 foi compilado e validado pelo Workflow privado #48 (run ID `43662967897`), mas ainda precisa de teste no aparelho. É uma build diagnóstica com o marcador `[RECVX-DEPTH-TRANSFER]`; sucesso de compilação não prova correção das sombras nem do FPS.
+- Próxima ação: testar a APK #48 em uma cena com sombras ausentes e coletar todos os logs `recvx*.log` para analisar as primeiras 64 transferências de profundidade. Não alterar shaders, formatos, barreiras, qualidade gráfica ou backend antes de analisar os registros.
