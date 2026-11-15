@@ -174,21 +174,33 @@ vulkan_transfer_replacement = """          }
           // Observe the selected mode and key geometry without changing behavior.
           static uint32_t recvx_depth_transfer_log_count = 0;
           if (recvx_depth_transfer_log_count < 64) {
-            const RenderTargetKey* host_depth_key =
-                host_depth_source_vulkan_rt ? &host_depth_source_vulkan_rt->key() : nullptr;
+            const bool has_host_depth_key = host_depth_source_vulkan_rt != nullptr;
+            const uint32_t host_depth_base_tiles =
+                has_host_depth_key ? host_depth_source_vulkan_rt->key().base_tiles : 0;
+            const uint32_t host_depth_msaa_samples =
+                has_host_depth_key
+                    ? uint32_t(host_depth_source_vulkan_rt->key().msaa_samples)
+                    : 0;
+            // Copy bit-fields into ordinary scalar values before passing them
+            // through the variadic logging macro (fmt must not bind to bit-fields).
+            const uint32_t source_is_depth = uint32_t(source_rt_key.is_depth);
+            const uint32_t source_format = uint32_t(source_rt_key.resource_format);
+            const uint32_t source_base_tiles = uint32_t(source_rt_key.base_tiles);
+            const uint32_t dest_is_depth = uint32_t(dest_rt_key.is_depth);
+            const uint32_t dest_format = uint32_t(dest_rt_key.resource_format);
+            const uint32_t dest_base_tiles = uint32_t(dest_rt_key.base_tiles);
             REXGPU_INFO(
                 "[RECVX-DEPTH-TRANSFER] mode={} source_depth={} source_format={} "
                 "source_base={} source_msaa={} dest_depth={} dest_format={} "
                 "dest_base={} dest_pitch_tiles={} dest_msaa={} "
                 "host_depth={} host_is_copy={} host_base={} host_msaa={}",
-                uint32_t(new_transfer_shader_key.mode), source_rt_key.is_depth,
-                source_rt_key.resource_format, source_rt_key.base_tiles,
-                uint32_t(source_rt_key.msaa_samples), dest_rt_key.is_depth,
-                dest_rt_key.resource_format, dest_rt_key.base_tiles, dest_pitch_tiles,
-                uint32_t(dest_rt_key.msaa_samples), host_depth_key != nullptr,
-                host_depth_source_is_copy,
-                host_depth_key ? host_depth_key->base_tiles : 0,
-                host_depth_key ? uint32_t(host_depth_key->msaa_samples) : 0);
+                uint32_t(new_transfer_shader_key.mode), source_is_depth,
+                source_format, source_base_tiles,
+                uint32_t(source_rt_key.msaa_samples), dest_is_depth,
+                dest_format, dest_base_tiles, dest_pitch_tiles,
+                uint32_t(dest_rt_key.msaa_samples), has_host_depth_key,
+                host_depth_source_is_copy, host_depth_base_tiles,
+                host_depth_msaa_samples);
             ++recvx_depth_transfer_log_count;
           }
 
