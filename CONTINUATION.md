@@ -1648,3 +1648,8 @@ Foi atualizado `scripts/ensure-rexglue-android-input-fps.py` para inserir, no ch
 - Commit da correção: `5d4e5f5cb824b1134b8d52459ac47d410eba9d5d`.
 - Próximo passo: atualizar a referência de origem do build privado para o novo commit do branch `android-rebuild`, disparar nova tentativa e conferir a compilação de `render_target_cache.cpp`. Só considerar APK se a etapa de compilação e a verificação/empacotamento passarem.
 - Baseline funcional permanece APK #44. APK #46 segue sendo diagnóstico instalado, sem correção de sombras/FPS comprovada.
+
+
+- Nova tentativa iniciada após a correção: build privado #48, run ID `43662967897`, URL https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/43662967897.
+- Commit que disparou o build #48 no repositório privado: `c3a26933949385292f08ff1d4627cdc7c31afd16`. O pedido aponta para o helper corrigido `5d4e5f5cb824b1134b8d52459ac47d410eba9d5d` na branch `android-rebuild`.
+- Estado no momento desta atualização: `queued`; ainda sem resultado de compilação ou APK.
