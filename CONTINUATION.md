@@ -1691,3 +1691,15 @@ Foi atualizado `scripts/ensure-rexglue-android-input-fps.py` para inserir, no ch
 - APK #46 foi uma referência diagnóstica anterior.
 - APK #48 foi compilado e validado pelo Workflow privado #48 (run ID `43662967897`), mas ainda precisa de teste no aparelho. É uma build diagnóstica com o marcador `[RECVX-DEPTH-TRANSFER]`; sucesso de compilação não prova correção das sombras nem do FPS.
 - Próxima ação: testar a APK #48 em uma cena com sombras ausentes e coletar todos os logs `recvx*.log` para analisar as primeiras 64 transferências de profundidade. Não alterar shaders, formatos, barreiras, qualidade gráfica ou backend antes de analisar os registros.
+
+
+## 2026-11-15 — Limite mensal do GitHub Actions atingido
+
+- O usuário recebeu um aviso por e-mail do GitHub informando que a conta `joaovitoroutlok821-dot` consumiu 100% dos 2.000 minutos de GitHub Actions incluídos no ciclo atual (2.000/2.000).
+- O aviso informa que o uso será reiniciado em 16 dias, em **1º de dezembro de 2026**. Data indicada no aviso: ciclo de cobrança atual.
+- O aviso também informa que execuções acima da franquia podem ser cobradas, a menos que um orçamento de US$ 0 esteja configurado para Actions, caso em que o uso adicional é bloqueado. Não temos confirmação de qual orçamento está configurado; não presumir que novas execuções serão gratuitas nem que serão automaticamente bloqueadas.
+- **Decisão operacional:** não disparar novos workflows de compilação/diagnóstico no repositório privado enquanto a franquia estiver esgotada, para evitar custos inesperados. Só retomar antes de 1º de dezembro se o usuário confirmar explicitamente que verificou o orçamento/cobrança e autoriza o uso adicional.
+- Continuar o trabalho sem consumir Actions: testar a APK #48 já gerada no aparelho, coletar os logs locais e analisá-los. A APK #48 permanece a build diagnóstica atual; a #44 continua sendo a referência funcional. Não solicitar nova compilação até haver dados do teste ou a franquia ser renovada.
+- O aviso de quota não indica defeito no código nem invalida o sucesso do Workflow #48; é uma limitação de uso/cobrança do GitHub Actions.
+- Localização deste arquivo: repositório de código-fonte `joaovitoroutlok821-dot/recomp-codeveronica`, URL https://github.com/joaovitoroutlok821-dot/recomp-codeveronica, branch `android-rebuild`, caminho `CONTINUATION.md`.
+- Pipeline privado: repositório `joaovitoroutlok821-dot/recvx-private-build`, branch `main`.
