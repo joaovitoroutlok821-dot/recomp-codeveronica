@@ -1653,3 +1653,17 @@ Foi atualizado `scripts/ensure-rexglue-android-input-fps.py` para inserir, no ch
 - Nova tentativa iniciada após a correção: build privado #48, run ID `43662967897`, URL https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/43662967897.
 - Commit que disparou o build #48 no repositório privado: `c3a26933949385292f08ff1d4627cdc7c31afd16`. O pedido aponta para o helper corrigido `5d4e5f5cb824b1134b8d52459ac47d410eba9d5d` na branch `android-rebuild`.
 - Estado no momento desta atualização: `queued`; ainda sem resultado de compilação ou APK.
+
+
+## 2026-11-15 — Workflow privado #48: instrumentação de transferência de profundidade compilada
+
+- Workflow privado #48 concluído com sucesso: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/43662967897 (run ID `43662967897`), execução 1, commit disparador privado `c3a26933949385292f08ff1d4627cdc7c31afd16`, branch `main`.
+- O build utilizou o código público da branch `android-rebuild`, com a instrumentação corrigida no commit `5d4e5f5cb824b1134b8d52459ac47d410eba9d5d`.
+- Job `android-apk`: todas as 20 etapas concluídas com sucesso, incluindo geração privada, aplicação dos patches SDK, compilação das bibliotecas nativas ARM64, validação do APK e upload dos artefatos.
+- A validação registrou `APK native library validation: PASS`. O APK contém `libSDL3.so`, `libmain.so`, `librexgpu-xenosrd.so` e `librexruntimerd.so`; os dados privados do jogo e as fontes geradas foram excluídos dos artefatos de diagnóstico.
+- Artefato APK: `recvx-private-android-arm64`, ID `14141768583`, aproximadamente 50,56 MB. Artefato de diagnóstico: `recvx-private-diagnostics`, ID `14142685042`, aproximadamente 86,97 KB (expiração informada: 2026-11-22 para diagnóstico; conferir a validade do APK no GitHub antes de baixar).
+- O relatório de diagnóstico confirma status `success`; o log Gradle termina em `BUILD SUCCESSFUL in 21m 42s`. A compilação do arquivo SDK `src/graphics/vulkan/render_target_cache.cpp` passou, corrigindo o erro de C++ da tentativa #47. Permaneceram avisos de compilador, sem falha de build.
+- O artefato de diagnóstico não inclui APK, XEX ou fontes geradas; contém logs de codegen/build, inventário de bibliotecas, dependências e validação.
+- Limite: o sucesso confirma compilação e empacotamento, não confirma que `[RECVX-DEPTH-TRANSFER]` seja emitido durante a execução nem que as sombras/FPS tenham sido corrigidos. Nenhum teste físico da #48 foi registrado ainda.
+- Próximo passo: instalar/testar a APK #48 no Motorola Edge 30 Pro, reproduzir uma cena em que as sombras estão ausentes, encerrar o jogo normalmente e enviar todos os arquivos `recvx*.log` da pasta `Android/data/org.rexglue.recvx.privateapp/files/rexglue/`. Procurar especificamente `[RECVX-DEPTH-TRANSFER]` e correlacionar modo, formatos, MSAA e fonte auxiliar de profundidade. Não alterar shaders, formatos, barreiras, qualidade gráfica ou backend antes de analisar esses dados.
+- Preservar a APK #44 como baseline funcional conhecida e a #46 como referência de diagnóstico anterior. A #48 é a nova build diagnóstica compilada; ainda não é uma correção visual/performance validada.
