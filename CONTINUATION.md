@@ -1634,3 +1634,17 @@ Foi atualizado `scripts/ensure-rexglue-android-input-fps.py` para inserir, no ch
 - Commit do helper: `5e56e2a59ae464437a0cddc210b20ec7670625d3`.
 
 **Estado:** patch de instrumentação preparado no branch `android-rebuild`; ainda não foi executado em Actions nem validado por compilação. Não há APK novo e não há correção visual/performance afirmada. Próxima etapa: disparar build diagnóstico privado, confirmar que o patch aplica sem erro e, após instalar, coletar logs contendo `[RECVX-DEPTH-TRANSFER]` em uma cena com sombras ausentes.
+
+
+## 2026-11-14 — Falha de compilação #47 e correção da instrumentação
+
+- Build privado #47: https://github.com/joaovitoroutlok821-dot/recvx-private-build/actions/runs/43655957806
+- Repositório do build: `joaovitoroutlok821-dot/recvx-private-build`; branch `main`.
+- Fonte usada: `joaovitoroutlok821-dot/recomp-codeveronica`, branch `android-rebuild`, commit de solicitação `809bc1b48d45be30f1ae82e946f9c7dfcf1511db`.
+- As etapas de geração privada, instalação do Android SDK/NDK, preparação SDL e compatibilidade passaram. A compilação falhou em `src/graphics/vulkan/render_target_cache.cpp`, na nova instrumentação de profundidade.
+- Erros confirmados pelo log: endereço de temporário ao usar `&host_depth_source_vulkan_rt->key()`; tentativa de passar o bit-field `source_rt_key.is_depth` diretamente ao macro de logging/fmt.
+- Não foi criado APK. O único artefato do run #47 é `recvx-private-diagnostics` (179.616 bytes; ID `14138078680`). Não instalar.
+- Correção aplicada ao helper `scripts/ensure-rexglue-android-input-fps.py`: remover o ponteiro para o objeto temporário; copiar os campos da chave host-depth para escalares locais; converter bit-fields/formato/base para valores escalares antes de chamar `REXGPU_INFO`. A intenção continua estritamente diagnóstica, limitada a 64 mensagens e sem alterar a lógica de renderização.
+- Commit da correção: `5d4e5f5cb824b1134b8d52459ac47d410eba9d5d`.
+- Próximo passo: atualizar a referência de origem do build privado para o novo commit do branch `android-rebuild`, disparar nova tentativa e conferir a compilação de `render_target_cache.cpp`. Só considerar APK se a etapa de compilação e a verificação/empacotamento passarem.
+- Baseline funcional permanece APK #44. APK #46 segue sendo diagnóstico instalado, sem correção de sombras/FPS comprovada.
