@@ -21,6 +21,74 @@ extern "C" void RecvX_ShutdownTouchGamepad();
 #include <rex/system/interfaces/graphics.h>
 #include <rex/ui/presenter.h>
 
+#include <imgui.h>
+
+class RecvXInGameDialog final : public rex::ui::ImGuiDialog {
+ public:
+  explicit RecvXInGameDialog(rex::ui::ImGuiDrawer* drawer)
+      : rex::ui::ImGuiDialog(drawer) {}
+
+ protected:
+  void OnDraw(ImGuiIO& io) override {
+    const ImVec2 button_size(92.0f, 42.0f);
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x - button_size.x - 16.0f,
+                                   io.DisplaySize.y - button_size.y - 16.0f), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(button_size, ImGuiCond_Always);
+    constexpr ImGuiWindowFlags button_flags = ImGuiWindowFlags_NoDecoration |
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing |
+        ImGuiWindowFlags_NoNav;
+    if (ImGui::Begin("RECVX Menu Button##recvx", nullptr, button_flags)) {
+      if (ImGui::Button(menu_open_ ? "FECHAR" : "MENU", ImVec2(-1.0f, -1.0f)))
+        menu_open_ = !menu_open_;
+    }
+    ImGui::End();
+    if (!menu_open_) return;
+
+    ImGui::SetNextWindowSize(ImVec2(420.0f, 360.0f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowPos(ImVec2(io.DisplaySize.x * 0.5f, io.DisplaySize.y * 0.5f),
+                            ImGuiCond_FirstUseEver, ImVec2(0.5f, 0.5f));
+    if (!ImGui::Begin("RESIDENT EVIL CODE: VERONICA X##recvx_menu", &menu_open_,
+                      ImGuiWindowFlags_NoCollapse)) { ImGui::End(); return; }
+    if (ImGui::BeginTabBar("##recvx_tabs")) {
+      if (ImGui::BeginTabItem("Cheats")) {
+        ImGui::TextWrapped("Opcoes de treinador para este XEX");
+        ImGui::Separator();
+        ImGui::BeginDisabled();
+        bool infinite_health = false, infinite_ammo = false;
+        bool chest_items = false, time_control = false;
+        ImGui::Checkbox("Vida infinita", &infinite_health);
+        ImGui::Checkbox("Municao infinita", &infinite_ammo);
+        ImGui::Checkbox("Itens no bau", &chest_items);
+        ImGui::Checkbox("Controle do tempo", &time_control);
+        ImGui::EndDisabled();
+        ImGui::TextDisabled("Desativado: enderecos/codigos ainda nao validados para Bio_cv.exe.");
+        ImGui::EndTabItem();
+      }
+      if (ImGui::BeginTabItem("Salvar / Carregar")) {
+        ImGui::TextWrapped("Save convencional do Code Veronica X");
+        ImGui::Separator();
+        ImGui::BeginDisabled();
+        ImGui::Button("Salvar jogo", ImVec2(-1.0f, 42.0f));
+        ImGui::Button("Carregar jogo", ImVec2(-1.0f, 42.0f));
+        ImGui::EndDisabled();
+        ImGui::TextWrapped("Salvar normalmente exige maquina de escrever e Ink Ribbon. Carregar usa LOAD GAME na tela de titulo.");
+        ImGui::TextDisabled("A integracao XAM ainda nao e segura: OpenFile retorna FILE_NOT_FOUND e Flush e no-op no SDK auditado.");
+        ImGui::EndTabItem();
+      }
+      if (ImGui::BeginTabItem("Continuar")) {
+        ImGui::TextWrapped("Fechar somente o painel e voltar ao jogo.");
+        if (ImGui::Button("VOLTAR AO JOGO", ImVec2(-1.0f, 48.0f))) menu_open_ = false;
+        ImGui::EndTabItem();
+      }
+      ImGui::EndTabBar();
+    }
+    ImGui::End();
+  }
+ private:
+  bool menu_open_ = false;
+};
+
+
 class RecvXApp : public rex::ReXApp {
  public:
   using rex::ReXApp::ReXApp;
@@ -32,6 +100,20 @@ class RecvXApp : public rex::ReXApp {
   }
 
  protected:
+  void OnCreateDialogs(rex::ui::ImGuiDrawer* drawer) override {
+    // O drawer mantem este overlay anexado durante toda a execucao do jogo.
+    new RecvXInGameDialog(drawer);
+  }
+
+  void OnPostSetup() override {
+    if (rex::cvar::GetFlagSource("snorm16_render_target_full_range") ==
+        rex::cvar::Source::kDefault) {
+      rex::cvar::SetFlagByName("snorm16_render_target_full_range", "false");
+    }
+    REXLOG_INFO("[GPU] snorm16_render_target_full_range = {}",
+                rex::cvar::GetFlagByName("snorm16_render_target_full_range"));
+  }
+
   void OnPreSetup(rex::RuntimeConfig& config) override {
     // Explicitly enable the Xenos GPU plugin for the Android runtime.
     config.gpu_plugin = "xenos";
