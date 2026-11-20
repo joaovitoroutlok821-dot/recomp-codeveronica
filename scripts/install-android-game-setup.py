@@ -324,7 +324,6 @@ public final class GameSetupActivity extends Activity {
 
     private void prepareGame(Uri tree) {
         start.setEnabled(false);
-        start.setEnabled(false);
         progress.setVisibility(View.VISIBLE);
         status.setText("Verificando arquivos e espaço disponível...");
         worker.execute(() -> {
@@ -353,7 +352,7 @@ public final class GameSetupActivity extends Activity {
                 });
                 copyDirectory(rootUri, staging);
                 File entry = findEntryPoint(staging);
-                if (entry == null) throw new Exception("Nenhum arquivo .xex válido foi encontrado na raiz da pasta selecionada.");
+                if (entry == null) throw new Exception("Default.xex não foi copiado corretamente ou não possui cabeçalho XEX2 válido.");
                 File backup = new File(getFilesDir(), "game.old");
                 deleteRecursively(backup);
                 if (gameDir.exists() && !gameDir.renameTo(backup)) throw new Exception("Não foi possível preservar a cópia anterior.");
@@ -365,7 +364,6 @@ public final class GameSetupActivity extends Activity {
                 main.post(() -> {
                     progress.setVisibility(View.GONE);
                     start.setEnabled(true);
-                    start.setEnabled(true);
                     getPreferences(MODE_PRIVATE).edit().putString(PREF_URI, tree.toString()).apply();
                     status.setText("Arquivos preparados. Toque em INICIAR JOGO para continuar.");
                     publishCopyProgress(100, totalBytes, totalBytes, "Cópia concluída. Arquivos preparados.");
@@ -376,7 +374,6 @@ public final class GameSetupActivity extends Activity {
                 deleteRecursively(new File(getFilesDir(), "game.new"));
                 main.post(() -> {
                     progress.setVisibility(View.GONE);
-                    start.setEnabled(true);
                     start.setEnabled(false);
                     status.setText("Falha ao preparar os arquivos: " + e.getMessage());
                     refreshDirectoryStatus();
