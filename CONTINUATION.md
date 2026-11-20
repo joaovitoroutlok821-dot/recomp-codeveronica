@@ -1703,3 +1703,12 @@ Foi atualizado `scripts/ensure-rexglue-android-input-fps.py` para inserir, no ch
 - O aviso de quota não indica defeito no código nem invalida o sucesso do Workflow #48; é uma limitação de uso/cobrança do GitHub Actions.
 - Localização deste arquivo: repositório de código-fonte `joaovitoroutlok821-dot/recomp-codeveronica`, URL https://github.com/joaovitoroutlok821-dot/recomp-codeveronica, branch `android-rebuild`, caminho `CONTINUATION.md`.
 - Pipeline privado: repositório `joaovitoroutlok821-dot/recvx-private-build`, branch `main`.
+
+## Correções pontuais do instalador Android — 2026-11-20
+
+- Commit `99915e1d2aa529089dac3772335443f7969d7995` em `scripts/install-android-game-setup.py`.
+- Removidas chamadas duplicadas de `setEnabled` durante a preparação da pasta e após cópia concluída.
+- Em caso de falha na cópia, o botão **Iniciar Jogo** permanece desabilitado; antes havia uma sequência redundante que o habilitava e imediatamente desabilitava.
+- A mensagem de falha pós-cópia agora identifica explicitamente `Default.xex` e a validação do cabeçalho XEX2.
+- Esta é uma correção pequena de consistência do fluxo SAF; não comprova que o jogo inicia nem altera o runtime/renderizador.
+- Ainda é necessário disparar um workflow para testar a disponibilidade do GitHub Actions nesta conta.
