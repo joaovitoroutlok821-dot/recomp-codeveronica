@@ -1712,3 +1712,16 @@ Foi atualizado `scripts/ensure-rexglue-android-input-fps.py` para inserir, no ch
 - A mensagem de falha pós-cópia agora identifica explicitamente `Default.xex` e a validação do cabeçalho XEX2.
 - Esta é uma correção pequena de consistência do fluxo SAF; não comprova que o jogo inicia nem altera o runtime/renderizador.
 - Ainda é necessário disparar um workflow para testar a disponibilidade do GitHub Actions nesta conta.
+
+
+## Retomada do menu in-game — 2026-11-20
+
+- Reintroduzido em `src/recvx_app.h` o diálogo ImGui `RecvXInGameDialog`, registrado em `RecvXApp::OnCreateDialogs`. O botão flutuante `MENU` e o painel são desenhados pelo ImGuiDrawer durante a execução do jogo; `VOLTAR AO JOGO` fecha somente o painel.
+- Abas restauradas: `Cheats`, `Salvar / Carregar` e `Continuar`. O menu não é uma Activity da launcher.
+- As opções de cheats permanecem visualmente desativadas de propósito. A auditoria identificou APIs de memória do runtime (`Runtime::memory()`, `LookupHeap()`, `QueryRegionInfo()`, `TranslateVirtual()`, `rex::be<T>`), mas ainda não há endereços/códigos validados para `Bio_cv.exe`; ativar toggles sem isso seria simular funcionalidade e poderia corromper a partida.
+- Salvar/carregar também permanece desativado. O SDK auditado tem `ContentManager`, mas `XamContentOpenFile_entry` retorna `X_ERROR_FILE_NOT_FOUND` e `XamContentFlush_entry` é no-op. Não ligar os botões ao backend até corrigir e testar criação, escrita, flush, close e leitura persistente no diretório privado Android.
+- Mantida a regra do jogo: save convencional em máquina de escrever com Ink Ribbon; carregamento normal pelo LOAD GAME na tela de título. Isto não é Save State.
+- O workaround de renderização `snorm16_render_target_full_range=false` foi preservado em `OnPostSetup`, respeitando configuração explícita do usuário.
+- Limite desta alteração: restaura a estrutura do overlay e evita controles falsamente funcionais; não implementa ainda códigos de cheats nem backend de save/load. Também não foi adicionada nesta etapa a combinação Start+Select do controle Bluetooth; a abertura disponível neste patch é pelo botão de toque MENU.
+- Commit de código: `f368db94c4814e5d625d249637b3285d449e9721`.
+- Ainda é necessário compilar o APK e testar com gameplay ativo, toque e controle Bluetooth antes de declarar o overlay validado.
